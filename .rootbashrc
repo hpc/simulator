@@ -1,0 +1,23 @@
+# .bashrc
+
+# User specific aliases and functions
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+export LD_LIBRARY_PATH=/usr/local/lib64/:/usr/local/lib/:$LD_LIBRARY_PATH
+bind '"\eu":previous-history'
+bind '"\em":next-history'
+bind '"\ey":history-search-backward'
+bind '"\en":history-search-forward'
+bind '"\ej":backward-char'
+bind '"\ek":forward-char'
+bind '"\eh":unix-line-discard'
+bind '"\el":beginning-of-line'
+bind '"\e;":end-of-line'
+bind '"\ep":yank'
+bind '"\eg":kill-line'
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi

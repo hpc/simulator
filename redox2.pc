@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=/usr/local/bin
+libdir=/usr/local/lib64
+includedir=/usr/local/include
+
+Name: Redox
+Description: Modern, asynchronous, and wicked fast C++11 client for Redis
+Version: 0.3.0
+
+Libs: -L${libdir} -lredox
+Cflags: -I${includedir}

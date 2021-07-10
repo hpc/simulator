@@ -1,0 +1,343 @@
+SLURM_NODELIST=ac16
+SLURM_CHECKPOINT_IMAGE_DIR=/var/slurm/checkpoint
+SLURM_JOB_NAME=bash
+XDG_SESSION_ID=6866
+HOSTNAME=ac-fe1.newmexicoconsortium.org
+SLURM_TOPOLOGY_ADDR=ac16
+SLURMD_NODENAME=ac16
+SLURM_PRIO_PROCESS=0
+SLURM_SRUN_COMM_PORT=44843
+__LMOD_REF_COUNT_MODULEPATH=/opt/ohpc/pub/modulefiles:1;/ac-project/software/modules/linux-centos7-x86_64/Core/linux-centos7-haswell:1
+TERM=screen-256color
+SHELL=/bin/bash
+LMOD_ROOT=/opt/ohpc/admin/lmod
+HISTSIZE=1000
+SLURM_PTY_WIN_ROW=23
+SLURM_JOB_QOS=normal
+SSH_CLIENT=10.0.67.4 36564 22
+SLURM_TOPOLOGY_ADDR_PATTERN=node
+TMPDIR=/tmp
+LMOD_PKG=/opt/ohpc/admin/lmod/lmod
+LMOD_VERSION=8.1.18
+SSH_TTY=/dev/pts/11
+USER=USER
+LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:
+SLURM_STEP_NUM_NODES=1
+SRUN_DEBUG=3
+SLURM_JOBID=3664631
+SLURM_LAUNCH_NODE_IPADDR=172.16.4.61
+SLURM_STEP_ID=0
+LMOD_PREPEND_BLOCK=normal
+_ModuleTable001_=X01vZHVsZVRhYmxlXz17WyJNVHZlcnNpb24iXT0zLFsiY19yZWJ1aWxkVGltZSJdPWZhbHNlLFsiY19zaG9ydFRpbWUiXT1mYWxzZSxkZXB0aFQ9e30sZmFtaWx5PXt9LG1UPXt9LG1wYXRoQT17Ii9vcHQvb2hwYy9wdWIvbW9kdWxlZmlsZXMiLCIvYWMtcHJvamVjdC9zb2Z0d2FyZS9tb2R1bGVzL2xpbnV4LWNlbnRvczcteDg2XzY0L0NvcmUvbGludXgtY2VudG9zNy1oYXN3ZWxsIix9LFsic3lzdGVtQmFzZU1QQVRIIl09Ii9vcHQvb2hwYy9wdWIvbW9kdWxlZmlsZXM6L2FjLXByb2plY3Qvc29mdHdhcmUvbW9kdWxlcy9saW51eC1jZW50b3M3LXg4Nl82NC9Db3JlL2xpbnV4LWNlbnRvczctaGFzd2VsbCIsfQ==
+MAIL=/var/spool/mail/USER
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+SLURM_STEP_LAUNCHER_PORT=44843
+SLURM_WORKING_CLUSTER=acordar:172.16.4.62:6817:8448
+_=/usr/bin/env
+SLURM_JOB_ID=3664631
+LMOD_SETTARG_CMD=:
+PWD=/home/USER/sc21/Author-Kit
+SLURM_STEPID=0
+SLURM_JOB_USER=USER
+SLURM_SRUN_COMM_HOST=172.16.4.61
+LANG=en_US.UTF-8
+MODULEPATH=/opt/ohpc/pub/modulefiles:/ac-project/software/modules/linux-centos7-x86_64/Core/linux-centos7-haswell
+SLURM_UMASK=0002
+SLURM_PTY_WIN_COL=94
+_ModuleTable_Sz_=1
+SLURM_JOB_UID=5403
+SLURM_NODEID=0
+SLURM_SUBMIT_DIR=/home/USER
+LMOD_CMD=/opt/ohpc/admin/lmod/lmod/libexec/lmod
+SLURM_TASK_PID=39447
+SLURM_CPUS_ON_NODE=2
+HISTCONTROL=ignoreboth
+KRB5CCNAME=FILE:/tmp/krb5cc_5403_9bjUfU
+SLURM_PROCID=0
+SLURM_JOB_NODELIST=ac16
+SHLVL=3
+HOME=/home/USER
+SLURM_PTY_PORT=45434
+SLURM_LOCALID=0
+SLURM_CLUSTER_NAME=acordar
+SLURM_JOB_CPUS_PER_NODE=1
+SLURM_JOB_GID=5403
+SLURM_SUBMIT_HOST=ac-fe1.newmexicoconsortium.org
+SLURM_GTIDS=0
+BASH_ENV=/opt/ohpc/admin/lmod/lmod/init/bash
+SLURM_JOB_PARTITION=usrc-nd02
+LOGNAME=USER
+SLURM_STEP_NUM_TASKS=1
+SSH_CONNECTION=10.0.67.4 36564 10.0.108.5 22
+SLURM_JOB_ACCOUNT=usrc-nd02
+MODULESHOME=/opt/ohpc/admin/lmod/lmod
+SLURM_JOB_NUM_NODES=1
+LMOD_SETTARG_FULL_SUPPORT=no
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+SLURM_STEP_TASKS_PER_NODE=1
+LMOD_FULL_SETTARG_SUPPORT=no
+SLURM_STEP_NODELIST=ac16
+XDG_RUNTIME_DIR=/run/user/5403
+LMOD_DIR=/opt/ohpc/admin/lmod/lmod/libexec
+LMOD_COLORIZE=no
+BASH_FUNC_module()=() {  eval $($LMOD_CMD bash "$@") && eval $(${LMOD_SETTARG_CMD:-:} -s sh)
+}
+BASH_FUNC_ml()=() {  eval $($LMOD_DIR/ml_cmd "$@")
+}
+Linux ac16.newmexicoconsortium.org 3.10.0-1160.6.1.el7.x86_64 #1 SMP Tue Nov 17 13:59:11 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                60
+On-line CPU(s) list:   0-59
+Thread(s) per core:    2
+Core(s) per socket:    15
+Socket(s):             2
+NUMA node(s):          2
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 62
+Model name:            Intel(R) Xeon(R) CPU E7-4870 v2 @ 2.30GHz
+Stepping:              7
+CPU MHz:               1283.923
+CPU max MHz:           2900.0000
+CPU min MHz:           1200.0000
+BogoMIPS:              4599.62
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              256K
+L3 cache:              30720K
+NUMA node0 CPU(s):     0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58
+NUMA node1 CPU(s):     1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm tpr_shadow vnmi flexpriority ept vpid fsgsbase smep erms xsaveopt dtherm ida arat pln pts
+MemTotal:       396222716 kB
+MemFree:        275926660 kB
+MemAvailable:   376065448 kB
+Buffers:               0 kB
+Cached:         63946788 kB
+SwapCached:            0 kB
+Active:         30187456 kB
+Inactive:       33803248 kB
+Active(anon):    2301216 kB
+Inactive(anon):  2014456 kB
+Active(file):   27886240 kB
+Inactive(file): 31788792 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:                 0 kB
+Writeback:             0 kB
+AnonPages:         43624 kB
+Mapped:            57828 kB
+Shmem:           4271608 kB
+Slab:           44512616 kB
+SReclaimable:   41600792 kB
+SUnreclaim:      2911824 kB
+KernelStack:        9600 kB
+PageTables:         3712 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    198111356 kB
+Committed_AS:    4447676 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:     1031236 kB
+VmallocChunk:   34157230076 kB
+Percpu:            12544 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+DirectMap4k:      475840 kB
+DirectMap2M:     7866368 kB
+DirectMap1G:    394264576 kB
+No modules loaded
+NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver. Make sure that the latest NVIDIA driver is installed and running.
+
+00:00.0 Host bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DMI2 (rev 07)
+00:02.0 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 2a (rev 07)
+00:02.1 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 2b (rev 07)
+00:02.2 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 2c (rev 07)
+00:03.0 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 3a (rev 07)
+00:03.2 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 3c (rev 07)
+00:05.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 VTd/Memory Map/Misc (rev 07)
+00:05.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 IIO RAS (rev 07)
+00:11.0 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Virtual Root Port (rev 06)
+00:16.0 Communication controller: Intel Corporation C600/X79 series chipset MEI Controller #1 (rev 05)
+00:16.1 Communication controller: Intel Corporation C600/X79 series chipset MEI Controller #2 (rev 05)
+00:1a.0 USB controller: Intel Corporation C600/X79 series chipset USB2 Enhanced Host Controller #2 (rev 06)
+00:1c.0 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Root Port 1 (rev b6)
+00:1c.6 PCI bridge: Intel Corporation C600/X79 series chipset PCI Express Root Port 7 (rev b6)
+00:1d.0 USB controller: Intel Corporation C600/X79 series chipset USB2 Enhanced Host Controller #1 (rev 06)
+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev a6)
+00:1f.0 ISA bridge: Intel Corporation C600/X79 series chipset LPC Controller (rev 06)
+00:1f.2 SATA controller: Intel Corporation C600/X79 series chipset 6-Port SATA AHCI Controller (rev 06)
+01:00.0 Ethernet controller: Broadcom Inc. and subsidiaries NetXtreme BCM5720 2-port Gigabit Ethernet PCIe
+01:00.1 Ethernet controller: Broadcom Inc. and subsidiaries NetXtreme BCM5720 2-port Gigabit Ethernet PCIe
+02:00.0 Ethernet controller: Broadcom Inc. and subsidiaries NetXtreme BCM5720 2-port Gigabit Ethernet PCIe
+02:00.1 Ethernet controller: Broadcom Inc. and subsidiaries NetXtreme BCM5720 2-port Gigabit Ethernet PCIe
+04:00.0 RAID bus controller: Broadcom / LSI MegaRAID SAS-3 3108 [Invader] (rev 02)
+06:00.0 PCI bridge: Renesas Technology Corp. SH7757 PCIe Switch [PS]
+07:00.0 PCI bridge: Renesas Technology Corp. SH7757 PCIe Switch [PS]
+07:01.0 PCI bridge: Renesas Technology Corp. SH7757 PCIe Switch [PS]
+08:00.0 PCI bridge: Renesas Technology Corp. SH7757 PCIe-PCI Bridge [PPB]
+09:00.0 VGA compatible controller: Matrox Electronics Systems Ltd. G200eR2
+0c:00.0 PCI bridge: PLX Technology, Inc. PEX 8734 32-lane, 8-Port PCI Express Gen 3 (8.0GT/s) Switch (rev ab)
+0d:04.0 PCI bridge: PLX Technology, Inc. PEX 8734 32-lane, 8-Port PCI Express Gen 3 (8.0GT/s) Switch (rev ab)
+0d:05.0 PCI bridge: PLX Technology, Inc. PEX 8734 32-lane, 8-Port PCI Express Gen 3 (8.0GT/s) Switch (rev ab)
+0d:06.0 PCI bridge: PLX Technology, Inc. PEX 8734 32-lane, 8-Port PCI Express Gen 3 (8.0GT/s) Switch (rev ab)
+0d:07.0 PCI bridge: PLX Technology, Inc. PEX 8734 32-lane, 8-Port PCI Express Gen 3 (8.0GT/s) Switch (rev ab)
+1f:08.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 0 (rev 07)
+1f:09.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 1 (rev 07)
+1f:0a.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 0 (rev 07)
+1f:0a.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 1 (rev 07)
+1f:0a.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 2 (rev 07)
+1f:0a.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 3 (rev 07)
+1f:0b.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 UBOX Registers (rev 07)
+1f:0b.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 UBOX Registers (rev 07)
+1f:0c.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0c.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0d.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+1f:0e.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 0 (rev 07)
+1f:0e.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 0 (rev 07)
+1f:0f.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Target Address/Thermal Registers (rev 07)
+1f:0f.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 RAS Registers (rev 07)
+1f:0f.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+1f:0f.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+1f:0f.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+1f:0f.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+1f:10.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 0 (rev 07)
+1f:10.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 1 (rev 07)
+1f:10.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 0 (rev 07)
+1f:10.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 1 (rev 07)
+1f:10.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 2 (rev 07)
+1f:10.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 3 (rev 07)
+1f:10.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 2 (rev 07)
+1f:10.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 3 (rev 07)
+1f:11.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:13.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 R2PCIe (rev 07)
+1f:13.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 R2PCIe (rev 07)
+1f:13.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Registers (rev 07)
+1f:13.5 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Performance Ring Monitoring (rev 07)
+1f:13.6 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Performance Ring Monitoring (rev 07)
+1f:16.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 System Address Decoder (rev 07)
+1f:16.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Broadcast Registers (rev 07)
+1f:16.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Broadcast Registers (rev 07)
+1f:18.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 2 (rev 07)
+1f:1c.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 1 (rev 07)
+1f:1c.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 1 (rev 07)
+1f:1d.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Target Address/Thermal Registers (rev 07)
+1f:1d.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 RAS Registers (rev 07)
+1f:1d.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+1f:1d.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+1f:1d.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+1f:1d.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+1f:1e.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 0 (rev 07)
+1f:1e.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 1 (rev 07)
+1f:1e.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 0 (rev 07)
+1f:1e.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 1 (rev 07)
+1f:1e.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 2 (rev 07)
+1f:1e.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 3 (rev 07)
+1f:1e.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 2 (rev 07)
+1f:1e.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 3 (rev 07)
+1f:1f.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:1f.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:1f.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:1f.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:1f.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+1f:1f.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+20:02.0 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 2a (rev 07)
+20:03.0 PCI bridge: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 PCI Express Root Port 3a (rev 07)
+20:05.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 VTd/Memory Map/Misc (rev 07)
+20:05.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 IIO RAS (rev 07)
+22:00.0 Network controller: Mellanox Technologies MT27500 Family [ConnectX-3]
+3f:08.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 0 (rev 07)
+3f:09.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 1 (rev 07)
+3f:0a.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 0 (rev 07)
+3f:0a.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 1 (rev 07)
+3f:0a.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 2 (rev 07)
+3f:0a.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Power Control Unit 3 (rev 07)
+3f:0b.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 UBOX Registers (rev 07)
+3f:0b.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 UBOX Registers (rev 07)
+3f:0c.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0c.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0d.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Unicast Registers (rev 07)
+3f:0e.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 0 (rev 07)
+3f:0e.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 0 (rev 07)
+3f:0f.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Target Address/Thermal Registers (rev 07)
+3f:0f.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 RAS Registers (rev 07)
+3f:0f.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+3f:0f.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+3f:0f.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+3f:0f.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel Target Address Decoder Registers (rev 07)
+3f:10.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 0 (rev 07)
+3f:10.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 1 (rev 07)
+3f:10.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 0 (rev 07)
+3f:10.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 1 (rev 07)
+3f:10.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 2 (rev 07)
+3f:10.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 Thermal Control 3 (rev 07)
+3f:10.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 2 (rev 07)
+3f:10.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel 0-3 ERROR Registers 3 (rev 07)
+3f:11.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:13.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 R2PCIe (rev 07)
+3f:13.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 R2PCIe (rev 07)
+3f:13.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Registers (rev 07)
+3f:13.5 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Performance Ring Monitoring (rev 07)
+3f:13.6 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Ring Performance Ring Monitoring (rev 07)
+3f:16.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 System Address Decoder (rev 07)
+3f:16.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Broadcast Registers (rev 07)
+3f:16.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Broadcast Registers (rev 07)
+3f:18.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 QPI Link 2 (rev 07)
+3f:1c.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 1 (rev 07)
+3f:1c.1 Performance counters: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Home Agent 1 (rev 07)
+3f:1d.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Target Address/Thermal Registers (rev 07)
+3f:1d.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 RAS Registers (rev 07)
+3f:1d.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+3f:1d.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+3f:1d.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+3f:1d.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 1 Channel Target Address Decoder Registers (rev 07)
+3f:1e.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 0 (rev 07)
+3f:1e.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 1 (rev 07)
+3f:1e.2 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 0 (rev 07)
+3f:1e.3 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 1 (rev 07)
+3f:1e.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 2 (rev 07)
+3f:1e.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 Thermal Control 3 (rev 07)
+3f:1e.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 2 (rev 07)
+3f:1e.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 Integrated Memory Controller 0 Channel 0-3 ERROR Registers 3 (rev 07)
+3f:1f.0 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:1f.1 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:1f.4 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:1f.5 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:1f.6 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)
+3f:1f.7 System peripheral: Intel Corporation Xeon E7 v2/Xeon E5 v2/Core i7 DDRIO (rev 07)

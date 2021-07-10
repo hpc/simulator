@@ -1,0 +1,7 @@
+#!/bin/bash
+source ./start.sh
+date
+python3 generate_config.py -i $file1 -o $folder1 --basefiles $basefiles --output-config
+date
+python3 run-experiments.py -i $folder1  --time 120 --sim-time-minutes 60 --socket-start 100000
+date
