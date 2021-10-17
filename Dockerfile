@@ -49,7 +49,12 @@ RUN \
     make install
 
 
+RUN \
+    apt update && \
+    apt-get install apt-transport-https ca-certificates -y && \
+    update-ca-certificates 
 
+USER sim
 #install simgrid (current version 3.25)
 
 RUN \
