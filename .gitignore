@@ -1,0 +1,4 @@
+/basefiles/*.config
+/basefiles/workloads/*
+!/basefiles/workloads/.gitkeep
+**/__pycache__

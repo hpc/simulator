@@ -1,0 +1,9 @@
+printf "%s%s" "libdir=$install_prefix/lib
+includedir=$install_prefix/include
+
+Name: ev
+Description: ev
+Version: 1.0
+
+Libs: -L" '${libdir} -lev
+Cflags: -I${includedir}' > $install_prefix/lib/pkgconfig/ev.pc

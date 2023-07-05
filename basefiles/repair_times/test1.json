@@ -1,0 +1,12 @@
+{
+	"repair-times":[
+			{
+			 "machine":"a0",
+			 "repair-time":3.0
+			},
+			{
+			 "machine":"a2",
+			 "repair-time":2.0
+			}
+		     ]
+}

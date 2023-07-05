@@ -1,0 +1,7 @@
+/usr/bin/srun -p usrc-nd02 -N1  --pty --preserve-en $SHELL
+sbatch -p usrc-nd02 -N1 -n1 -c1 --output=/home/cwalker/basefiles/myBatch.log --export=folder1=$folder1,file1=$file1 ./myBatch
+python3 aggregate_makespan.py -i ~/experiments/$folder1
+tar cf - /folder-with-big-files -P | pv -s $(du -sb /folder-with-big-files | awk '{print $1}') | gzip > big-files.tar.gz
+
+
+strigger --set --jobid

@@ -1,0 +1,9 @@
+printf "%s%s" "libdir=$install_prefix/$gmp_dir
+includedir=$install_prefix/include
+
+Name: GMP
+Description: GNU Multiple Precision
+Version: 10.3.2
+
+Libs: -L" '${libdir} -lgmp
+Cflags: -I${includedir}'> $install_prefix/$gmp_dir/pkgconfig/gmpxx.pc

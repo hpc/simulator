@@ -1,9 +1,0 @@
-libdir=/home/$USER/Install/lib
-includedir=/home/$USER/Install/include
-
-Name: GMP
-Description: GNU Multiple Precision
-Version: 10.3.2
-
-Libs: -L${libdir} -lgmp
-Cflags: -I${includedir}

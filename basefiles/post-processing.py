@@ -1,32 +1,17 @@
 """
 Usage: 
-    post-processing.py -i PATH [-o PATH] [--raw INT] 
-    post-processing.py -i PATH [-o PATH] [--raw INT] [--checkpointing-on] [--makespan]
-    post-processing.py -i PATH [-o PATH] [--raw INT] --checkpointing-on -a PATH [--makespan]
-
-Arguments:
-    FILE                            an absolute location to a file
-    PATH                            an absolute location to a directory
-    INT                             an integer
-    FLOAT                           a decimal number
-    
+    post-processing.py -i <path> [-o <path>] [ --reservations-as-jobs]
+       
 Required Options:
-    -i PATH --input=PATH            where out_jobs.csv lives
-                       
+    -i , --input <path>            where the Run path is
+                         
 Options:
-    -o PATH --output=PATH           where output lives
-                                    [default: input_path]
-    --raw INT                       whether to output raw post processing data
-                                    raw = 1,debug=2, raw and debug=3
-    --makespan                      output makespan at input_path/makespan.csv
-                                    outputs avgerage turnaround time, as well as
-                                    nodes,SMTBF,NMTBF,AAE,num_checkpointed,
-                                    percent_checkpointed
-                                    
-Checkpointing Options:
-  
-  --checkpointing-on                process checkpointed data
-  -a PATH --avgAE_path=PATH         Path to where avgAE.csv lives
+    -o , --output <path>           where output lives
+                                   [default: input_path/output/expe-out/]
+
+    --reservations-as-jobs         whether to include reservation time in
+                                   things like avg_tat and avg_waiting
+
   
 """
 
@@ -40,40 +25,90 @@ import json
 from docopt import docopt
 import sys
 import os
+def dictHasKey(myDict,key):
+    if key in myDict.keys():
+        return True
+    else:
+        return False
 
 args=docopt(__doc__,help=True,options_first=False)
-        
+OutConfig={}
+InConfig = {}
+runPath=args["--input"]
+with open(runPath+"/input/config.ini","r") as InFile:
+    InConfig = json.load(InFile)
+
+syntheticWorkload = InConfig['synthetic-workload'] if dictHasKey(InConfig,'synthetic-workload') else False
+grizzlyWorkload = InConfig['grizzly-workload'] if dictHasKey(InConfig,'grizzly-workload') else False
+nodes = int(InConfig['nodes']) if dictHasKey(InConfig,'nodes') else False
+cores = int(InConfig['core-count']) if dictHasKey(InConfig,'core-count') else False
+speeds = str(InConfig['speeds']) if dictHasKey(InConfig,'speeds') else False
+sharePacking = InConfig['share-packing'] if dictHasKey(InConfig,"share-packing") else False
+corePercent = float(InConfig['core-percent']) if dictHasKey(InConfig,"core-percent") else False
+checkpointing = InConfig['checkpointing-on'] if dictHasKey(InConfig,'checkpointing-on') else False
+SMTBF = float(InConfig['SMTBF']) if dictHasKey(InConfig,'SMTBF') else False
+checkpointInterval = str(InConfig['checkpoint-interval']) if dictHasKey(InConfig,'checkpoint-interval') else False
+performanceFactor = float(InConfig['performance-factor']) if dictHasKey(InConfig,'performance-factor') else False
+calculateCheckpointing = InConfig['calculate-checkpointing'] if dictHasKey(InConfig,'calculate-checkpointing') else False
+platformPath = InConfig['platformFile'] if dictHasKey(InConfig,'platformFile') else False
+seedFailures = InConfig['seed-failures'] if dictHasKey(InConfig,'seed-failures') else False
+batsimLog = InConfig['batsim-log'] if dictHasKey(InConfig,'batsim-log') else "-q"
+batschedLog=InConfig['batsched-log'] if dictHasKey(InConfig,'batsched-log') else "--verbosity quiet"
+repairTime = InConfig['repair-time'] if dictHasKey(InConfig,'repair-time') else False
+fixedFailures = InConfig['fixed-failures'] if dictHasKey(InConfig,'fixed-failures') else False
+checkpointError = InConfig['checkpointError'] if dictHasKey(InConfig,'checkpointError') else False
+
+reservations_as_jobs = True if args["--reservations-as-jobs"] else False
+submissionTime = False
+workloadPath = False
+profileType = False
+speed = False
+if not type(syntheticWorkload) == bool:
+    workloadPath = syntheticWorkload["workloadFile"] if dictHasKey(syntheticWorkload,'workloadFile') else False
+    profileType = syntheticWorkload["profileType"] if dictHasKey(syntheticWorkload,'profileType') else False
+    speed = syntheticWorkload["speed"] if dictHasKey(syntheticWorkload,'speed') else False
+    submissionTime = syntheticWorkload["submissionTime"] if dictHasKey(syntheticWorkload,'submissionTime') else False
+elif not type(grizzlyWorkload) == bool:
+    workloadPath = grizzlyWorkload["workloadFile"] if dictHasKey(grizzlyWorkload,'workloadFile') else False
+    profileType = grizzlyWorkload["profileType"] if dictHasKey(grizzlyWorkload,'profileType') else False
+    speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
+    submissionTime = grizzlyWorkload["submissionTime"] if dictHasKey(grizzlyWorkload,'submissionTime') else False
 
 
+with open(runPath+"/output/config.ini","r") as InFile:
+    OutConfig = json.load(InFile)
+AAE = OutConfig['AAE'] if dictHasKey(OutConfig,'AAE') else False
+makespan = OutConfig['makespan'] if dictHasKey(OutConfig,'makespan') else False
+pp_slowdown = OutConfig['pp-slowdown'] if dictHasKey(OutConfig,'pp-slowdown') else False
 
+if not reservations_as_jobs:
+    reservations_as_jobs = OutConfig['reservations-as-jobs'] if dictHasKey(OutConfig,"reservations-as-jobs") else False
+raw = int(OutConfig['raw']) if dictHasKey(OutConfig,'raw') else False
+print("makespan {}".format(makespan))
 #example conditional required non_int.add_argument('--lport', required='--prox' in sys.argv, type=int)
 
-args["--output"] = args["--output"] if not (args["--output"] == "input_path") else args["--input"]
+args["--output"] = args["--output"] if not (args["--output"]=="input_path/output/expe-out/") else args["--input"].rstrip("/") + "/output/expe-out/"
 #path to results of the simulation
-path=args["--input"].rstrip('/') + "/out_jobs.csv"
+path=runPath + "/output/expe-out/out_jobs.csv"
 
 #path to outfile
 outfile = args["--output"].rstrip('/') +"/post_out_jobs.csv"
 raw_outfile = args["--output"].rstrip('/') +"/raw_post_out_jobs.csv"
 raw_outfile_debug = args["--output"].rstrip('/') +"/DEBUG_raw_post_out_jobs.csv"
 
-#CHECKPOINTING
-checkpointing = True if args["--checkpointing-on"] else False
-
-raw = int(args["--raw"]) if args["--raw"] else False
+oneSecond = speed
 
 
 if checkpointing:
-    if args["--avgAE_path"]:
-            avgAE_path=args["--avgAE_path"].rstrip('/') + "/avgAE.csv"
-    else:
-        avgAE_path=args["--input"].rstrip('/') + "/avgAE.csv"
-makespan = True if args["--makespan"] else False
+    avgAE_path=args["--input"].rstrip('/') + "/avgAE.csv"
+
 
 
 df = pd.read_csv(path,sep=',',header=0,dtype={"job_id": str, "profile": str,"metadata":str,"batsim_metadata":str})
 MTBF = df["MTBF"].iloc[0] if not df["MTBF"].isnull().iloc[0] else -1
 SMTBF = df["SMTBF"].iloc[0] if not df["SMTBF"].isnull().iloc[0] else -1
+fixedFailures = df["fixed-failures"].iloc[0] if not df["fixed-failures"].isnull().iloc[0] else -1
+repairTime = df["repair-time"].iloc[0] if not df["repair-time"].isnull().iloc[0] else -1
 error = df["Tc_Error"].iloc[0]
 
 
@@ -85,6 +120,7 @@ df["waiting_time"]=df["waiting_time"].astype(np.double)
 df["turnaround_time"]=df["turnaround_time"].astype(np.double)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
+
 
 if set(['metadata','batsim_metadata']).issubset(df.columns):
     #select just jod_id and metadata columns
@@ -234,26 +270,39 @@ if raw==2 or raw==3:
 #df3 becomes everything df2 was without the resubmitted jobs
 df3=df2[df2.resubmit==0]
 
-
 #reorder columns
 if checkpointing:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources',\
             'requested_time','success','real_final_state','starting_time','total_execution_time',\
-            'num_resubmits','real_finish_time','checkpointed','total_waiting_time','total_turnaround_time','total_dumps','work_progress',\
-            'checkpoint_time','dump_time','read_time','delay','real_delay','MTBF','SMTBF','Tc_Error']
+            'purpose','num_resubmits','real_finish_time','checkpointed','total_waiting_time','total_turnaround_time','total_dumps','work_progress',\
+            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error']
 else:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources'\
             ,'requested_time','success','real_final_state','starting_time','total_execution_time'\
-            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','MTBF','SMTBF','Tc_Error']
+            ,'purpose'\
+            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error']
 df3=df3[cols]
-if checkpointing:
+if checkpointing and profileType == "delay":
     df3.loc[~(df3['delay'] == df3['real_delay']),'checkpointing_on']=True
     df3.loc[df3['delay']==df3['real_delay'],'checkpointing_on']=False
+elif checkpointing and profileType == "parallel_homogeneous":
+    df3.loc[~(df3['cpu'] == df3['real_cpu']),'checkpointing_on'] = True
+    df3.loc[df3['cpu'] == df3['real_cpu'], 'checkpointing_on'] = False
 
 avgAE = 0
-if checkpointing:
+if checkpointing and profileType == "delay":
     df3['application_efficiency']=df3['real_delay']/df3['total_execution_time']
     avgAE = (df3['real_delay']*df3['requested_number_of_resources']).sum() \
+        /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
+elif checkpointing and profileType == "parallel_homogeneous":
+    df3['real_cpu'] = df3['real_cpu'].astype(np.double)
+    df3['application_efficiency']=df3['real_cpu']/oneSecond/df3['total_execution_time']
+    avgAE = (df3['real_cpu']/oneSecond * df3['requested_number_of_resources']).sum() \
+        /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
+elif profileType == "parallel_homogeneous":
+    df3['cpu'] = df3['cpu'].astype(np.double)
+    df3['application_efficiency']=df3['cpu']/oneSecond/df3['total_execution_time']
+    avgAE = (df3['cpu']/oneSecond * df3['requested_number_of_resources']).sum() \
         /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
 else:
     df3['application_efficiency']=df3['delay']/df3['total_execution_time']
@@ -263,28 +312,44 @@ else:
 print("Average App Efficiency: ",avgAE)
 df3['Average App Efficiency'] = avgAE
 
+if pp_slowdown:
+        tau = pp_slowdown
+        df3['pp_slowdown']=max((df3.total_waiting_time + df3.total_execution_time)/(df3.requested_number_of_resources* max(df3.total_execution_time,tau)),1)
+avg_slowdown = 0
+if reservations_as_jobs:
+    avg_waiting = df3['total_waiting_time'].mean()
+    avg_tat = df3['total_turnaround_time'].mean()
+    if pp_slowdown:
+        avg_slowdown = df3['pp_slowdown'].mean()
 
+else:
+    df3_jobs=df3.loc[df3.purpose == "job"]
+    avg_waiting = df3_jobs['total_waiting_time'].mean()
+    avg_tat = df3_jobs['total_turnaround_time'].mean()
+    if pp_slowdown:
+        avg_slowdown = df3_jobs['pp_slowdown'].mean()
 
-avg_tat = df3['total_turnaround_time'].mean()
 if makespan and checkpointing: 
     makespan = df3.real_finish_time.max() - df3.starting_time.min()
     checkpointed_num = len(df3.loc[df3.checkpointed == True])
     checkpointing_on_num = len(df3.loc[df3.checkpointing_on == True])
     percent_checkpointed = float(checkpointed_num/float(len(df3)))
     checkpointing_on_percent = float(checkpointing_on_num/float(len(df3)))
-    outputMakespan = args["--input"].rstrip("/") + "/makespan.csv"
+    outputMakespan = runPath + "/output/expe-out/makespan.csv"
     from datetime import datetime, timedelta
     sec = timedelta(seconds=(int(makespan)))
     sec2=timedelta(seconds=(int(avg_tat)))
+    sec3=timedelta(seconds=(int(avg_waiting)))
+    avg_waiting_dhms = str(sec3)
     avg_tat_dhms =str(sec2)
     makespan_dhms = str(sec)
     numNodes = df3["workload_num_machines"].values[0]
-    utilization_df = df2.execution_time * df2.requested_number_of_resources
-    utilization = utilization_df.sum() / (makespan*numNodes)
     
     makespan_df = pd.DataFrame({"nodes":numNodes,
                                 "SMTBF":[SMTBF],
                                 "NMTBF":[np.round(SMTBF*numNodes)],
+                                "fixed-failures":[fixedFailures],
+                                "repair-time":[repairTime],
                                 "makespan_sec":[makespan],
                                 "makespan_dhms":[makespan_dhms],
                                 "AAE":[avgAE],
@@ -292,37 +357,58 @@ if makespan and checkpointing:
                                 "percent_checkpointed":[percent_checkpointed],
                                 "avg_tat":[avg_tat],
                                 "avg_tat_dhms":[avg_tat_dhms],
+                                "avg_waiting":[avg_waiting],
+                                "avg_waiting_dhms":[avg_waiting_dhms],    
                                 "checkpointing_on_num":[checkpointing_on_num],
                                 "checkpointing_on_percent":[checkpointing_on_percent],
                                 "number_of_jobs":[len(df3)],
-                                "utilization":[utilization]
+                                "submission_time":[submissionTime]
+                                
                                })
+    if pp_slowdown:
+        sec = timedelta(seconds=(int(avg_slowdown)))
+        makespan_df["avg-pp-slowdown"]=[avg_slowdown]
+        makespan_df["avg-pp-slowdown_dhms"]=[str(sec)]
+        makespan_df["avg-pp-slowdown-Tau"]=[pp_slowdown]
     makespan_df.to_csv(outputMakespan,mode='w',header=True)
 elif makespan:
+
     makespan = df3.real_finish_time.max() - df3.starting_time.min()
     
-    outputMakespan = args["--input"].rstrip("/") + "/makespan.csv"
+    outputMakespan = runPath +  "/output/expe-out/makespan.csv"
     from datetime import datetime, timedelta
     sec = timedelta(seconds=(int(makespan)))
     sec2=timedelta(seconds=(int(avg_tat)))
     avg_tat_dhms =str(sec2)
+    sec3=timedelta(seconds=(int(avg_waiting)))
+    avg_waiting_dhms = str(sec3)
     makespan_dhms = str(sec)
     numNodes = df3["workload_num_machines"].values[0]
-    utilization_df = df2.execution_time * df2.requested_number_of_resources
-    utilization = utilization_df.sum() / (makespan*numNodes)
     
     makespan_df = pd.DataFrame({"nodes":numNodes,
+                                "cores":[cores],
+                                "speeds":[speeds],
+                                "core-percent":[corePercent],
                                 "SMTBF":[SMTBF],
                                 "NMTBF":[np.round(SMTBF*numNodes)],
+                                "fixed-failures":[fixedFailures],
+                                "repair-time":[repairTime],
                                 "makespan_sec":[makespan],
                                 "makespan_dhms":[makespan_dhms],
                                 "AAE":[avgAE],
                                 "avg_tat":[avg_tat],
                                 "avg_tat_dhms":[avg_tat_dhms],
+                                "avg_waiting":[avg_waiting],
+                                "avg_waiting_dhms":[avg_waiting_dhms],
                                 "number_of_jobs":[len(df3)],
-                                "utilization":[utilization]
+                                "submission_time":[submissionTime]
                                 
                                })
+    if pp_slowdown:
+        sec = timedelta(seconds=(int(avg_slowdown)))
+        makespan_df["avg-pp-slowdown"]=[avg_slowdown]
+        makespan_df["avg-pp-slowdown_dhms"]=[str(sec)]
+        makespan_df["avg-pp-slowdown-Tau"]=[pp_slowdown]
     makespan_df.to_csv(outputMakespan,mode='w',header=True)
 df3.to_csv(outfile)
 

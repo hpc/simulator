@@ -4,7 +4,8 @@ A program to generate a synthetic workload for Batsim Simulator
 Usage: 
     generate_synthetic_workload.py --help [<type-of-info>]
     generate_synthetic_workload.py -F FILE
-    generate_synthetic_workload.py --number-of-jobs INT --nodes INT  --number-of-resources STR --duration-time STR --submission-time STR 
+    generate_synthetic_workload.py --db FILE --file-name FILE
+    generate_synthetic_workload.py --number-of-jobs INT --nodes INT  --number-of-resources STR --duration-time STR --submission-time STR --type STR [--machine-speed FLOAT]
                                     [--output FILE]
                                     [--wallclock-limit <FLOAT|INT%|STR>]
                                     [--read-time <FLOAT|INT%|STR>] [--dump-time <FLOAT|INT%|STR>]
@@ -19,15 +20,19 @@ Arguments:
 Required Options 1:
     --help                                          display all usage information
                                                     types of info:
+                                                        usage-full - displays full usage info, also displayed when type of info is blank
                                                         usage - only display the usage information and not options
                                                         json - display the format of the json file
 Required Options 2:
-    -F FILE --file FILE                             Options will come from a json file.  "--help json" for format of json file
-                                        
+    -F, --file FILE                                 Options will come from a json file.  "--help json" for format of json file
 Required Options 3:
+    --db FILE                                       path to database csv file to add workload(s) to                                    
+    --file-name FILE                                output file name that also serves as the look-up name in the database for all the options
+
+Required Options 4:
     -j <int> --number-of-jobs <INT>                 total number of jobs in this workload
     
-    --nodes <INT>                      total number of nodes in this cluster for this workload
+    --nodes <INT>                                   total number of nodes in this cluster for this workload
 
     --number-of-resources <INT:fixed>               This dictates the number of resources used for each job and the kind of randomness.
                           <INT:INT:unif>            INT must be > 0
@@ -75,6 +80,10 @@ Required Options 3:
                                                             '--submission-time "100.0:fixed"'
                                                             '--submission-time "0.0:fixed"'
                                                             '--submission-time "0:200.0:unif"'
+    --type <STR>                                    Type of profile: delay || parallel_homogeneous
+    
+    --machine-speed <FLOAT>                         The speed (in flops/s) of the machines this will run on, used for type: parallel_homogeneous
+    
 Optional Options:
     -o PATH/FILE --output=PATH/FILE                 where output lives
                                                     [default: <number-of-jobs>_<nodes>.json]
@@ -129,7 +138,6 @@ import os
 import json
 import sys
 from docopt import docopt,DocoptExit
-import json
 
 def dictHasKey(myDict,key):
     if key in myDict.keys():
@@ -138,46 +146,62 @@ def dictHasKey(myDict,key):
         return False
 
 def parseTimeString(aTimeStr,durations_times,newSize):
-    # if there is a colon (:)
     times=[]
-    if not aTimeStr.find(":") == -1:
-        minMax = aTimeStr.split(":")
-        #if there are %'s and a colon
-        if not minMax[0].find("%")== -1 and not minMax[1].find("%")== -1:
-            minPercent = int(minMax[0].rstrip("%"))
-            maxPercent = int(minMax[1].rstrip("%"))
-            percents = (np.random.randint(low=minPercent,high=maxPercent+1,size=newSize))/100
-            times = percents * durations_times
-            times = np.ceil(times)
-        # != is the same as xor. if only one has a % but there is a colon
-        elif (not minMax[0].find("%")==-1) != (not minMax[1].find("%")==-1):
-            print("you provided a random string from min:max but one had a percent sign and the other didn't")
-            print(aTimeStr)
-            sys.exit(1)
-        # only a colon
-        else:    
-            times = np.random.randint(low=int(minMax[0]),high=int(minMax[1])+1,size=newSize)
-    # only a percent
-    elif not aTimeStr.find("%")== -1:
-        percent = int(aTimeStr.rstrip("%"))
-        for time in durations_times:
-            times.append(np.ceil(time*(percent/100)))
-    # only a float
-    else:
+    # if it is an integer or float
+    if isinstance(aTimeStr,int) or isinstance(aTimeStr,float):
         time = float(aTimeStr)
         times = [time] * newSize
+    else:
+        # if there is a colon (:)
+        times=[]
+        if not aTimeStr.find(":") == -1:
+            minMax = aTimeStr.split(":")
+            #if there are %'s and a colon
+            if not minMax[0].find("%")== -1 and not minMax[1].find("%")== -1:
+                minPercent = int(minMax[0].rstrip("%"))
+                maxPercent = int(minMax[1].rstrip("%"))
+                percents = (np.random.randint(low=minPercent,high=maxPercent+1,size=newSize))/100
+                times = percents * durations_times
+                times = np.ceil(times)
+            # != is the same as xor. if only one has a % but there is a colon
+            elif (not minMax[0].find("%")==-1) != (not minMax[1].find("%")==-1):
+                print("you provided a random string from min:max but one had a percent sign and the other didn't")
+                print(aTimeStr)
+                sys.exit(1)
+            # only a colon
+            else:    
+                times = np.random.randint(low=int(minMax[0]),high=int(minMax[1])+1,size=newSize)
+        # only a percent
+        elif not aTimeStr.find("%")== -1:
+            percent = 0
+            if not aTimeStr.find(".") == -1:
+                percent = float(aTimeStr.rstrip("%"))
+            else:
+                percent = int(aTimeStr.rstrip("%"))
+            for time in durations_times:
+                times.append(np.ceil(time*(percent/100)))
+    
     return times
 
 def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize):
     # if there is a colon (:)
+    import os
     times=[]
     if not aTimeStr.find(":") == -1:
         STR = aTimeStr.split(":")
         #check if csv durations
         if len(STR) == 4:
             if not STR[3].find("csv")==-1 and "csv" in randomChoices:
-                if os.path.exists(STR[0]):
-                    df = pd.read_csv(STR[0],sep=",",header=None)
+                aFile=STR[0]
+                print(aFile)
+                if not os.path.exists(aFile):
+                    #ok the path does not exist
+                    #try using the script path
+                    basename=str(os.path.basename(aFile))
+                    aFile=str(os.path.dirname(os.path.abspath(__file__)))+"/"+basename
+                    print(aFile)
+                if os.path.exists(aFile):
+                    df = pd.read_csv(aFile,sep=",",header=None)
                     pos=int(STR[1])
                     time=STR[2]
                     df = df[:newSize]
@@ -197,6 +221,12 @@ def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize
             #check if uniform
             if not STR[2].find("unif")== -1 and "unif" in randomChoices:
                 if numberFunction == int:
+                    #check if we need to add STR[1]
+                    if STR[1] == '':
+                        STR[1] = newSize
+                    #check if we need to add STR[0]
+                    if STR[0] == '':
+                        STR[0] = 1
                     times = np.random.randint(low=numberFunction(STR[0]),high=numberFunction(STR[1]),size=newSize)
                 else:
                     times = np.random.uniform(low=numberFunction(STR[0]),high=numberFunction(STR[1]),size=newSize)
@@ -208,8 +238,16 @@ def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize
                     times=np.random.normal(loc=float(STR[0]),scale=float(STR[1]),size=newSize)
             #check if csv resources
             elif not STR[2].find("csv")==-1 and "csv" in randomChoices:
-                if os.path.exists(STR[0]):
-                    df = pd.read_csv(STR[0],sep=",",header=None)
+                aFile=STR[0]
+                print(aFile)
+                if not os.path.exists(aFile):
+                    #ok the path does not exist
+                    #try using the script path
+                    basename=str(os.path.basename(aFile))
+                    aFile=str(os.path.dirname(os.path.abspath(__file__)))+"/"+basename
+                    print(aFile)
+                if os.path.exists(aFile):
+                    df = pd.read_csv(aFile,sep=",",header=None)
                     pos=int(STR[1])
                     #times = df.iloc[0:newSize,[pos]]
                     df = df[:newSize]
@@ -241,6 +279,202 @@ def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize
     
     return times
 
+def generate_reservations_from_json(reservations_json):
+    import reservations as rsv
+    reservations = rsv.generate_reservations(reservations_json)
+    return reservations
+
+def generate_workload_from_json(workload_json):
+    # every json has these
+    speed=workload_json["machine-speed"] if dictHasKey(workload_json,"machine-speed") else -1
+    totalResources = int(workload_json["total-resources"])
+    numberOfJobs =int(workload_json["number-of-jobs"])
+    workload=()
+    # do we have a "workload-types" key?
+    if dictHasKey(workload_json,"workload-types"):
+        for workload_type in workload_json["workload-types"]:
+            profileType = workload_type["type"]
+            numberResources = workload_type["number-of-resources"]
+            durationTime = workload_type["duration-time"]
+            submissionTime = workload_type["submission-time"]
+            percent = workload_type["percent"]
+            wallclockLimit = workload_type["wallclock-limit"] if dictHasKey(workload_type,"wallclock-limit") else False
+            dumpTime = workload_type["dump-time"] if dictHasKey(workload_type,"dump-time") else False
+            readTime = workload_type["read-time"] if dictHasKey(workload_type,"read-time") else False
+            checkpointInterval = workload_type["checkpoint-interval"] if dictHasKey(workload_type,"checkpoint-interval") else False
+            workload=generate_workload(speed=speed,profile_type=profileType,number_of_jobs=numberOfJobs,total_resources=totalResources,\
+                              number_resources=numberResources,duration_time=durationTime,submission_time=submissionTime,\
+                               percent=percent,\
+                               wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,checkpoint_interval=checkpointInterval,\
+                               add_to_workload=workload)
+    else:
+        profileType = workload_json["type"]
+        numberResources = workload_json["number-of-resources"]
+        durationTime = workload_json["duration-time"]
+        submissionTime = workload_json["submission-time"]
+        wallclockLimit = workload_json["wallclock-limit"] if dictHasKey(workload_json,"wallclock-limit") else False
+        dumpTime = workload_json["dump-time"] if dictHasKey(workload_json,"dump-time") else False
+        readTime = workload_json["read-time"] if dictHasKey(workload_json,"read-time") else False
+        checkpointInterval = workload_json["checkpoint-interval"] if dictHasKey(workload_json,"checkpoint-interval") else False
+        workload=generate_workload(speed=speed,profile_type=profileType,number_of_jobs=numberOfJobs,total_resources=totalResources,\
+                            number_resources=numberResources,duration_time=durationTime,submission_time=submissionTime,\
+                            wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,checkpoint_interval=checkpointInterval)
+    return (totalResources,workload[1],workload[2])
+    
+
+def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number_resources,\
+                    duration_time,submission_time,percent=100,wallclock_limit=None,read_time=None,dump_time=None,\
+                    checkpoint_interval=None,add_to_workload=None):
+    startIds=1
+    previousJobs=pd.DataFrame()
+    previousProfiles=pd.DataFrame()
+    if not add_to_workload == None:
+        startIds =len(add_to_workload[0])
+        previousJobsDict=add_to_workload[0]
+        previousProfilesDict=add_to_workload[1]
+        previousJobs=pd.DataFrame.from_dict(data=previousJobsDict)
+        previousProfiles=pd.DataFrame.from_dict(data=previousProfilesDict,orient='index')
+    #get ids of jobs
+    number_of_jobs = int(number_of_jobs*(percent/100))
+
+    ids = list(range(startIds,number_of_jobs+1))
+    ids = [str(e) for e in ids ]
+
+    #get profile ids and types
+    if profile_type == "delay":
+        types = ["delay"]*number_of_jobs
+    else:
+        types = ["parallel_homogeneous"] * number_of_jobs
+    profileTypes=ids
+
+
+    #Handle Required Options
+    #--------------------------------------------------
+    if number_resources:
+        resources = parseRandomChoiceString(number_resources,"--number-of-resources",int,["fixed","unif","norm","exp","csv"],number_of_jobs)
+    if duration_time:
+        durations = parseRandomChoiceString(duration_time,"--duration-time",float,["fixed","unif","norm","exp","csv"],number_of_jobs)
+    if submission_time:
+        submissions = parseRandomChoiceString(submission_time,"--submission-time",float,["fixed","unif","norm","exp"],number_of_jobs)
+
+    #set the required columns
+    cols=[ids,submissions,resources,ids]
+    column_names=["id","subtime","res","profile"]
+
+
+
+
+    #Handle Optional Options
+    #--------------------------------------------------
+    if wallclock_limit:
+        wallclockLimits = parseTimeString(wallclock_limit,durations,number_of_jobs)
+        cols.append(wallclockLimits)
+        column_names.append("walltime")
+    if read_time:
+        readTimes = parseTimeString(read_time,durations,number_of_jobs)
+        cols.append(readTimes)
+        column_names.append("readtime")
+    if dump_time:
+        dumpTimes = parseTimeString(dump_time,durations,number_of_jobs)
+        cols.append(dumpTimes)
+        column_names.append("dumptime")
+    if checkpoint_interval:
+        checkpointIntervals = parseTimeString(checkpoint_interval,durations,number_of_jobs)
+        cols.append(checkpointIntervals)
+        column_names.append("checkpoint_interval")
+
+
+    #Create the json file
+    #----------------------------------------------------
+
+        #first get all the columns of jobs into a list and then make a dataframe out of it
+    data=list(zip(*cols))
+    jobs=pd.DataFrame(data=data,columns=column_names)
+
+        #change the name of durations to make more sense of the json file
+    delay=durations
+    real_delay=delay
+    if profile_type == "delay":
+            #now get all the columns of profiles into a list and then make a dataframe out of it. notice the index
+            #of the dataframe will have the profileTypes as its index.  Read why below.
+        data=list(zip(types,delay,real_delay))
+
+        profiles=pd.DataFrame(data=data,columns=["type","delay","real_delay"],index=profileTypes)
+    else:
+            #convert times to cpu
+        delay = [duration * speed for duration in durations]
+        real_delay = delay
+        com = [0] * number_of_jobs
+        
+        data=list(zip(types,delay,com,real_delay))
+        profiles=pd.DataFrame(data=data,columns=["type","cpu","com","real_cpu"],index=profileTypes)   
+
+    if not add_to_workload == None:
+        jobs=pd.concat([previousJobs,jobs])
+        jobs["id"]=jobs["id"].astype('int')
+        jobs.sort_values(by="id")
+        jobs["id"]=jobs["id"].astype('str')
+
+        profiles=pd.concat([previousProfiles,profiles])
+
+
+
+        
+        
+        
+
+        #convert the dataframes to dictionaries,notice "orient" is "index" for profiles and "records" for jobs
+        #This is because profiles are a list of dict of dicts whereas jobs are just a series of dicts
+        #ie profiles 
+        #       {"job_id_number1":{"type":"delay","delay":200,"real_delay":200},"job_id_number2":{...}}
+        #vs jobs
+        #       [{"option":value,"option":value,...},{"option":value,"option":value,...}]
+    profiles2dict=profiles.to_dict(orient="index")
+    jobs2dict=jobs.to_dict(orient="records")
+    return (total_resources,jobs2dict,profiles2dict)
+
+def add_reservations_to_workload(aWorkload,reservations):
+    wJobs2dict=aWorkload[1]
+    wProfiles2dict=aWorkload[2]
+    endId = int(wJobs2dict[len(wJobs2dict)-1]["id"])
+    jobs2dict=reservations[0]
+    profiles2dict=reservations[1]
+    
+    count=endId+1
+    #change the reservations jobs ids and profile names
+    for i in range(0,len(jobs2dict),1):
+        jobDict=jobs2dict[i]
+        jobDict["id"]=str(count)
+        jobDict["profile"]=str(count)
+        jobs2dict[i]=jobDict
+        count+=1
+    #change the profiles keys
+    
+    #first get the keys and sort them
+    myList=list(profiles2dict.keys())
+    myList=[int(i) for i in myList]
+    myList.sort()
+    #get the start and end ids of reservations
+    proStartId=myList[0]
+    proEndId=myList[len(myList)-1]
+
+    
+    #now start at the ending id of the workload jobs +1
+    #and set a dict with that key equal to the corresponding reservation profile dict
+    count=endId+1
+    profiles2dict_new={}
+    for i in range(proStartId,proEndId+1,1):
+        #remove the dict from profiles2dict and keep the returned dict
+        proDict=profiles2dict.pop(str(i))
+        profiles2dict_new[str(count)]=proDict
+        
+        count+=1
+    
+    # now jobs2dict and profiles2dict has been updated for the reservations
+    # we just need to add them to the jobs2dict and profiles2dict of the workload
+    wJobs2dict.extend(jobs2dict)
+    wProfiles2dict.update(profiles2dict_new)
+    return (aWorkload[0],wJobs2dict,wProfiles2dict)
 
 
 
@@ -256,29 +490,98 @@ if args["<type-of-info>"] == "json":
     JSON file will be in this format:
 
     {
-        "total_jobs": ,                # total number of jobs in this workload
-        "total_resources": ,           # total nodes in cluster this workload is running on
-        "workload_A":{
-                        "percent": ,   # where percent is an integer and all workloads add up to 100
-                        "durations":{
-                                        "X1_[h|m|s]":YY,   # where h,m,s is hrs,mins,or secs and YY is percent integer 
-                                        "X2_[h|m|s]":YY    # where YY's add up to 100
-                                        ...
-                                    },
-                        "job_sizes":{
-                                        "X1":YY,    # where X1 is the cutoff of nodes and YY is percent integer
-                                        "X2":YY     # where YY's add up to 100
-                                        ...
-                                    },
-                        "submissions":INT,
-                        "dump_time":INT,
-                        "read_time":INT,
-                        "[random-submissions|random-dump_time|random-read_time]":"min:max"
+        "reservations-name1":{
+            "reservation-array":[
+                {
+                    "type":"parallel_homogeneous",
+                    "machines":{
+                        "prefix":"a",
+                        "machine-speed":1,
+                        "total-resources":"0-1489",
+                        "interval":"0-744"                        
                     },
-        "workload_B":{
-                        ...
+                    "repeat-every":"5months 5days 05:05:05",    
+                    "time": "5months 5days 05:05:05",          
+                    "start":"5months 5days 05:05:05",           
+                    "submit-before-start":"5months 5days 05:05:05",
+                    "count":200
+                },
+                   {
+                    "type":"delay",
+                    "machines":{
+                        "prefix":"a",
+                        "resources":5                        
                     },
-        ...
+                    "repeat-every":"5months 5days 05:05:05",    
+                    "time": "5months 5days 05:05:05",          
+                    "start":"5months 5days 05:05:05",           
+                    "submit":-1,
+                    "count":200
+                }
+            ],
+            "options":{
+                "no-collisions":"True"
+            }
+        },
+
+        "synthetic-workloads":[
+                                {
+                                    "file-name":"~/basefiles/workloads/wl1.json",
+                                    "number-of-jobs":3000,
+                                    "total-resources":1490,
+                                    "reservations":"name1",
+
+                                    "type":"parallel-homogeneous",
+                                    "machine-speed":1,
+                                    "number-of-resources":"/ac-project/cwalker/basefiles/wl4.csv:0:csv", 
+                                    "duration-time":"/ac-project/cwalker/basefiles/wl4.csv:1:h:csv", 
+                                    "submission-time":"0:fixed", 
+                                    "wallclock-limit":-1, "dump-time":"3%", 
+                                    "read-time":"2%"
+                                },
+
+                                {
+                                    "file-name":"~/basefiles/workloads/wl2.json",
+                                    "number-of-jobs":8000,
+                                    "total-resources":1490,
+                                    
+                                    "type":"parallel-homogeneous",
+                                    "machine-speed":1,
+                                    "number-of-resources":"/ac-project/cwalker/basefiles/wl2.csv:0:csv", 
+                                    "duration-time":"/ac-project/cwalker/basefiles/wl2.csv:1:h:csv", 
+                                    "submission-time":"0:fixed", 
+                                    "wallclock-limit":-1, "dump-time":"3%", 
+                                    "read-time":"2%"
+                                },
+                                {
+                                    "file-name":"~/basefiles/workloads/wl3.json",
+                                    "number-of-jobs":8000,
+                                    "total-resources":1490,
+                                    "machine-speed":1,
+                                    "workload-types":[
+                                                        {
+                                                            "percent":80,
+                                                            "type":"parallel-homogeneous",
+                                                            "number-of-resources":"/ac-project/cwalker/basefiles/wl2.csv:0:csv", 
+                                                            "duration-time":"/ac-project/cwalker/basefiles/wl2.csv:1:h:csv", 
+                                                            "submission-time":"0:fixed", 
+                                                            "wallclock-limit":-1, "dump-time":"3%", 
+                                                            "read-time":"2%"
+                                                        },
+                                                        {
+                                                            "percent":20,
+                                                            "type":"parallel-homogeneous",
+                                                            "number-of-resources":"/ac-project/cwalker/basefiles/wl2.csv:0:csv", 
+                                                            "duration-time":"/ac-project/cwalker/basefiles/wl2.csv:1:h:csv", 
+                                                            "submission-time":"0:fixed", 
+                                                            "wallclock-limit":-1, "dump-time":"6%", 
+                                                            "read-time":"2%"
+                                                        }
+                                                    ]
+                                },
+                                
+                            ]
+        
     }"""
     print(info)
     sys.exit(0)
@@ -289,6 +592,7 @@ elif args["<type-of-info>"] == "usage":
         Usage: 
             generate_synthetic_workload.py --help [<type-of-info>]
             generate_synthetic_workload.py -F FILE
+            generate_synthetic_workload.py --db FILE --file-name FILE
             generate_synthetic_workload.py --number-of-jobs INT --nodes INT  --number-of-resources STR --duration-time STR --submission-time STR 
                                             [--output FILE]
                                             [--wallclock-limit <FLOAT|INT%|STR>]
@@ -299,6 +603,7 @@ elif args["<type-of-info>"] == "usage":
             FILE                                            an absolute location to a file
             PATH                                            an absolute location to a directory
             INT                                             an integer
+            INT%                                            a string made with an integer followed by a '%'.  This value represents a percent of duration.
             FLOAT                                           a decimal number
             STR                                             a string of characters
 
@@ -306,36 +611,104 @@ elif args["<type-of-info>"] == "usage":
     """
     print(info)
     sys.exit(0)
+elif args["<type-of-info>"] == "usage-full":
+    print(__doc__)
+    sys.exit(0)
 elif args["--help"]:
     print(__doc__)
     sys.exit(0)
 if args["--file"]:
     jsonFile = args["--file"]
+    jsonConfig={}
     with open(jsonFile,"r") as InFile:
-        jsonOptions = json.load(InFile)
-    if dictHasKey(jsonOptions,"total_jobs"):
-        total_jobs = int(jsonOptions["total_jobs"])
-    if dictHasKey(jsonOptions,"total_resources"):
-        total_resources = int(jsonOptions["total_resources"])
-    workloads = list()
-    for key in jsonOptions.keys():
-        if not key.find("workload_") == -1:
-            workloads.append(key)
-    if len(workloads)==0:
-        print("no workloads were detected in json file, refer to --json-info option for file format")
-        sys.exit(1)
-    total_percent = 0
-    for workload in workloads:
-        total_percent += jsonOptions[workload]["percent"]
-    if total_percent != 100:
-        print("workload percents do not add up to 100%, added up to:  " + str(total_percent))
-        print("exiting")
-        sys.exit(1)
-    for workload in workloads:
-        sys.exit(0)
+        jsonConfig = json.load(InFile)
+    rString="reservations-"
+    wString="synthetic-workloads"
+    reservations={}
+    workloads={}
+    # first check on reservations
+    for key in jsonConfig.keys():
+        if not key.find(rString) == -1:
+            #ok we found a reservations key
+            #get the name of it
+            name=key[len(rString):]
+            #now make the reservations.  They will have ids to them
+            #we have a function add_reservations_to_workload() to change the ids
+            reservations[name]=generate_reservations_from_json(jsonConfig[key])
+    #next check on workloads
+    if dictHasKey(jsonConfig, "synthetic-workloads"):
+        for workload in jsonConfig[wString]:
+
+
+            file_name=workload["file-name"]
+            aWorkload = generate_workload_from_json(workload)
+            if dictHasKey(workload,"reservations"):
+                reservations_name=workload["reservations"]
+                workloads[file_name]=add_reservations_to_workload(aWorkload,reservations[reservations_name])
+            else:
+                workloads[file_name]=aWorkload
+    elif dictHasKey(jsonConfig, "synthetic-workload"):
+        workload=jsonConfig["synthetic-workload"]
+        file_name=workload["file-name"]
+        aWorkload = generate_workload_from_json(workload)
+        if dictHasKey(workload,"reservations"):
+            reservations_name=workload["reservations"]
+            workloads[file_name]=add_reservations_to_workload(aWorkload,reservations[reservations_name])
+        else:
+            workloads[file_name]=aWorkload
+    for file,workload in workloads.items():
+            #add the data and the headings to our json
+        jsonData={"nb_res":workload[0],"jobs":workload[1],"profiles":workload[2]}
+    
+            #now dump the jsonData into a file with nice formatting (indent=4)
+        with open(file, 'w') as outfile:
+            json.dump(jsonData, outfile,indent=4)
+    sys.exit(0)
+if args["--db"]:
+    
+    
+    
+    database=pd.read_csv(args["--db"],sep="|",header=0)
+    filename=args["--file-name"]
+    df=database.loc[database.filename == filename]
+    #ok now df has all the info we need
+    cols=["filename","nodes","number-of-jobs","index","type","machine-speed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
+
+    speed=int(df["machine-speed"].values[0])
+    profile_type=df["type"].values[0]
+    number_of_jobs=int(df["number-of-jobs"].values[0])
+    totalResources=int(df["nodes"].values[0])
+    numberResources=df["number-of-resources"].values[0]
+    durationTime=df["duration-time"].values[0]
+    submissionTime=df["submission-time"].values[0]
+    wallclockLimit=df["wallclock-limit"].values[0]
+    readTime=df["read-time"].values[0]
+    dumpTime=df["dump-time"].values[0]
+    checkpointInterval=df["checkpoint-interval"].values[0]
+    reservation_json=df["reservation-json"].values[0]
+    reservations=False
+    if not ((reservation_json == False) or (reservation_json == "False")):
+        reservations=generate_reservations_from_json(reservation_json)
+        
+    workload=generate_workload(speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,total_resources=totalResources,number_resources=numberResources,\
+                        duration_time=durationTime,submission_time=submissionTime,wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
+                        checkpoint_interval=checkpointInterval)
+    if reservations:
+        workload=add_reservations_to_workload(workload, reservations)
+    jsonData={"nb_res":totalResources,"jobs":workload[1],"profiles":workload[2]}
+    file=os.path.dirname(str(args["--db"]))+"/"+str(args["--file-name"])
+    with open(file, 'w') as outfile:
+        json.dump(jsonData, outfile,indent=4)
+    sys.exit(0)
+    
 
 #Required Options
 #---------------------------------------
+speed = -1
+    #what profile type?
+profile_type = args['--type']
+if profile_type == "parallel_homogeneous":
+    speed = float(args['--machine-speed'])
 
     #how many jobs?
 number_of_jobs=int(args['--number-of-jobs'])
@@ -370,79 +743,13 @@ dumpTime = args['--dump-time']
     #checkpoint interval
 checkpointInterval = args['--checkpoint-interval']
 
+workload=generate_workload(speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,total_resources=totalResources,number_resources=numberResources,\
+                    duration_time=durationTime,submission_time=submissionTime,wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
+                    checkpoint_interval=checkpointInterval)
 
-#get ids of jobs
-ids = list(range(1,number_of_jobs+1))
-ids = [str(e) for e in ids ]
-
-#get profile ids and types
-types = ["delay"]*number_of_jobs
-profileTypes=ids
-
-
-#Handle Required Options
-#--------------------------------------------------
-if numberResources:
-    resources = parseRandomChoiceString(numberResources,"--number-of-resources",int,["fixed","unif","norm","exp","csv"],number_of_jobs)
-if durationTime:
-    durations = parseRandomChoiceString(durationTime,"--duration-time",float,["fixed","unif","norm","exp","csv"],number_of_jobs)
-if submissionTime:
-    submissions = parseRandomChoiceString(submissionTime,"--submission-time",float,["fixed","unif","norm","exp"],number_of_jobs)
-
-#set the required columns
-cols=[ids,submissions,resources,ids]
-column_names=["id","subtime","res","profile"]
-
-
-
-
-#Handle Optional Options
-#--------------------------------------------------
-if wallclockLimit:
-    wallclockLimits = parseTimeString(wallclockLimit,durations,number_of_jobs)
-    cols.append(wallclockLimits)
-    column_names.append("walltime")
-if readTime:
-    readTimes = parseTimeString(readTime,durations,number_of_jobs)
-    cols.append(readTimes)
-    column_names.append("readtime")
-if dumpTime:
-    dumpTimes = parseTimeString(dumpTime,durations,number_of_jobs)
-    cols.append(dumpTimes)
-    column_names.append("dumptime")
-if checkpointInterval:
-    checkpointIntervals = parseTimeString(checkpointInterval,durations,number_of_jobs)
-    cols.append(checkpointIntervals)
-    column_names.append("checkpoint")
-
-
-#Create the json file
-#----------------------------------------------------
-
-    #first get all the columns of jobs into a list and then make a dataframe out of it
-data=list(zip(*cols))
-jobs=pd.DataFrame(data=data,columns=column_names)
-
-    #change the name of durations to make more sense of the json file
-delay=durations
-real_delay=delay
-
-    #now get all the columns of profiles into a list and then make a dataframe out of it. notice the index
-    #of the dataframe will have the profileTypes as its index.  Read why below.
-data=list(zip(types,delay,real_delay))
-profiles=pd.DataFrame(data=data,columns=["type","delay","real_delay"],index=profileTypes)
-
-    #convert the dataframes to dictionaries,notice "orient" is "index" for profiles and "records" for jobs
-    #This is because profiles are a list of dict of dicts whereas jobs are just a series of dicts
-    #ie profiles 
-    #       {"job_id_number1":{"type":"delay","delay":200,"real_delay":200},"job_id_number2":{...}}
-    #vs jobs
-    #       [{"option":value,"option":value,...},{"option":value,"option":value,...}]
-profiles2dict=profiles.to_dict(orient="index")
-jobs2dict=jobs.to_dict(orient="records")
 
     #add the data and the headings to our json
-jsonData={"nb_res":totalResources,"jobs":jobs2dict,"profiles":profiles2dict}
+jsonData={"nb_res":totalResources,"jobs":workload[0],"profiles":workload[1]}
 
     #now dump the jsonData into a file with nice formatting (indent=4)
 with open(output_jobs, 'w') as outfile:

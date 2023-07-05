@@ -1,9 +1,0 @@
-libdir=/lib
-includedir=/usr/include
-
-Name: Loguru
-Description: Logging
-Version: 1.2
-
-Libs: -L${libdir} -lloguru
-Cflags: -I${includedir}

@@ -1,0 +1,3 @@
+#!/bin/bash
+python3 $basePath/traverse_and_post_processing.py --input $folder --basePath $basePath
+

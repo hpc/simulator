@@ -1,7 +1,7 @@
 from sweeps.sweepFunctions import *
 import numpy as np
 
-def checkpointSweep(checkpointSweepInput,ourInput):
+def checkpointSweep(checkpointSweepInput,ourInput,origInput):
     myRange = checkpointSweepInput["range"] if dictHasKey(checkpointSweepInput,"range") else False
     if type(myRange) == bool:
         minimum = checkpointSweepInput["min"]

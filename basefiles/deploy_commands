@@ -1,0 +1,217 @@
+cd $downloads_prefix
+wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
+tar -xf ./download
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/oar-team/batsim.git
+cd $downloads_prefix/batsim
+git checkout tags/v4.0.0 -b our_v4
+patch -p2 < $basefiles_prefix/batsim.patch
+cd $downloads_prefix
+git clone https://github.com/oar-team/batsched.git
+cd $downloads_prefix/batsched
+git checkout tags/v1.4.0 -b our_v1_4
+patch -p2 < $basefiles_prefix/batsched.patch
+echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
+cd $downloads_prefix
+cd ./boost_1_75_0/
+./bootstrap.sh --prefix=$install_prefix --with-toolset=gcc
+#this command does not get a  after it.  It fails some targets (66) but successfully does 17,6XX targets.  It may just be that it's not configured for those targets
+#in any case it returns a non-zero number and will quit the chain of commands if expected to return zero(true) with an &&
+./b2 install
+
+#### don't need to compile Cmake since we are loading cmake above
+#cd /home/$USER/Downloads/
+#git clone https://github.com/Kitware/CMake.git &&
+#cd ./CMake
+#git checkout tags/v3.18.4 -b our_v3.18.4d
+#./bootstrap --prefix=/home/$USER/Install -- -DCMAKE_USE_OPENSSL:BOOL=OFF
+#gmake
+#gmake install
+line_number=$i
+cd $downloads_prefix
+git clone https://framagit.org/simgrid/simgrid.git
+cd $downloads_prefix/simgrid/
+git checkout tags/v3.29 -b our_v3.29
+cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" $downloads_prefix/simgrid/  \
+    -Denable_documentation=off \
+    -Denable_java=off \
+    -Denable_msg=on \
+    -Denable_fortran=off \
+    -Denable_model-checking=off \
+    -Denable_ns3=off \
+    -Denable_lua=off \
+    -Denable_lib_in_jar=off \
+    -Denable_maintainer_mode=off \
+    -Denable_mallocators=on \
+    -Denable_debug=off \
+    -Denable_smpi=on \
+    -Dminimal-bindings=on \
+    -Denable_smpi_ISP_testsuite=off \
+    -Denable_smpi_MPICH3_testsuite=off \
+    -Denable_compile_warnings=off \
+    -Denable_compile_optimizations=on \
+    -Denable_lto=on
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/zeromq/libzmq.git
+cd $downloads_prefix/libzmq
+git checkout tags/v4.3.3 -b our_v4.3.3d
+./autogen.sh
+./configure --prefix=$install_prefix
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/redis/hiredis.git
+cd ./hiredis
+git checkout tags/v0.14.0 -b our_v0.14.0d
+make PREFIX=$install_prefix
+#make install does not work here. tried it with DESTDIR and PREFIX.  Puts it in PREFIX/PKG_CONFIG_PATH
+INSTALL="cp -pPR"
+mkdir -p $install_prefix/include/hiredis/adapters
+${INSTALL} hiredis.h async.h read.h sds.h $install_prefix/include/hiredis/
+${INSTALL} adapters/*.h $install_prefix/include/hiredis/adapters
+${INSTALL} libhiredis.so $install_prefix/lib/libhiredis.so.0.14
+ln -sf $install_prefix/lib/libhiredis.so.0.14 $install_prefix/lib/libhiredis.so
+${INSTALL} libhiredis.a $install_prefix/lib/
+mkdir -p $install_prefix/lib/pkgconfig
+source $myDir/genHiRedisPC
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/enki/libev.git
+cd ./libev
+./configure --prefix=$install_prefix
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/alisw/GMP.git
+cd ./GMP
+./configure --prefix=$install_prefix
+make
+make install
+cd $install_prefix
+export gmp_dir=`find ./ -name libgmp.so | awk -F/ '{print $2}'`
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/zeromq/cppzmq.git
+cd ./cppzmq
+cmake -DCMAKE_PREFIX_PATH="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" ./
+make
+make install
+line_number=$i
+cd $python_prefix
+python3 -m venv ./
+source "$python_prefix/bin/activate"
+python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
+line_number=$i
+python3 -m pip install meson
+line_number=$i
+python3 -m pip install ninja
+line_number=$i
+python3 -m pip install pandas
+line_number=$i
+python3 -m pip install numpy
+line_number=$i
+python3 -m pip install seaborn
+line_number=$i
+python3 -m pip install shapely
+line_number=$i
+export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
+export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
+sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
+export PATH=$PATH:$install_prefix/bin
+cd $downloads_prefix
+git clone https://github.com/mpoquet/redox.git
+cd $downloads_prefix/redox/
+git checkout install-pkg-config-file
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix $downloads_prefix/redox/
+make
+cd $downloads_prefix/redox/build/
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/Tencent/rapidjson.git
+mkdir $downloads_prefix/rapidjson/build && cd $downloads_prefix/rapidjson/build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/zeux/pugixml.git
+cd $downloads_prefix/pugixml
+mkdir $downloads_prefix/pugixml/build
+cd $downloads_prefix/pugixml/build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/google/googletest.git
+cd ./googletest
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix
+make
+make install
+line_number=$i
+cd $downloads_prefix
+git clone https://framagit.org/batsim/intervalset.git
+cd $downloads_prefix/intervalset
+export BOOST_ROOT=$install_prefix
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$install_prefix/lib64/pkgconfig:$install_prefix/lib/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig
+$python_prefix/bin/meson build --buildtype release --prefix $install_prefix
+cd $downloads_prefix/intervalset/build/
+$python_prefix/bin/ninja
+$python_prefix/bin/ninja install
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/docopt/docopt.cpp.git
+cd $downloads_prefix/docopt.cpp/
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
+make
+make install
+line_number=$i
+source $myDir/genGmpPC
+source $myDir/genEvPC
+source $myDir/genLoguruPC
+line_number=$i
+cd $downloads_prefix/batsim
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number=$i
+cd $downloads_prefix
+git clone https://github.com/emilk/loguru.git
+cd $downloads_prefix/loguru
+g++ -std=c++11 -o libloguru.so -shared -pthread -fPIC loguru.cpp
+cp $downloads_prefix/loguru/libloguru.so $install_prefix/lib/
+cp $downloads_prefix/loguru/loguru.hpp $install_prefix/include/
+line_number=$i
+cd $downloads_prefix/batsched
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number=$i
+cd $basefiles_prefix
+git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+cd basefiles
+git checkout main
+line_number=$i
+cd $downloads_prefix
+wget --no-check-certificate https://go.dev/dl/go1.19.2.linux-amd64.tar.gz
+tar -xf go1.19.2.linux-amd64.tar.gz
+mv ./go/bin/go $install_prefix/bin/
+
+go install -v framagit.org/batsim/batexpe/cmd/robin@latest
+go install -v framagit.org/batsim/batexpe/cmd/robintest@latest
+
+
+
+rm $myDir/deploy.config
+
+line_number="end"

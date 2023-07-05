@@ -1,0 +1,11 @@
+printf "%s%s" "prefix=$install_prefix
+exec_prefix=${install_prefix}
+libdir=$install_prefix/lib
+includedir=$install_prefix/include/hiredis
+
+Name: hiredis
+Description: Minimalistic C client library for Redis.
+Version: 0.14.0
+
+Libs: -L" '${libdir} -lhiredis
+Cflags: -I${includedir} -D_FILE_OFFSET_BITS=64'> $install_prefix/lib/pkgconfig/hiredis.pc

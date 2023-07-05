@@ -1,0 +1,58 @@
+ 
+FROM ubuntu:22.04
+
+LABEL desc="Batsim simulator made ready"
+
+# get the right repos
+
+RUN \
+    apt-get update && \
+    apt update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get -y install tzdata && \
+    apt-get install build-essential -y && \
+    apt-get install cmake python3 python3-venv python3-pip git-all patch -y
+
+RUN \
+    apt-get update && \
+    apt-get install -y pkg-config wget gcc g++ libtool texinfo nano iproute2
+   
+
+RUN \
+    apt update && \
+    apt-get install apt-transport-https ca-certificates -y && \
+    update-ca-certificates 
+
+RUN \
+    mkdir -p /home/sim
+RUN \
+    cd /home/sim && \
+    git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+
+COPY ./boost_1_75_0 /home/sim/simulator/Downloads/boost_1_75_0
+RUN \
+    chmod -R 777 /home/sim/simulator/Downloads/boost_1_75_0
+ARG VERSION=1.0
+
+RUN \
+    cd /home/sim/simulator/basefiles && \
+    export HOME=/home/sim && \
+    ./deploy.sh --format bare-metal --prefix /home/sim/simulator --line-number 4
+#RUN \
+#    cd /home/sim/basefiles && \
+#    export GOROOT=/home/sim/Downloads/go && \
+#    export GOBIN=/home/sim/Install/bin && \
+#    export GO111MODULE=on && \
+#    export GOPATH=/home/sim/Downloads/go && \
+#    export HOME=/home/sim && \
+#    /home/sim/Install/bin/go install -v framagit.org/batsim/batexpe/cmd/robin@latest
+
+RUN mkdir -p /home/sim/simulator/experiments
+RUN mkdir -p /home/sim/simulator/configs
+
+
+COPY ./.rootbashrc /root/.bashrc
+COPY ./.bashrc /home/sim/.bashrc
+
+
+WORKDIR /home/sim/simulator/basefiles
+CMD ["/bin/bash"]

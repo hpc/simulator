@@ -1,372 +1,602 @@
-# simulator
-Our work makes use of Inria's Batsim (https://batsim.readthedocs.io/) simulator. We have added a node fault model and simulated job checkpoint / restart in order to more easily explore the trade-offs between performance and reliability. This repo is associated with our IEEE HPEC 2021 submitted article entitled "Exploring the Tradeoff Between Reliability and Performance in HPC Systems." <br/>
+<!-- Required extensions:  codehilite,markdown.extensions.tables,pymdownx.magiclink,pymdownx.betterem,pymdownx.tilde,pymdownx.emoji,pymdownx.tasklist,pymdownx.superfences,pymdownx.saneheaders -->
 
-Scripts are provided to apply patches to the original Batsim source and run experiments congruent with those presented in our article. They have been packaged here to be applied, built, and executed in a dockerized format for ease of use and replication of our experimental data presented in the HPEC article.  Those that wish to learn more about the native Batsim are encouraged to visit the Batsim homepage directly.
 
+
+
+<!-- ----------------------------------------------------------------  Intro --------------------------------------------- -->
+$\textbf{\Huge simulator}$ <br />
+
+Our work makes use of Inria's Batsim (https://batsim.readthedocs.io/) simulator.
+
+We have added:
+
+- a node fault model with repair times
+- checkpointing
+- reservations
+- some work with cores
+- other useful additions
+
+These were added to 4 scheduling algorithms:
+
+- fcfs_fast2
+- easy_bf_fast2
+- easy_bf_fast2_holdback
+- conservative_bf $\space \space \space \space \space \space \mathbb{\color{darkred}\longleftarrow} \text{\color{darkred} reservations only work with this algorithm}$
+
+In addition to this is also a framework for spinning up simulations and for post processing.
+
+Scripts are provided to apply patches to the original Batsim source and run experiments congruent with those presented in our article.  The initial deployment of our code is all handled by one deploy script.  The running of a simulation or simulations can all be done by writing a config file and running a single script.
+
+Analysis of the simulation data is mostly up to you, but there are some helpful jupyter notebooks to faciliate this by looking at our code and modifying it for your needs.  However, scripts for the analysis of data obtained from running the example configs that were used in our article are provided.  These can be run as-is.
+
+
+<!-- ----------------------------------------------------------------  Table of Contents --------------------------------------------- -->
 ## Table of Contents
-- [Build Docker](#build_docker)
-- [Run The Docker](#run_docker)
-- [Test The Docker](#test_docker)
-  - [Config File](#config)
-    - [Intro To Config](#intro_to_config)
-  - [Run Test](#run_test)
-  - [Basic Steps](#basic_steps)
-- [Explanation Of total_makespan.csv](#total_makespan)
-- [Steps To Run Simulations](#steps_to_run)
-  - [How To Edit Config File](#edit_config)
-  - [Example](#fig4_leftsub_wl4)
-- [Monte Carlo](#monte_carlo_start)
-
-## <a name="build_docker"></a> How to build the docker
-
-clone this repo:<br/>
-```git clone https://github.com/hpec-2021-ccu-lanl/simulator.git``` <br/>
-enter directory:<br/>
-```cd simulator```<br/>
-build the docker and name the image "simulator": <br/>
-```docker build . -t simulator```<br/>
-
-
-
-
-## <a name="run_docker"></a>How to run the docker
-
-create the docker container based off the "simulator" image and name it "batsim_docker":<br/>
-```docker create --name batsim_docker -t simulator```<br/>
-start the docker container: <br/>
-```docker start batsim_docker```<br/>
-start an interactive shell:<br/>
-```docker exec -it batsim_docker /bin/bash```
+- [Deployment](#deployment)
+    - [Deploy Methods](#build_methods)
+    - [Deploy: How To...](#deploy_how_to)
+        - [Bare-Metal](#deploy_bare_metal)
+        - [Docker](#deploy_docker)
+        - [CharlieCloud with Internet](#deploy_charliecloud_with_internet)
+        - [CharlieCloud without Internet](#deploy_charliecloud_without_internet)
+- [Make Sure Everything Works](#run_tests_works)
+    - [Bare-Metal works](#run_tests_works_bare_metal)
+    - [Docker works](#run_tests_works_docker)
+    - [CharlieCloud works](#run_tests_works_charliecloud)
+- [Verifying Paper](#run_tests_verify)
+    - [Crash Course to myBatchTasks.sh](#crash_course)
+    - [Squeue Monitoring](#squeue)
+    - [Verifcation Methods](#run_tests_verify_methods)
+        - [Bare-Metal verification](#run_tests_verify_bare_metal)
+            - [parallel](#run_tests_verify_bare_metal_parallel)
+            - [serial](#run_tests_verify_bare_metal_serial)
+        - [Docker verification](#run_tests_verify_docker)
+            - [parallel](#run_tests_verify_docker_parallel)
+            - [serial](#run_tests_verify_docker_serial)
+        - [CharlieCloud verification](#run_tests_verify_charliecloud)
+            - [parallel](#run_tests_verify_charliecloud_parallel)
+            - [serial](#run_tests_verify_charliecloud_serial)
+    - [Analysis](#analysis)
+- [Further Reading](#further_reading)
+    - [Config Files](#config_files)
 
 
+<!-- ----------------------------------------------------------------  Deployment --------------------------------------------- -->
+***
 
 
-## <a name="test_docker"></a>Test the batsim_docker
+<a name="deployment"></a>
+# Deployment
 
-Before we test our docker, please bear with us on some confusing terminology:
+Requirements (bare-metal and charliecloud):
+- linux os
+- gcc >= 8.0 (bare-metal needs c++17, charliecloud method may allow for previous versions)
+- cmake >= 3.15.4  (maybe previous versions)
+- python >= 3.6
+- pip3
+- make
+- build
+- git
+- patch (bare-metal)
+- typical build system
 
-This needs clarification. An "experiment", as far as the config file is concerned, is a json element that
-has an input and an output.  You can make multiple experiments in one config file.  Below, the "experiment" is "test" and all data for that experiment will be in the folder "test".<br/>
+Requirements (docker method):
+- linux os
+- git
+- docker running and working
 
- Each "job", as it relates to the config file, is one set of parameters used for a simulation.  For example, a simulation having a cluster with 1500 nodes vs a simulation having a cluster with 1600 nodes are two different "jobs".  Similarly two simulations both having 1500 nodes but differing on SMTBF are two different "jobs".  The confusion here is that "jobs" in this sense are titled "experiment_#" and so are their folder that comes under the "experiment" folder.<br />
+<a name="build_methods"></a>
+## Deploy Methods
+<details>
+There are 4 methods of building and deploying our batsim applications.
 
- "Runs" are simulations in the same "experiment" that have the exact same parameters and so come under the same "job" and are used for averaging purposes.  To further complicate things, there are the "simulated jobs".  These are part of the workloads that the simulator is running.<br />
+- bare-metal
+    - will compile and install everything you need into a directory
+- docker
+    - will compile and install everything you need into a docker container
+    - currently there is no option of parallelism with this method
+- charliecloud with internet
+    - charliecloud is a container technology that works when docker is not an option (think clusters without docker)
+    - will compile and install everything you need into a directory
+- charliecloud without internet
+    - charliecloud is a container technology that works when docker is not an option (think clusters without docker)
+    - meant to be run where you have internet and copy folder (3.5GB) to cluster without internet
+        - will compile and install everything you need and will be packaged into a directory to be copied to your setup without internet
 
-## <a name="config"></a>Ok, that is out of the way
-Test the batsim_docker to see if it gives you the correct results.  This will make sure the docker is running properly, but will also give you a chance to see how the process
-of running simulations goes.  We will use a config file "test_docker.config".<br/>
+</details>
+
+<a name="deploy_how_to"></a> 
+## Deploy: How To...
+
+<a name="deploy_bare_metal"></a>
+###  Bare-Metal
+
+<details>
+
+1. obtain the code
+2. change directories
+3. deploy
 ```
-{  "test":{
-            "input": {
-                        "node-sweep":{
-                                "range":[1490]
-                        },
-                        "SMTBF-sweep":{
-                                "compute-SMTBF-from-NMTBF":true,
-                                "formula":"128736000 * (1/i)",
-                                "range":[1,8]
-                        },
-                        "checkpoint-sweep":{
-                                "range":["optimal"]
-                        },
-                        "performance-sweep":{
-                                "range":[1.0]
-                        },
-                        "checkpointing-on":true,
-                        "synthetic-workload":{
-                                "number-of-jobs":30000,
-                                "number-of-resources":"/home/sim/basefiles/workload_types/wl2.csv:0:csv",
-                                "duration-time":"/home/sim/basefiles/workload_types/wl2.csv:1:h:csv",
-                                "submission-time":"0:fixed",
-                                "wallclock-limit":-1,
-                                "dump-time":"3%",
-                                "read-time":"2%"
-                        }
-          },
-          "output": {
-                        "AAE":true,
-                        "avg-makespan":1
-          }
-   }
+git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+cd simulator/basefiles
+./deploy.sh -f bare-metal --prefix $(dirname `pwd`)
+```
+
+</details>
+
+<a name="deploy_docker"></a>
+### Docker
+
+<details>
+
+1. obtain the code
+2. change directories
+3. deploy
+```
+git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+cd simulator/basefiles
+./deploy.sh -f docker
+```
+
+</details>
+
+<a name="deploy_charliecloud_with_internet"></a> 
+### CharlieCloud with Internet
+<details>
+
+1. obtain the code
+2. change directories
+3. deploy
+```
+git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+cd simulator/basefiles
+./deploy.sh -f charliecloud
+```
+
+</details>
+
+<a name="deploy_charliecloud_without_internet"></a> 
+### CharlieCloud without Internet
+
+<details>
+
+1. obtain the code
+2. change directories
+3. deploy package
+4. change directories
+5. scp folder
+6. ssh to remote
+7. change directories
+8. unpackage
+```
+git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+cd simulator/basefiles
+./deploy.sh -f charliecloud --no-internet --package
+cd ../../
+scp -r ./batsim_packaged user@remote.org:/home/USER/
+ssh user@remote.org
+cd /home/USER/batsim_packaged
+./deploy.sh -f charliecloud --no-internet --un-package
+```
+
+</details>
+
+
+
+
+<!-- ----------------------------------------------------------------  Make Sure Everything Works --------------------------------------------- -->
+***
+
+
+
+<a name="run_tests_works"></a> 
+# Make Sure Everything Works
+
+You can make sure your particular deployment works by looking at the section of your deployment method
+and running the commands contained there.
+
+Keep in mind that parallel tests assume the following:
+
+- You are on a cluster running SLURM
+- You have access to at least two (2) nodes
+
+
+<a name="run_tests_works_bare_metal"></a> 
+## Bare-Metal works
+
+<details>
+
+1. change directories
+2. edit basefiles/batsim_environment.sh
+3. run test_serial script
+4. view result
+5. run test_parallel script
+6. view result
+```
+cd /path/to/simulator/basefiles
+# edit ./batsim_environment.sh   
+# make sure you point prefix to /path/to/simulator (don't include basefiles in the path)
+./tests/bare_metal/tests_serial.sh
+./tests/bare_metal/tests_parallel.sh
+```
+
+You should see two SUCCESS messages
+
+</details>
+
+<a name="run_tests_works_docker"></a> 
+## Docker works
+<details>
+
+1. create and run a container from your "simulator_compile" image
+2. change directories (should already be in the correct directory)
+3. edit basefiles/batsim_environment.sh 
+4. run test_serial script
+5. view result
+6. exit docker
+
+```
+docker run -it --name sim_test simulator_compile:latest
+inside docker> cd /home/sim/simulator/basefiles
+inside docker> # edit ./batsim_environment.sh  # prefix should be /home/sim/simulator
+inside docker> ./tests/docker/tests_serial.sh
+inside docker> exit
+
+```
+You should see a SUCCESS message
+
+</details>
+
+<a name="run_tests_works_charliecloud"></a> 
+## CharlieCloud works
+
+<details>
+
+1. change directories
+2. edit basefiles/batsim_environment.sh
+3. run test_serial script
+4. view result
+5. run test_parallel script
+6. view result
+```
+cd /path/to/simulator/basefiles
+# edit ./batsim_environment.sh   
+# make sure you point prefix to /path/to/simulator (don't include basefiles in the path)
+./tests/charliecloud/tests_serial.sh
+./tests/charliecloud/tests_parallel.sh
+```
+You should see two SUCCESS messages
+
+</details>
+
+
+<!-- ----------------------------------------------------------------  Verifying Paper --------------------------------------------- -->
+***
+
+
+<a name="run_tests_verify"></a>
+# Verifying Paper
+
+While we invite you to get the same results we did by running our simulations, there are some things to consider
+
+- We used a 12 node cluster with 30 cores per node and 377GB RAM per node
+    - In order to not run out of memory we used 26 tasks per node to limit memory usage.  Feel free to limit it even more.
+- The simulations took at least 4 days total on our cluster
+    - Of course it all depends on your cluster
+- It is a bit ridiculous to think of doing it serially
+- While it has been our intention to add seeds to our config files for random computations to become deterministic, at the time of this writing it is not deterministic.
+    - With enough runs they would converge
+    - You should get similar results as us with the 47 runs achieved from our config files, though not exact
+
+<!-- ---------------------  Crash Course ------------------------------ -->
+
+
+<a name="crash_course"></a>
+## Crash Course To myBatchTasks.sh
+
+<details>
+
+You run our simulations using a script called myBatchTasks.sh <br />
+For help:
+```
+cd simualtor/basefiles
+./myBatchTasks.sh --help
+```
+### File and Output Folder
+
+- The most important info to give it is the config file and the output folder
+- If you provide just the name of the config file or just the name of the output folder, it will assume you are using the default
+'configs' folder and the default 'experiments' folder respectively.
+- You may not have space on these locations (particularly the output folder) so you can pass absolute paths to these locations.
+    - 15GB is necessary for verifying our paper
+- With the output folder **Make Sure**:
+    - if using default locations (no slashes), that that folder does not exist in simulator/experiments/
+    - if using absolute locations, that the leaf of the output folder does not exist
+
+### Tasks Per Node
+
+- Again, we used this property to limit how many simulations would run on a node and thus limit its memory usage
+    - You will also want to use it to limit simulations to less than or equal to the amount of cores on your nodes
+
+### Method
+
+- Very important, this says how you deployed batsim.
+    - Basically, for verifying the paper, you should only be using charliecloud or bare-metal
+    - charliecloud is default
+
+### Parallel-Method
+
+- sets the type of parallel method.  
+    - I suggest keeping this as 'tasks', the default.
+
+### Socket-Start
+
+- Batsim uses sockets to communicate with its sister program 'batsched'
+- You need to use a different socket for each simulation
+- If you only run myBatchTasks.sh once and you leave it till all jobs complete you have nothing to worry about
+    - If you spin up some more simulations after myBatchTasks.sh returns control to the user you will need to figure how many simulations you currently have running
+    - The paper uses 611 simulations.  If you are running the paper.config and want to spin up more simulations of something else, then add like 1,000 to the socket-start
+        - So your socket-start would then be 11000
+        - You must do your own book-keeping of sockets used
+
+### WallClock-Limit
+
+- Self explanatory in the output of --help
+
+
+</details>
+
+<!-- ---------------------  Squeue Monitoring ------------------------------ -->
+
+<a name="squeue"></a>
+## Squeue Monitoring
+
+<details>
+
+We use a certain format passed to squeue to see which simulations are still running.<br />
+It is advised you do the same.  Add the following to your .bashrc :<br />
+```
+function squeue ()
+{
+    if [[ $1 == "-s" ]]
+    then
+        /usr/bin/squeue --format="%.18i %.9P %.8u %.10M %.9l %.9N %.120j" "$@"
+    else
+        /usr/bin/squeue --format="%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %.120k" "$@"
+    fi
 }
 ```
 
-### <a name="intro_to_config"></a>Just a real quick intro to this config file...
-- We are sweeping over nodes, but really there is no sweep, as we used a fixed "range" and in that list of nodes there
-is only one value [1490].  There are tools available to do a real sweep, but we won't get into that just yet.<br/><br/>
-- We use a formula for (**S**)ystem (**M**)ean (**T**)ime (**B**)etween (**F**)ailure.  
-  - 128736000 * 1/i where "i" is replaced with a "range": [1,8]
-  - So we will have 128736000 / **1** and 128736000 / **8**
-  - For clarification: 128,736,000 node seconds = **24 system hrs** * **3600seconds/hr** * **1490 nodes/system**
-    - so this is a system failure rate of 1 failure every 24 hours for baseline ( "range" : [1] ) and for 8x worse ( "range" : [8] )<br/><br/>
-- We let the simulator compute the optimal checkpointing for each job
-- We set the speed of the system to 1.0 (normal speed) where higher is slower ( a 30% faster and 30% slower system would be 0.70 and 1.30 respectively )
-- We give an option for all jobs, checkpointing-on.
-- We set up a workload
-- We tell it what kind of output we need
-  - Average Application Efficiency
-  - makespan with only 1 run   (replace "1" with "200" for 200 runs)
-    - we did not pass the seed-failures option to all jobs.  This means our results will be deterministic.  Therefore, we only need 1 run.  Normally we want to take an average of at least 200 runs when it is not deterministic. However, we need to confirm exact numbers for our test so we will keep it deterministic by leaving the seed-failures option off.
+To see the 'sbatch jobs' use `squeue` <br />
+To see the 'srun tasks' use `squeue -s`
 
+</details>
 
+<!-- ---------------------  Verify Methods ------------------------------ -->
 
+<a name="run_tests_verify_methods"></a>
+## Verification Methods
 
+<a name="run_tests_verify_bare_metal"></a>
+### Bare-Metal Verification
 
-### <a name="run_test"></a>Ok, let's run this test
+<a name="run_tests_verify_bare_metal_parallel"></a>
+#### Parallel
 
-1. you should already be in the /home/sim/basefiles directory.   If not, head there. `cd /home/sim/basefiles`
-2. set two variables to make things easier:<br/>
-    ```file1=./configs/test_docker.config```<br/>
-    ```folder1=test_docker```
-3. Now we get our workloads made, input/output folders made for each run, underlying config files made, and then the simulations begin.
-    ```python3 run_simulation.py --config $file1 --output ~/experiments/$folder1```
-  - since the docker is not a cluster and simulations run sequentially, there is a handy counter that is flushed to output before every simulation.  For example:
+<details>
+
+1. change directories
+2. edit batsim_environment.sh if you have not already
+3. determine number of tasks to run on each node
+4. run myBatchTasks.sh filling in for `##`
+5. monitor simulations using [squeue monitoring](#squeue)
+6. [run analysis](#analysis)
+
 ```
-    Experiment 1/1
-    Job 1/2
-    Run 1/1
-
-    ...
-
-    Experiment 1/1
-    Job 2/2
-    Run 1/1
+cd /path/to/simulator/basefiles
+#edit batsim_environment.sh if needed
+./myBatchTasks.sh -f `pwd`/tests/configs/paper.config -o paper -m bare-metal -p tasks -t ##
 ```
-4. We have results but they need to be aggregated: ```python3 aggregate_makespan.py -i ~/experiments/$folder1```
-  - After running this you should have a file called "total_makespan.csv" under the ~/experiments/$folder1 folder
 
-5. Now to make determining whether we have correct results easier, run the following:<br />
-  ```
-  cat ~/experiments/$folder1/total_makespan.csv | \
-  awk -F, BEGIN'{printf "\n"}''(NR>1)''{printf "%f\t%s,%s\n",$5,$7,$8}'END'{printf "\n"}'
-  ```
+</details>
 
-  you should get
-  ```
+<a name="run_tests_verify_bare_metal_serial"></a>
+#### Serial
 
-  4896980.836070  "56 days, 16:16:20"            <----baseline makespan (displayed as seconds, then days,hh:mm:ss)
-  7861976.738434  "90 days, 23:52:56"            <----8x worse failures makespan (displayed as seconds, then days,hh:mm:ss)
+<details>
 
-  ```
+1. change directories
+2. edit batsim_environment.sh if you have not already
+3. run myBatchTasks.sh
+4. wait for a very long time (years)
+5. [run analysis](#analysis)
 
-If you wanted to know how much worse the makespan is for the worse failure rate, it's just a matter of taking the 8x worse makespan (use the seconds) and dividing by the baseline (use the seconds).
-
-### <a name="basic_steps"></a>So that's basically it
-That is all that is needed to run simulations with the docker.  You basically edit the config file, set the file1/folder1, run "run_simulation.py", aggregate the results, and do something with the aggregation. <br />
-
-## <a name="total_makespan"></a>total_makespan.csv clarification
-Let's make the total_makespan.csv clear.  I've put definitions for each field:
 ```
-The first line is the header:
-,nodes,SMTBF,NMTBF,makespan_sec,avg_tat,makespan_dhms,avg_tat_dhms,AAE,checkpointed_num,percent_checkpointed,checkpointing_on_num,checkpointing_on_percent,job,exp
+cd /path/to/simulator/basefiles
+#edit batsim_environment.sh if needed
+./myBatchTasks.sh -f `pwd`/tests/configs/paper.config -o paper -m bare-metal -p none
 ```
-starting with "nodes"<br/>
-- **nodes**
-  - That's easy, just the amount of nodes the system had for that job
-- **SMTBF**
-  - System Mean Time Between Failure for that job
-- **NMTBF**
-  - Node Mean Time Between Failure for that job.  This is easier to look at and use for grouping as it doesn't matter how many nodes the system had for that job
-- **makespan_sec**
-  - makespan in seconds
-- **avg_tat**
-  - average Turn Around Time in seconds
-- **makespan_dhms**
-  - makespan in days, hours:minutes:seconds format.  Keep in mind that there is a comma in this representation
-    which may or may not mess things up for your comma separated values' file parsing
-- **avg_tat_dhms**
-  - similar to makespan_dhms, it is the Turn Around Time in days, hours:minutes:seconds format
-- **AAE**
-  - The Average-Average Application Efficiency of the job
-- **checkpointed_num**
-  - The average number of jobs that had to be restarted(maybe multiple times) and had checkpointed before failing(so they were able to be restarted by reading the checkpoint data)
-- **percent_checkpointed**
-  - Same as checkpointed_num except given as a percent
-- **checkpointing_on_num**
-  - If a global checkpointing interval is 4 hours but the individual job in the simulation was only 1 hour then no checkpointing time takes place.  Same situation can happen with "optimal" as it is dependent on dump time and not run time.  In this situation we call checkpointing "off" for that individual job.  This field is an average amount of jobs where the jobs were long enough to incorporate checkpointing and were so called "on".
-- **checkpointing_on_percent**
-  - same as checkpointing_on_num except given as a percent
-- **number_of_jobs**
-  - The amount of jobs in the workload for that experiment
-- **utilization**
-  - The average utilization of the simulated system over the simulation's makespan.
-- **job**
-  - This needs clarification. An "experiment", as far as the config file is concerned, is a json element that
-  has an input and an output.  You can make multiple experiments in one config file. Each "job", as it relates to the config file, is one set of parameters used for a simulation.  For example, a simulation using 1500 nodes vs a simulation using 1600 nodes are two different "jobs".  Similarly two simulations both having 1500 nodes but differing on SMTBF are two different "jobs".  The confusion here is that "jobs" in this sense are titled "experiment_#" and so are their folder that comes under the "experiment" folder. "Runs" are simulations in the same "experiment" that have the exact same parameters and so come under the same "job" and are used for averaging purposes.  To further complicate things, there are the "simulated jobs".  These are part of the workloads that the simulator is running.
-  This field "job" is how it relates to the config file and will be called "experiment_#"
-- **exp**
-  - This is the "experiment" that the job belongs to.  Read "job" above for clarification.
 
+</details>
 
+<a name="run_tests_verify_docker"></a>
+### Docker Verification
 
+<a name="run_tests_verify_docker_parallel"></a>
+#### Parallel
 
+<details>
 
+**Not an option at this time**
 
-## <a name="steps_to_run"></a>How to run some simulations
+</details>
 
-1.  Start the docker container: `docker start batsim_docker`
-2.  Start an interactive shell: `docker exec -it batsim_docker /bin/bash`
-3.  Change directory to "basefiles": `cd /home/sim/basefiles`
-4.  Choose a config file and optionally edit it (*below): `nano ./configs/figure4_left_wl4.config`
-5.  Set the config file you wish to run:`file1=./configs/figure4_left_wl4.config`
-6.  Set the output folder you wish the output to go to ( a **new** folder ): `folder1=NAME`
-7.  Run the simulation: `python3 run_simulation.py --config $file1 --output ~/experiments/$folder1`
-8.  Aggregate results if need be: `python3 aggregate_makespan.py -i ~/experiments/$folder1`
-9.  Process the results in ~/experiments/$folder1/total_makespan.csv
+<a name="run_tests_verify_docker_serial"></a>
+#### Serial
 
-### <a name="edit_config"></a>How To Edit Config File
-\* Instructions for editing config files can be seen by running the following commands:
- - view general info on config files: `python3 generate_config.py  --config-info general`
- - view general info on sweeps: `python3 generate_config.py --config-info sweeps`
- - All --config-info options can be seen by running: `python3 generate_config.py --help`
-    - Under `Required Options 1 -> --config-info <type>` you can see the various types of info that is offered
-    - generate_config.py will not generate your config file for you.  It is called that because it takes a config file that you will need to write and generates the underlying config files the simulator needs.
+<details>
 
-### <a name="fig4_leftsub_wl4"></a>For example:
-  - Run a modified Figure 4, left-hand subfigure for workload 4:
-    - `file1=./configs/figure4_left_wl4.config`
-    - `folder1=fig4_left_wl4`
-    - `python3 run_simulation.py --config $file1 --output ~/experiments/$folder1`
-      - This command took about 1.5 hours on my computer
-    - `python3 aggregate_makespan.py -i ~/experiments/$folder1`
-    - Now divide each makespan_sec in total_makespan.csv by the makespan_sec for the baseline (the first job, "experiment_1")
-      You should get roughly what is in Figure 4, left-hand subfigure for workload 4. Keep in mind, this is only 10 runs.  The paper used 1500 runs.
-      - The following will do these calculations for you:
-        ```
-        baseline=`cat ~/experiments/$folder1/total_makespan.csv | awk -F, '(NR>1)''{print $5}' | awk '(NR==1)''{print}'` && cat ~/experiments/$folder1/total_makespan.csv | awk -F, '(NR>2)''{print $5}' | awk -v baseline=$baseline BEGIN'{i=1}''{ printf "%f\tworse failures:%dx\n", $1/baseline,2^i;i=i+1}'
-        ```
-        This is what I get running these commands:
-        ```
-        1.015441        worse failures:2x
-        1.049923        worse failures:4x
-        1.100013        worse failures:8x
-        1.188432        worse failures:16x
-        1.328728        worse failures:32x
-        ```
+1. start up docker container
+    1. if already created use 'docker start'
+    2. if not already created (from the tests) use 'docker run'
+2. change directories (shouldn't need to)
+3. edit batsim_environment.sh if you have not already
+4. run myBatchTasks.sh
+5. wait for a very long time (years)
+6. [run analysis](#analysis)
 
-## <a name="monte_carlo_start"></a>Monte Carlo
-
-We used a cluster of 13 nodes with 30 processing cores on each node in order to get our results.  This is mainly due to the fact
-that we wanted a statistical average for our makespans, as they are based on random events.  In most simulations we did, we found the makespan to converge at
-around 200 runs.  For added assurance we did 1500 runs for each datapoint in the paper.  With each run usually taking a couple minutes, we found datapoints at a rate
-of about 1 every 10 minutes.  In order to sweep the 1,2,4,8,16,32 SMTBF it would take around an hour or two for each workload.  We were looking at around
-8 or 10 hours for all 6 workloads for 13 day baseline, and longer but around the same for the 24 hour. (more errors equates to longer simulation time).<br/>
-
-For this reason, you may want to consider a cluster for your tests.  Our cluster uses SLURM and we leverage it for parallelization.  These steps and instructions need to be understood so that you can adapt them to your linux distro and cluster situation.
-
-## Table Of Contents
-- [How To Run Monte Carlo Simulations](#how_to_run)
-  - [Prepare](#prepare)
-  - [Install](#install)
-  - [How To Run A Simulation On Our AC-Cluster](#how_to_run_ac)
-    - [Run Simulation (generic)](#run_sim)
-    - [Actual Test Simulation (3 runs)](#run_3sim)
-    - [Actual Simulation (1500 runs)](#run_1500sim)
-      - [myBatch Running?](#myBatch)
-      - [Completed?](#completed)
-      - [Aggregate Results](#aggregate_ac)
-      - [Analyze](#analyze_ac)
-  - [How To Change Config Files](#change_config_ac)
-
-## <a name="how_to_run"></a> How To Run Monte Carlo Simulations
-
-### <a name="prepare"></a> Prepare
-
-If you haven't yet, read over **simulator / monte_carlo / README_FILES.txt** to see what each file does.<br />
-In particular, look over **deploy.sh** and **generate_config.py**<br/>
-You will undoubtedly need to edit **deploy.sh** for your needs.
-### <a name="install"></a> Install
-
-Change Directory to user directory<br/>
-`cd /home/$USER`<br/>
-Copy deploy.sh into user directory<br/>
-`cp ./monte_carlo/deploy.sh /home/$USER/deploy.sh`<br/>
-Copy patches of batsim and batsched to Downloads<br/>
-`cp ./monte_carlo/patch_batsim.patch ~/Downloads/patch_batsim.patch`<br/>
-`cp ./monte_carlo/patch_batsched.patch ~/Downloads/patch_batsched.patch`<br/>
-Run deploy.sh . Again, this will need to be edited first<br/>
-`./deploy.sh`<br/>
-
-- gcc: 10.2.0
-- Kernel: 3.10.0-1160.6.1.el7.x86_64
-- python: 3.6.8
-
-### <a name="how_to_run_ac"></a> How to Run A Simulation On Our AC-Cluster
-Change Directory to **simulator / monte_carlo** <br/>
-`cd monte_carlo` <br/>
-if you don't have an experiments folder already <br/>
-`mkdir ~/experiments` <br/>
-<a name="run_sim"></a> <h4>Generic Example:</h4>
-
-`file1=./configs/configFileName.config` <br/>
-Make sure the folder name is different each time <br/>
-`folder1=~/experiments/configFileName` <br/>
-``` base=`pwd` ```<br/>
+##### i.
 ```
-sbatch -p usrc-nd02 -N1 -n1 -c1 --output=./myBatch.log \
---export=folder1=$folder1,file1=$file1,basefiles=$base \
- ./myBatch
+docker start -i sim_test
 ```
-<a name="run_3sim"></a> <h4>Actual Test Simulation (3 Runs of each simulation)</h4>
 
-`file1=./configs/MC_test.config`<br/>
-`folder1=~/experiments/MC_test`<br/>
-``` base=`pwd` ```<br/>
-Run this once.  It changes a path that is needed for the simulation workload:<br/>
-`sed -i "s:TODO:$base/:g" ./configs/MC_test.config`<br/>
+##### ii.
 ```
-sbatch -p usrc-nd02 -N1 -n1 -c1 --output=./myBatch.log \
---export=folder1=$folder1,file1=$file1,basefiles=$base \
- ./myBatch
+docker run -it --name sim_test simulator_compile:latest
 ```
-<a name="run_1500sim"></a> <h4>Actual Simulation (1500 Runs of each simulation)</h4>
 
-`file1=./configs/MC.config`<br/>
-`folder1=~/experiments/MC`<br/>
-``` base=`pwd` ```<br/>
-Run this once.  It changes a path that is needed for the simulation workload:<br/>
-`sed -i "s:TODO:$base/:g" ./configs/MC.config`<br/>
 ```
-sbatch -p usrc-nd02 -N1 -n1 -c1 --output=./myBatch.log \
---export=folder1=$folder1,file1=$file1,basefiles=$base \
- ./myBatch
+inside docker>  cd /home/sim/simulator/basefiles
+inside docker>  #edit batsim_environment.sh if you haven't
+inside docker>  ./myBatchTasks.sh -f `pwd`/tests/configs/paper.config -o paper -m docker -p none
+```
+
+</details>
+
+
+<a name="run_tests_verify_charliecloud"></a>
+### CharlieCloud Verification
+
+<a name="run_tests_verify_charliecloud_parallel"></a>
+#### Parallel
+
+<details>
+
+1. change directories
+2. edit batsim_environment.sh if you have not already
+3. determine number of tasks to run on each node
+4. run myBatchTasks.sh filling in for `##`
+5. monitor simulations using [squeue monitoring](#squeue)
+6. [run analysis](#analysis)
+
+```
+cd /path/to/simulator/basefiles
+#edit batsim_environment.sh if needed
+./myBatchTasks.sh -f `pwd`/tests/configs/paper.config -o paper -m charliecloud -p tasks -t ##
+```
+
+</details>
+
+<a name="run_tests_verify_charliecloud_serial"></a>
+#### Serial
+
+<details>
+
+1. change directories
+2. edit batsim_environment.sh if you have not already
+3. run myBatchTasks.sh
+4. wait for a very long time (years)
+5. [run analysis](#analysis)
+
+```
+cd /path/to/simulator/basefiles
+#edit batsim_environment.sh if needed
+./myBatchTasks.sh -f `pwd`/tests/configs/paper.config -o paper -m charliecloud -p none
+```
+
+</details>
+
+
+<!-- ---------------------  Analysis ------------------------------ -->
+
+<a name="analysis"></a>
+## Analysis
+
+<details>
+
+### CharlieCloud and Bare-Metal
+
+1. change directories
+2. run analysis script
+3. browse folders
+    1. total_waiting_time
+        1. comparisons 
+            1. WD = 1 month; 2,4,8 days
+            2. Binned
+            3. Overall
+        2. graphs
+4. use image viewer to view pngs
+
+```
+cd /path/to/simulator/basefiles
+source ../python_env/bin/activate
+# you may have chosen a different location for the sim's data to go when invoking 'myBatchTasks.sh'.
+# If this is the case use that path for --folder.
+# run python3 ./tests/analysis.py --help for options
+python3 ./tests/analysis.py --folder /path/to/simulator/experiments/paper --comparisons
+```
+
+Now `/path/to/simulator/basefiles/tests/paper_analysis` will house your various graphs
+
+#### Browsing Folders
+
+```
+.../paper_analysis/total_waiting_time/graphs:
+    if --all,--outliers, --non-outliers is selected you will have graphs here
+    When --all or --non-outliers is selected you will have graphs with cut_ in front of the graph name
+        These cut out any values past 2 standard deviations of the mean
+    When --all or --outliers is selected you will have graphs without cut_ in front of the graph name
+        These are graphs as-is.  They may not show much in terms of resolution since they include more extreme data
+
+
+.../paper_analysis/total_waiting_time/comparisons:
+    Comparisons are made regardless of the option given
+
+    .../comparisons/comparisons_overall/
+        Overall mean of the waiting times as the WD Units go from 1 to 8 subdivisions
+
+    .../comparisons/<WD Unit>/
+        Binned means of the waiting times in a certain WD Unit
+
 ```
 
 
 
-<a name="myBatch"></a>**Make sure myBatch is running (ie there were no json problems in the config file )**<br/>
-`squeue --format="%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %.120k"`<br/>
-
-<a name="completed"></a>**Continue to squeue to check if jobs are completing and to tell when they have all been completed**<br/>
-`squeue --format="%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %.120k" | tail -n 10`<br/>
-
-<a name="aggregate_ac"></a>**Aggregate Results**<br/>
-`python3 aggregate_makespan.py -i $folder1`<br/>
-
-<a name="analyze_ac"></a>**Analyze ../experiments/$folder1/total_makespan.csv**<br/>
-
-  - group by "exp" : so you will have wl[1-6]_24hr and wl[1-6]_13d
-    - group by "job" in each "exp" grouping
-      - The job "experiment_1" will be the baseline
-      - The job "experiment_2" will be the 2x
-      - The job "experiment_3" will be the 5x
-    - divide every "experiment_2"'s "makespan_sec" by "experiment_1"'s "makespan_sec"
-    - divide every "experiment_3"'s "makespan_sec" by "experiment_1"'s "makespan_sec"
-    - dividing can be done with an `awk` command
-      - First get the baseline by replacing **NR==1** by **NR==#** where **#** equals the line that is the baseline<br/>
-        ```baseline=`cat ~/experiments/$folder1/total_makespan.csv | awk -F, '(NR==1)''{print $5}'` ```<br/>
-      - Next do the division. Replace **NR==2** with **NR==#** where **#** equals the line that you are dividing by the baseline:<br/>
-        ```
-        cat ~/experiments/$folder1/total_makespan.csv | awk -F, -v baseline=$baseline '(NR==2)''{printf "%f",$5/baseline}'
-        ```
+</details>
 
 
-### <a name="change_config_ac"></a> INFO ON HOW TO CHANGE CONFIG FILES
 
-This is covered in the docker sections, but here it is again:<br/>
+<!-- ------------------------------------------------------------   Further Reading ----------------------------------------------- -->
+***
+
+
+<a name="further_reading"></a>
+# Further Reading
+
+<a name="config_files"></a>
+## Config Files
+
+If you would like to run other experiments, feel free to learn about our simulator and how to write a config file.
 ```
-python3 generate_config.py --config-info [ general | sweeps |
-                                            node-sweep | SMTBF-sweep | checkpoint-sweep | checkpointError-sweep | performance-sweep |
-                                            grizzly-workload | synthetic-workload |
-                                            input-options | output ]
+cd /path/to/simulator/basefiles
+source ../python_env/bin/activate
+python3 generate_config.py --help
 ```
+
+You should see that you can pass it `--config-info <type>`
+
+Once you are satisfied with your config file
+
+Try running it using the 'myBatchTasks.sh' script
+
+
+
+
+
+
+
+
+
+
+
+

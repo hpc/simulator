@@ -1,0 +1,18 @@
+export prefix=`sed -n 2p deploy.config`
+export basefiles_prefix=$prefix/basefiles
+export install_prefix=$prefix/Install
+mkdir -p $install_prefix
+export downloads_prefix=$prefix/Downloads
+mkdir -p $downloads_prefix
+export python_prefix=$prefix/python_env
+export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
+export GO111MODULE=on
+export GOBIN=$install_prefix/bin
+export BOOST_ROOT=$install_prefix
+export GOROOT=$downloads_prefix/go
+module load gcc/10.2.0
+module load cmake/3.15.4
+if [[ $line_number -gt 96 ]]
+then
+    source $python_prefix/bin/activate
+fi

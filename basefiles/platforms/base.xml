@@ -1,0 +1,11 @@
+<?xml version='1.0'?>
+<!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">
+<platform version="4.1">
+<zone id="AS0" routing="Vivaldi">
+    
+    
+    <host id="master_host" coordinates="0 0 0" speed="100000Tf">
+    </host>
+  
+</zone>
+</platform>
