@@ -33,7 +33,7 @@ RUN \
 USER sim
 RUN \
     cd /home/sim && \
-    git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+    git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 COPY ./boost_1_75_0 /home/sim/simulator/Downloads/boost_1_75_0
 USER root
 RUN \

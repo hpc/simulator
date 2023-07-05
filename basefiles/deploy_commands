@@ -3,15 +3,10 @@ wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1
 tar -xf ./download
 line_number=$i
 cd $downloads_prefix
-git clone https://github.com/oar-team/batsim.git
-cd $downloads_prefix/batsim
-git checkout tags/v4.0.0 -b our_v4
-patch -p2 < $basefiles_prefix/batsim.patch
+git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
 cd $downloads_prefix
-git clone https://github.com/oar-team/batsched.git
-cd $downloads_prefix/batsched
-git checkout tags/v1.4.0 -b our_v1_4
-patch -p2 < $basefiles_prefix/batsched.patch
+git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
+
 echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
 cd $downloads_prefix
 cd ./boost_1_75_0/
@@ -180,11 +175,6 @@ source $myDir/genGmpPC
 source $myDir/genEvPC
 source $myDir/genLoguruPC
 line_number=$i
-cd $downloads_prefix/batsim
-$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
-$python_prefix/bin/ninja -C build
-$python_prefix/bin/meson install -C build
-line_number=$i
 cd $downloads_prefix
 git clone https://github.com/emilk/loguru.git
 cd $downloads_prefix/loguru
@@ -192,13 +182,29 @@ g++ -std=c++11 -o libloguru.so -shared -pthread -fPIC loguru.cpp
 cp $downloads_prefix/loguru/libloguru.so $install_prefix/lib/
 cp $downloads_prefix/loguru/loguru.hpp $install_prefix/include/
 line_number=$i
+cd $downloads_prefix
+git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
+cd $downloads_prefix/batsim4
+git checkout master
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number=$i
+cd $downloads_prefix
+git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
+cd $downloads_prefix/batsched4
+git checkout master
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number=$i
 cd $downloads_prefix/batsched
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
 line_number=$i
 cd $basefiles_prefix
-git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 cd basefiles
 git checkout main
 line_number=$i
