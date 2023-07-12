@@ -266,6 +266,7 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     cd $prefix
     mkdir experiments
     mkdir configs
+    rm -rf $prefix/python_env
     cd $prefix/..
     cp $basefiles/deploy.sh ./
     tar -czf batsim.tar.gz ./$(basename $prefix)
@@ -284,6 +285,7 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $UNPACK = true ];then
     tar -xf batsim.tar.gz
     prefix=$pack_prefix/$prefixName
     cd $prefix
+    tar -xf python_env.tar.gz
     mkdir batsim_ch
     cd batsim_ch
     tar -xf $prefix/batsim_ch.tar.gz
