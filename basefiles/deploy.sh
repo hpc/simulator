@@ -285,7 +285,11 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $UNPACK = true ];then
     tar -xf batsim.tar.gz
     prefix=$pack_prefix/$prefixName
     cd $prefix
+    mkdir python_env
+    mv python_env.tar.gz $prefix/python_env
+    cd $prefix/python_env
     tar -xf python_env.tar.gz
+    cd $prefix
     mkdir batsim_ch
     cd batsim_ch
     tar -xf $prefix/batsim_ch.tar.gz
