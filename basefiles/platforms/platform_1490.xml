@@ -1,6 +1,11 @@
 <?xml version='1.0'?>
 <!DOCTYPE platform SYSTEM "http://simgrid.gforge.inria.fr/simgrid/simgrid.dtd">
 <platform version="4.1">
+        <config>
+        <prop id = "maxmin/precision" value = "0.0000000000001" />
+       <prop id = "surf/precision" value = "0.0000000000001" />
+
+    </config>
 
 <zone id="AS0" routing="Full">
     <cluster bb_bw="100000EBps" bb_lat="0ps" bw="100000EBps" id="my_cluster_1" lat="0ps" prefix="a" radical="0-1489" speed="1f" suffix="" />

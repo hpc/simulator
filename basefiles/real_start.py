@@ -180,7 +180,7 @@ if not args["--only-output"]:
     print(batsimCMD)
     print("making genCommand",flush=True)
     if method == "charliecloud":
-        wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
+        wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
         genCommand="""{chPath}/experiment.yaml
         --output-dir={output}/expe-out
         --batcmd=\'batsim {batsimCMD}\'
