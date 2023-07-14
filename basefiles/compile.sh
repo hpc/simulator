@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o f:npuxlc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
+VALID_ARGS=$(getopt -o cf:p:h --long clean,format:,path:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -26,7 +26,7 @@ while true; do
         FORMAT="$2"
         shift 2
         ;;
-    -p | --PATH)
+    -p | --path)
         SRC_PATH="$2"
         shift 2
         ;;
@@ -52,9 +52,7 @@ if [ $HELP = true ] || [ $FORMAT = false ] || [ $SRC_PATH = false ];then
     cat <<"EOF"
 
 
-    deploy.sh               automates the downloading compiling and building of batsim into different formats and in different conditions.
-                            NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
-
+    
 Usage:
     compile.sh -f <STR> -p <STR>
     compile.sh --clean
@@ -69,7 +67,7 @@ Required Options 1:
 
 Required Options 2:
 
-    -c, --clean                     Will clean up the basefiles folder from a previous deploy
+    -c, --clean                     Will clean up the basefiles folder from a previous build
 
 Required Options 3:
 
@@ -78,16 +76,16 @@ Required Options 3:
 EOF
     exit 1
 fi
-prefix = ${MY_PATH%/basefiles}
+prefix=${MY_PATH%/basefiles}
 if [ $FORMAT == "charliecloud" ];then
     ch_bin=$prefix/charliecloud/charliecloud/bin
     ch_loc=$prefix/batsim_ch
     rm -rf $ch_loc/home/sim/simulator/Downloads/batsim4
     rm -rf $ch_loc/home/sim/simulator/Downloads/batsched4
     cp -R $SRC_PATH/batsim4 $ch_loc/home/sim/simulator/Downloads/batsim4
-    cp -R $SRC_PATH/batched4 $ch_loc/home/sim/simulator/Downloads/batsched4
+    cp -R $SRC_PATH/batsched4 $ch_loc/home/sim/simulator/Downloads/batsched4
     python_prefix=/home/sim/simulator/python_env
     install_prefix=/home/sim/simulator/Install
-    $ch_bin/ch-run $ch_loc --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsim4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
-    --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsched4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+    $ch_bin/ch-run $ch_loc --write --set-env=HOME=/home/sim -- /bin/bash -c "export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig;export BOOST_ROOT=$install_prefix;source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsim4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+    $ch_bin/ch-run $ch_loc --write --set-env=HOME=/home/sim -- /bin/bash -c "export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig;export BOOST_ROOT=$install_prefix;source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsched4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
 fi

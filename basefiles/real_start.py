@@ -205,7 +205,7 @@ if not args["--only-output"]:
         myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
         mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
         postCmd = """python3 {location}/post-processing.py
-        -i {path}""".format(location="/home/sim/basefiles",path=path).replace("\n","")
+        -i {path}""".format(location="/home/sim/simulator/basefiles",path=path).replace("\n","")
     elif method == "bare-metal":
         genCommand="""{outPutPath}/experiment.yaml  
         --output-dir={output}/expe-out
