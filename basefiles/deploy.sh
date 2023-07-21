@@ -180,7 +180,7 @@ if [ $FORMAT = 'bare-metal' ];then
         else
             continue
         fi
-        eval "$line"
+        eval "CFLAGS='-Wno-error' CXXFLAGS='-Wno-error' $line"
         if [[ $line_number != "boost" ]]
         then
 
