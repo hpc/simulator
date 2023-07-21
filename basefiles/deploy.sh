@@ -195,7 +195,7 @@ if [ $FORMAT = 'bare-metal' ];then
             fi
         fi
 
-            if [[ $line_number -eq "end" ]]
+            if [[ $line_number == "end" ]]
         then
             cat <<EOF
             *********************************************
