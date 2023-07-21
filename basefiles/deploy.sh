@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o f:npuxlc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
+VALID_ARGS=$(getopt -o f:npux:l:c --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -181,7 +181,7 @@ if [ $FORMAT = 'bare-metal' ];then
             continue
         fi
         eval "$line"
-        if [[ $line_number != 4 ]]
+        if [[ $line_number != "boost" ]]
         then
 
             if [[ $? -eq 1 ]]
@@ -191,7 +191,7 @@ if [ $FORMAT = 'bare-metal' ];then
                 echo "Try to fix error and start this script again. Exiting..."
                 echo "$line_number" > $myDir/deploy.config
                 echo "$prefix" >> $myDir/deploy.config
-                break
+                exit 1
             fi
         fi
 
