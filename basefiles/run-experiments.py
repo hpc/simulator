@@ -3,8 +3,8 @@
                                     prepared with the generate_config.py script.  This can be run in parallel and single mode.
 
 Usage:
-    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority]
-    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--tasks-per-node INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority]
+    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR]
+    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--tasks-per-node INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR]
 
 Required Options:
     -i <FOLDER> --input <FOLDER>    Where experiments live
@@ -41,6 +41,8 @@ Optional Important Options:
                                     You can use higher numbers.  I've used numbers up to 300,000
                                     [default: 10000]
 Not So Important Options:
+   --add-to-sbatch STR              If parallel-mode is not 'none' then one can add sbatch options.  These should
+                                    overrule any environment variables set.
 
    --time STR                       The wallclock limit of each submitted simulation
                                     The unit is hours by default.  The default is actually to let
@@ -100,6 +102,7 @@ coresPerJob = int(args["--cores-per-job"]) if args["--parallel-mode"] == "sbatch
 tasksPerNode=int(args["--tasks-per-node"]) if args["--parallel-mode"] == "tasks" else False
 socketStart=int(args["--socket-start"])
 myTime="--time {time}".format(time=args["--time"]) if args["--time"] else " "
+addToSbatch=args["--add-to-sbatch"] if args["--add-to-sbatch"] else " "
 mySimTime=31536000
 if args["--sim-time-minutes"]:
     mySimTime=int(np.round(float(args["--sim-time-minutes"])*60))
@@ -143,11 +146,11 @@ if parallelMode == "sbatch":
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
                     command = """source {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
-                    --output={jobPath}/output/slurm-%j.out --comment='{folder}_{exp}_{job}j_{ourId}i_{run}r' {myTime}
+                    --output={jobPath}/output/slurm-%j.out --comment='{folder}_{exp}_{job}j_{ourId}i_{run}r' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
                     """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=folder,priority=priority,\
                     socketCount=socketCount,myTime=myTime,mySimTime=mySimTime, \
-                    parallelMode=parallelMode,method=method).replace("\n","")
+                    parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
                     print(command,flush=True)
                     os.system(command)
                     socketCount+=1
@@ -213,12 +216,12 @@ elif parallelMode == "tasks":
 
                         command = """source {basefiles}/batsim_environment.sh;sbatch {partition} -N1 --exclusive --ntasks={tasksPerNode} --export=mySimTime='{mySimTime}',jobPathString='{jobPathString}',experimentString='{experimentString}',jobString='{jobString}',idString='{ourIdString}',runString='{runString}',basefiles='{basefiles}',priority='{priority}',socketCountString='{socketCountString}'
                     {myTime}
-                    --output={expPath}/sbatch-{batch_num}.out --comment='{folder}_{batch_num}' {myTime}
+                    --output={expPath}/sbatch-{batch_num}.out --comment='{folder}_{batch_num}' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
                     """.format(partition=partition,tasksPerNode=tasksPerNode,mySimTime=mySimTime,\
                                 jobPathString=jobPathString,experimentString=experimentString,runString=runString,jobString=jobString,ourIdString=ourIdString,\
                                 basefiles=basefiles,priority=priority,folder=os.path.basename(path),socketCountString=socketCountString,myTime=myTime,expPath=path,batch_num=batch_num,\
-                                parallelMode=parallelMode,method=method).replace("\n","")
+                                parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
                         batch_num+=1
                         srunCount=0
                         mySimTimeString=""

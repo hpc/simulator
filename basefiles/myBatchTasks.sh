@@ -6,7 +6,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:h --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -71,6 +71,11 @@ while true; do
         CORES_PER_NODE="$2"
         shift 2
         ;;
+    -a | --add-to-sbatch)
+        echo "a $2"
+        ADDED="$2"
+        shift 2
+        ;;
     -m | --method)
         echo "m $2"
         METHOD="$2"
@@ -126,6 +131,11 @@ Required Options:
                                     and mandatory with this parallel-method
 
 Optional Options:
+    -a, --add-to-sbatch <STR>       Commands to add to sbatch, in the form:
+                                    long:
+                                        -a "--option_s value --option_t value --option_u --option"
+                                    short/mixed:
+                                        --add-to-sbatch "-s value -t value -u --option"
 
     -c, --cores-per-node <INT>      How many cores to use for each sbatch
                                     Only used with --parallel-method 'sbatch'
@@ -173,7 +183,7 @@ if [ $P_METHOD = 'tasks' ];then
         'docker')
             echo "parallel-method 'tasks' is not valid with method 'docker'"
     esac
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'sbatch' ];then
     if [ $CORES_PER_NODE ];then
         CORES_PER_NODE="--cores-per-node $CORES_PER_NODE"
@@ -191,7 +201,7 @@ elif [ $P_METHOD = 'sbatch' ];then
         'docker')
             echo " parallel-method 'sbatch' is not valid with method 'docker' "
     esac
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'none' ]; then
     case $METHOD in
         'charliecloud')

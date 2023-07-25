@@ -180,11 +180,16 @@ if [ $FORMAT = 'bare-metal' ];then
         else
             continue
         fi
+        OLD_LINE=$line_number
         eval "CFLAGS='-Wno-error' CXXFLAGS='-Wno-error' $line"
+        return_value=$?
+        if [[ $line_number != $OLD_LINE ]];then
+            sleep 5
+        fi
         if [[ $line_number != "boost" ]]
         then
 
-            if [[ $? -eq 1 ]]
+            if [[ $return_value -eq 1 ]]
             then
 
                 echo "Error after line_number: $line_number"
