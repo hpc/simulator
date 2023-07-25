@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o f:npux:l:c --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
+VALID_ARGS=$(getopt -o f:npux:l:hc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
