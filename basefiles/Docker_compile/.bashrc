@@ -70,7 +70,10 @@ bind '"\el":beginning-of-line'
 bind '"\e;":end-of-line'
 bind '"\ep":yank'
 bind '"\eg":kill-line'
-export PS1="\$(git_ps1)\[$(tput setab 0)$(tput setaf 7)\]\[\e[42;1;30m\]\u: \w>\[$(tput sgr0)\]\[\e[0m\] "
+prompt_color="48;2;96;180;138"
+export PS1="\$(git_ps1)\[$(tput setab 0)$(tput setaf 7)\]\[\e[${prompt_color};1;30m\]\u: \w>\[$(tput sgr0)\]\[\e[0m\] "
+source ~/.updir.sh
+source ~/.dirB.sh
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 

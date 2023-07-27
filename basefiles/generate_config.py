@@ -333,11 +333,12 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     dumptime = config['dump-time'] if dictHasKey(config,'dump-time') else False
     checkpoint = config['checkpoint-interval'] if dictHasKey(config,'checkpoint-interval') else False
     machine_speed = config["machine-speed"] if dictHasKey(config,"machine-speed") else False
+    copies=int(config["copy"]) if dictHasKey(config,"copy") else False
    
-    cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
-    cols_for_folder=["folder","experiment","filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
-    cols_merge=["filename_x","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
-    cols_without_filename=["nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
+    cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+    cols_for_folder=["folder","experiment","filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+    cols_merge=["filename_x","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+    cols_without_filename=["nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
     df["filename"]=[str(False)]
     df["nodes"]=[str(nodes)]
     df["time"]=[str(time)]
@@ -353,6 +354,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     df["read-time"]=[str(readtime)]
     df["dump-time"]=[str(dumptime)]
     df["checkpoint-interval"]=[str(checkpoint)]
+    df["copy"]=[copies]
     df["reservation-json"]=[str(resv)]
         
     filename = "%d_nodes_%s__%s_time_%s.json"%(nodes,time.split(":")[0],time.split(":")[1],str(uuid.uuid4()))
@@ -408,6 +410,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
                     --db {db_path} --file-name {filename}""".format(scriptPath=scriptPath,db_path=db_path,filename=filename).replace("\n","")
 
         os.system(command)
+
     return location,profile_type,machine_speed,submission,command
 
 ###########################################################################################################    

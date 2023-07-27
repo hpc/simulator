@@ -475,8 +475,8 @@ elif args["--help"]:
 
 dbfile= args["--db"] if dictHasKey(args,"--db") else False
 filename= args["--file-name"] if dictHasKey(args,"--file-name") else False
-cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
-cols_without_filename=["nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
+cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+cols_without_filename=["nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
 timeStampOut = False
 
 if dbfile:
@@ -515,7 +515,7 @@ if dbfile:
     reservation_json=df["reservation-json"].values[0]
     index = df["index"].values[0]
     filename=os.path.dirname(str(args["--db"]))+"/"+str(args["--file-name"])
-
+    copies=df["copy"].values[0]
 
 else:
 
@@ -550,7 +550,12 @@ jsonData={"nb_res":nodes,"jobs":workload[1],"profiles":workload[2]}
 
 with open(filename, 'w') as outfile:
     json.dump(jsonData, outfile,indent=4)
-    sys.exit(0)
+    
+if copies != False:
+    from edit_workload import copyWorkload
+    ourFile=filename
+    copyWorkload(ourFile,ourFile,copies)
+sys.exit(0)
 
 
 #make outfile if timeStampOut

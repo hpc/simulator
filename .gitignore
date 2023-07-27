@@ -1,4 +1,6 @@
 /basefiles/*.config
+**/*.kate-swp
+**/*.orig
 /basefiles/workloads/*
 !/basefiles/workloads/.gitkeep
 **/__pycache__

@@ -56,6 +56,8 @@ RUN apt-get update && apt-get install iproute2 -y
 COPY ./.rootbashrc /root/.bashrc
 USER sim
 COPY ./.bashrc /home/sim/.bashrc
+COPY ./.updir.sh /home/sim/.updir.sh
+COPY ./.dirB.sh /home/sim/.dirB.sh
 
 USER sim
 WORKDIR /home/sim/simulator/basefiles

@@ -87,5 +87,32 @@ if [ $FORMAT == "charliecloud" ];then
     python_prefix=/home/sim/simulator/python_env
     install_prefix=/home/sim/simulator/Install
     $ch_bin/ch-run $ch_loc --write --set-env=HOME=/home/sim -- /bin/bash -c "export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig;export BOOST_ROOT=$install_prefix;source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsim4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+    sleep 15
     $ch_bin/ch-run $ch_loc --write --set-env=HOME=/home/sim -- /bin/bash -c "export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig;export BOOST_ROOT=$install_prefix;source /home/sim/.bashrc; cd /home/sim/simulator/Downloads/batsched4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+    exit 0
 fi
+if [ $FORMAT == "docker" ]; then
+    prefix=/home/sim/simulator
+    rm -rf $prefix/Downloads/batsim4/build
+    rm -rf $prefix/Downloads/batsched4/build
+    python_prefix=$prefix/python_env
+    install_prefix=$prefix/Install
+    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig
+    export BOOST_ROOT=$install_prefix
+    source /home/sim/.bashrc
+    source $python_prefix/bin/activate
+
+    cd $prefix/Downloads/batsim4
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/ninja -C build
+    $python_prefix/bin/meson install -C build
+
+    sleep 15
+
+    cd $prefix/Downloads/batsched4
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/ninja -C build
+    $python_prefix/bin/meson install -C build
+    exit 0
+fi
+
