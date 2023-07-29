@@ -5,6 +5,7 @@ mkdir -p $install_prefix
 export downloads_prefix=$prefix/Downloads
 mkdir -p $downloads_prefix
 export python_prefix=$prefix/python_env
+export PATH=$PATH:$install_prefix/bin
 export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
 export GO111MODULE=on
 export GOBIN=$install_prefix/bin

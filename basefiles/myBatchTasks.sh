@@ -6,7 +6,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -20,6 +20,7 @@ METHOD='charliecloud'
 P_METHOD='tasks'
 FOLDER1_ABS=false
 FILE1_ABS=false
+PERMISSIONS=false
 
 eval set -- "$VALID_ARGS"
 while true; do
@@ -91,6 +92,11 @@ while true; do
         WALLCLOCK="--time $2"
         shift 2
         ;;
+    --permissions)
+        echo "perm: $2"
+        PERMISSIONS="$2"
+        shift 2
+        ;;
     -h | --help)
         break
         ;;
@@ -116,7 +122,7 @@ if [ $FILE1 = false ] || [ $FOLDER1 = false ] ||  \
                             NOTE: make sure $prefix is set to the folder that houses basefiles, charliecloud, batsim_ch, python_env, experiments, and configs
 
 Usage:
-    myBatchTasks.sh -f <STR> -o <STR> (-p sbatch [-c <INT>] | -p tasks -t <INT> )[-m <STR>] [-s <INT>] [-w <STR>]
+    myBatchTasks.sh -f <STR> -o <STR> (-p sbatch [-c <INT>] | -p tasks -t <INT> )[-m <STR>] [-s <INT>] [-w <STR>][--permissions <STR>]
 
 Required Options:
 
@@ -159,9 +165,15 @@ Optional Options:
                                     STR is in format:
                                     "minutes", "minutes:seconds", "hours:minutes:seconds", 
                                     "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
-                                    ex: '48' , '48:30', '2:48:30'   48 minutes, 48.5 minutes, 2hours 48.5 minutes
-                                        '3-0' , '3-12:0', '3-12:30:0'  3days, 3days 12 hours, 3 days 12.5 hours
-
+                                    ex: '48' , '48:30', '2:48:30'  ==   48 minutes, 48.5 minutes, 2hours 48.5 minutes
+                                        '3-0' , '3-12:0', '3-12:30:0' ==  3days, 3days 12 hours, 3 days 12.5 hours
+                                        
+    --permissions <STR>             permissions to give files/folders after generate_config.py is run but before run-experiments.py is run.
+                                    It is still suggested to use SLURM_UMASK in batsim_environment.sh for files made during the simulations.
+                                    STR = The octal numbers for the permissions
+                                    ex: '--permissions 777' = rwxrwxrwx
+                                        '--permissions 750' = rwxr-x---
+                                        '--permissions 755' = rwxr-xr-x
     -h, --help                      Display this usage page
 
 EOF
@@ -183,6 +195,9 @@ if [ $P_METHOD = 'tasks' ];then
         'docker')
             echo "parallel-method 'tasks' is not valid with method 'docker'"
     esac
+    if [ $PERMISSIONS != false ];then
+        chmod -R $PERMISSIONS $FOLDER1
+    fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'sbatch' ];then
     if [ $CORES_PER_NODE ];then
@@ -201,6 +216,9 @@ elif [ $P_METHOD = 'sbatch' ];then
         'docker')
             echo " parallel-method 'sbatch' is not valid with method 'docker' "
     esac
+    if [ $PERMISSIONS != false ];then
+        chmod -R $PERMISSIONS $FOLDER1
+    fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'none' ]; then
     case $METHOD in
@@ -216,5 +234,8 @@ elif [ $P_METHOD = 'none' ]; then
             python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
             ;;
     esac
+    if [ $PERMISSIONS != false ];then
+        chmod -R $PERMISSIONS $FOLDER1
+    fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START}
 fi

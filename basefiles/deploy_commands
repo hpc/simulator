@@ -185,7 +185,7 @@ line_number=$i
 cd $downloads_prefix
 git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
 cd $downloads_prefix/batsim4
-git checkout master
+git checkout main
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
@@ -193,19 +193,14 @@ line_number=$i
 cd $downloads_prefix
 git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
 cd $downloads_prefix/batsched4
-git checkout master
-$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
-$python_prefix/bin/ninja -C build
-$python_prefix/bin/meson install -C build
-line_number=$i
-cd $downloads_prefix/batsched
+git checkout main
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
 line_number=$i
 cd $basefiles_prefix
 git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
-cd basefiles
+cd simulator
 git checkout main
 line_number=$i
 cd $downloads_prefix
