@@ -2,5 +2,12 @@
 **/*.kate-swp
 **/*.orig
 /basefiles/workloads/*
+/configs
+/experiments
+/charliecloud
+/Downloads
+/Install
+/python_env
+/batsim_ch
 !/basefiles/workloads/.gitkeep
 **/__pycache__
