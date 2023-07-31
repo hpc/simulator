@@ -24,7 +24,8 @@ def sweepSwitch(kindOfSweep):
         "sharePackingHoldback":share_packing_holdback_sweep.sharePackingHoldbackSweep,
         "jobs":jobs_sweep.jobsSweep,
         "reservation": reservation_sweep.reservationSweep,
-        "queueDepth": queue_depth_sweep.queueDepthSweep
+        "queueDepth": queue_depth_sweep.queueDepthSweep,
+        "MTTR": MTTR_sweep.MTTRSweep
     }
     return functions[kindOfSweep]
 

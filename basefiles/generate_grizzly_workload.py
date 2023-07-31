@@ -515,7 +515,7 @@ if dbfile:
     reservation_json=df["reservation-json"].values[0]
     index = df["index"].values[0]
     filename=os.path.dirname(str(args["--db"]))+"/"+str(args["--file-name"])
-    copies=df["copy"].values[0]
+    copies=int(df["copy"].values[0]) if df["copy"].values[0] != "False" else False
 
 else:
 

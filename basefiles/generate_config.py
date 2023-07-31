@@ -354,7 +354,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     df["read-time"]=[str(readtime)]
     df["dump-time"]=[str(dumptime)]
     df["checkpoint-interval"]=[str(checkpoint)]
-    df["copy"]=[copies]
+    df["copy"]=[str(copies)]
     df["reservation-json"]=[str(resv)]
         
     filename = "%d_nodes_%s__%s_time_%s.json"%(nodes,time.split(":")[0],time.split(":")[1],str(uuid.uuid4()))

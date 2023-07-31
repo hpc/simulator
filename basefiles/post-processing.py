@@ -411,7 +411,7 @@ elif makespan:
         makespan_df["avg-pp-slowdown-Tau"]=[pp_slowdown]
     makespan_df.to_csv(outputMakespan,mode='w',header=True)
 df3.to_csv(outfile)
-
+avgAE_path = runPath + "/output/expe-out/avgAE.csv"
 if (not(MTBF == -1)):
     AE_df=pd.DataFrame({'x':[error],
                   'y':[avgAE],

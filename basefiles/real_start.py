@@ -85,6 +85,8 @@ batschedPolicy = InConfig['batsched-policy'] if dictHasKey(InConfig,'batsched-po
 submitProfiles = InConfig['forward-profiles-on-submission'] if dictHasKey(InConfig,'forward-profiles-on-submission') else False
 queueDepth = InConfig['queue-depth'] if dictHasKey(InConfig,'queue-depth') else False
 reservationsStart = InConfig['reservations-start'] if dictHasKey(InConfig,'reservations-start') else False
+MTTR = float(InConfig['MTTR']) if dictHasKey(InConfig,"MTTR") else False
+seedRepairTimes = InConfig['seed-repair-times'] if dictHasKey(InConfig, 'seed-repair-times') else False
 
 
 if batschedPolicy == "conservative_bf":
@@ -153,6 +155,8 @@ if not args["--only-output"]:
         batsimCMD+=" --SMTBF {SMTBF}".format(SMTBF=SMTBF)
     if seedFailures:
         batsimCMD+=" --seed-failures"
+    if seedRepairTimes:
+        batsimCMD+=" --seed-repair-times"
     if not type(performanceFactor) == bool:
         batsimCMD+=" --performance-factor {performanceFactor}".format(performanceFactor=performanceFactor)
     if not type(repairTime) == bool:
@@ -174,7 +178,8 @@ if not args["--only-output"]:
         batsimCMD+=" --queue-depth {queueDepth}".format(queueDepth=queueDepth)
     if reservationsStart:
         batsimCMD+=" --reservations-start {reservationsStart}".format(reservationsStart=reservationsStart)
-
+    if (not type(MTTR) == bool) and (MTTR > 0) :
+        batsimCMD+=" --MTTR {MTTR}".format(MTTR=MTTR)
 
     print("finished making batsimCMD")
     print(batsimCMD)

@@ -15,6 +15,7 @@ PREFIX=false
 LINE=false
 HELP=false
 CLEAN=false
+ONLY="both"
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
@@ -132,6 +133,7 @@ if [ $FORMAT == "docker" ]; then
     $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
+    fi
     exit 0
 fi
 if [ $FORMAT == "bare-metal" ]; then
@@ -157,6 +159,7 @@ if [ $FORMAT == "bare-metal" ]; then
     $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
+    fi
     exit 0
 fi
 
