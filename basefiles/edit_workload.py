@@ -62,7 +62,7 @@ def copyWorkload(ourInput,ourOutput,copyFactor):
     profiles=workload["profiles"]
     jobs_copy=deepcopy(jobs)
     profiles_copy=deepcopy(profiles)
-    startId = int(jobs[len(jobs)-1]["id"]) + 1
+    startId = int(max(jobs, key=lambda job: job['id'])['id'])+1
     
     for i in range(0,copyFactor-1,1):
         jobs_returned,profiles_returned = copyComponents(jobs_copy,profiles_copy,startId)
