@@ -70,7 +70,7 @@ bind '"\el":beginning-of-line'
 bind '"\e;":end-of-line'
 bind '"\ep":yank'
 bind '"\eg":kill-line'
-prompt_color="48;2;96;180;138"
+prompt_color="48;5;78"
 export PS1="\$(git_ps1)\[$(tput setab 0)$(tput setaf 7)\]\[\e[${prompt_color};1;30m\]\u: \w>\[$(tput sgr0)\]\[\e[0m\] "
 source ~/.updir.sh
 source ~/.dirB.sh

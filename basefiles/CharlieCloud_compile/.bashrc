@@ -65,31 +65,8 @@ function git_ps1 ()
 	fi
 }
 # User specific environment
-function updir()
-{
-    re='^[0-9]+$'
-    if [[ $1 =~ $re ]]
-    then
-        for i in `seq 1 1 $1`
-        do
-        cd ../
-        done
-    else
-        tmp_var=$2
-        if ! [[ $tmp_var =~ $re ]]
-        then
-            tmp_var=1
-        fi
-        for i in `seq 1 1 $tmp_var`
-        do
-            tmp_cur=`pwd`
-            tmp_cur=`echo $tmp_cur | sed -E "s/(.*$1[^/]*[/]).*/\1/g"`
-            cd $tmp_cur
-            unset tmp_cur
-        done
-        unset tmp_var
-    fi
-}
+source ~/.updir.sh
+source ~/.dirB.sh
 
 
 export HOME=/home/sim
@@ -115,8 +92,8 @@ then
 do_binds
 fi
 
-
-export PS1="\$(git_ps1)\[$(tput setab 0)$(tput setaf 7)\]\[\e[42;1;30m\]\u: \w>\[$(tput sgr0)\]\[\e[0m\] "
+prompt_color="48;5;78"
+export PS1="\$(git_ps1)\[$(tput setab 0)$(tput setaf 7)\]\[\e[${prompt_color};1;30m\]\u: \w>\[$(tput sgr0)\]\[\e[0m\] "
 # Uncomment the following line if you don't like systemctl's auto-paging feature:
 # export SYSTEMD_PAGER=
 

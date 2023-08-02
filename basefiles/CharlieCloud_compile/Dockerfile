@@ -52,7 +52,9 @@ RUN mkdir -p /home/sim/simulator/configs
 
 COPY ./.rootbashrc /root/.bashrc
 COPY ./.bashrc /home/sim/.bashrc
-
+COPY ./.updir.sh /home/sim/.updir.sh
+COPY ./.dirB.sh /home/sim/.dirB.sh
+COPY ./.environ /home/sim/.environ
 
 WORKDIR /home/sim/simulator/basefiles
 CMD ["/bin/bash"]
