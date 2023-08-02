@@ -210,7 +210,7 @@ mv ./go/bin/go $install_prefix/bin/
 
 go install -v framagit.org/batsim/batexpe/cmd/robin@latest
 go install -v framagit.org/batsim/batexpe/cmd/robintest@latest
-
+env > $basefiles_prefix/environ
 
 
 rm $myDir/deploy.config
