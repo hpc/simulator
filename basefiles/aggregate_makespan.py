@@ -106,12 +106,20 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                         df2["nodes"] = [df1["nodes"].values[0]]
                         df2["SMTBF"] = [df1["SMTBF"].values[0]]
                         df2["NMTBF"] = [df1["NMTBF"].values[0]]
+                        df2["MTTR"] = [df1["MTTR"].values[0]]
                         df2["fixed-failures"] = [df1["fixed-failures"].values[0]]
                         df2["repair-time"] = [df1["repair-time"].values[0]]
                         df2["makespan_sec"] = [df1["makespan_sec"].mean()]
                         df2["avg-avg-pp-slowdown"] = [df1["avg-pp-slowdown"].mean()]
                         df2["avg-pp-slowdown-tau"] = [df1["avg-pp-slowdown-tau"].mean()]
                         df2["avg_tat"] = [df1["avg_tat"].mean()]
+                        df2["avg_avg_utilization"] = [df1["avg_utilization"].mean()]
+                        avg_waiting = df1["avg_waiting"].mean()
+                        sec4 = timedelta(seconds=int(avg_waiting))
+                        df2["avg_avg_waiting"]=[df1["avg_waiting"].mean()]
+                        df2["avg_avg_waiting_dhms"]=str(sec4)
+
+
     
                         sec = timedelta(seconds=(int(df2["makespan_sec"].values[0])))
                         sec2= timedelta(seconds=(int(df2["avg_tat"].values[0])))

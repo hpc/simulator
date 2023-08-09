@@ -42,12 +42,17 @@ except DocoptExit:
     sys.exit(1)
 
 path = args["--path"].rstrip("/")
-basename=os.path.basename(path.split(":PATH:")[0])
-dirname=os.path.dirname(path.split(":PATH:")[0])
-rest_of_path=path.split(":PATH:")[1]
+basename=""
+dirname=""
+rest_of_path=""
+if not args["--only-output"]:
+    basename=os.path.basename(path.split(":PATH:")[0])
+    dirname=os.path.dirname(path.split(":PATH:")[0])
+    rest_of_path=path.split(":PATH:")[1]
+    path = path.replace(":PATH:","")
 chPath=f"/mnt/FOLDER1/{basename}{rest_of_path}"
 
-path = path.replace(":PATH:","")
+
 
 method = args["--method"]
 
@@ -95,137 +100,138 @@ workloadPath = ""
 profileType = ""
 speed = ""
 
-if not args["--only-output"]:
-   
-    if not batsimLog  == "-q":
-        if batsimLog == "info" or batsimLog == "information":
-            batsimLog = "-v information"
-        elif batsimLog == "network-only":
-            batsimLog = "-v network-only"
-        elif batsimLog == "debug":
-            batsimLog = "-v debug"
-        else:
-            batsimLog = "-q"
-    
-    if not batschedLog == "--verbosity quiet":
-        if batschedLog == "info" or batschedLog == "information":
-            batschedLog = "--verbosity info"
-        elif batschedLog == "silent":
-            batschedLog = "--verbosity silent"
-        elif batschedLog == "debug":
-            batschedLog = "--verbosity debug"
-        else:
-            batschedLog = "--verbosity quiet"
-    if not type(syntheticWorkload) == bool:
-        workloadPath = syntheticWorkload["workloadFile"] if dictHasKey(syntheticWorkload,'workloadFile') else False
-        profileType = syntheticWorkload["profileType"] if dictHasKey(syntheticWorkload,'profileType') else False
-        speed = syntheticWorkload["speed"] if dictHasKey(syntheticWorkload,'speed') else False
-        if type(workloadPath) == bool:
-            workloadPath = createSyntheticWorkload(syntheticWorkload,path,scriptPath,nodes)
-    elif not type(grizzlyWorkload) == bool:
-        workloadPath = grizzlyWorkload["workloadFile"] if dictHasKey(grizzlyWorkload,'workloadFile') else False
-        profileType = grizzlyWorkload["profileType"] if dictHasKey(grizzlyWorkload,'profileType') else False
-        speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
-        if type(workloadPath) == bool:
-            workloadPath = createGrizzlyWorkload(grizzlyWorkload,path,scriptPath,nodes)
-    if type(platformPath) == bool:
-        platformPath = createPlatform(path,nodes,cores,speeds)
-    
-    #source_nix="source /home/sim/.nix-profile/etc/profile.d/nix.sh"
-    batsimCMD="-s tcp://localhost:{socketCount}".format(socketCount=socketCount)
-    if method == "charliecloud":
-        batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=chPath+"/output")
-    else:
-        batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=path+"/output")
-    #if not (batschedPolicy == "conservative_bf"):
-    batsimCMD+=" --disable-schedule-tracing --disable-machine-state-tracing "
-    batsimCMD+=" --enable-dynamic-jobs --acknowledge-dynamic-jobs {batsimLog}".format(batsimLog=batsimLog)
-    if checkpointingOn:
-        batsimCMD+=" --checkpointing-on"
-    if calculateCheckpointing and type(checkpointInterval)==bool:
-        batsimCMD+=" --compute_checkpointing"
-    elif checkpointInterval == "optimal":
-        batsimCMD+=" --compute_checkpointing"
-    elif type(checkpointInterval) == bool:
-        batsimCMD+=""
-    elif not checkpointInterval == "optimal":
-        checkpointInterval = int(checkpointInterval)
-        batsimCMD+=" --checkpointing-interval {checkpointInterval}".format(checkpointInterval=checkpointInterval)
-    if not type(SMTBF) == bool:
-        batsimCMD+=" --SMTBF {SMTBF}".format(SMTBF=SMTBF)
-    if seedFailures:
-        batsimCMD+=" --seed-failures"
-    if seedRepairTimes:
-        batsimCMD+=" --seed-repair-times"
-    if not type(performanceFactor) == bool:
-        batsimCMD+=" --performance-factor {performanceFactor}".format(performanceFactor=performanceFactor)
-    if not type(repairTime) == bool:
-        batsimCMD+=" --repair-time {repairTime}".format(repairTime=repairTime)
-    if not type(fixedFailures) == bool:
-        batsimCMD+=" --fixed-failures {fixedFailures}".format(fixedFailures=fixedFailures)
-    if not type(checkpointError) == bool:
-        batsimCMD+=" --compute_checkpointing_error {checkpointError}".format(checkpointError=checkpointError)
-    if sharePacking:
-        batsimCMD+=" --share-packing"
-        batsimCMD+=" --enable-compute-sharing"
-    if sharePackingHoldback:
-        batsimCMD+=" --share-packing-holdback {}".format(sharePackingHoldback)
-    if not type(corePercent) == bool:
-        batsimCMD+=" --core-percent {corePercent}".format(corePercent=corePercent)
-    if submitProfiles:
-        batsimCMD+=" --forward-profiles-on-submission "
-    if queueDepth:
-        batsimCMD+=" --queue-depth {queueDepth}".format(queueDepth=queueDepth)
-    if reservationsStart:
-        batsimCMD+=" --reservations-start {reservationsStart}".format(reservationsStart=reservationsStart)
-    if (not type(MTTR) == bool) and (MTTR > 0) :
-        batsimCMD+=" --MTTR {MTTR}".format(MTTR=MTTR)
 
-    print("finished making batsimCMD")
-    print(batsimCMD)
-    print("making genCommand",flush=True)
-    if method == "charliecloud":
-        wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
-        genCommand="""{chPath}/experiment.yaml
-        --output-dir={output}/expe-out
-        --batcmd=\'batsim {batsimCMD}\'
-        --schedcmd=\'batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\'
-        --failure-timeout=120
-        --ready-timeout=31536000
-        --simulation-timeout={mySimTime}
-        --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,chPath=chPath+"/input",output=chPath+"/output",batsimCMD=batsimCMD).replace("\n","")
-        myGenCmd="""{wrapper} robin generate {genCommand}" """.format(wrapper=wrapper,genCommand=genCommand)
-        mySimCmd=""" {wrapper} robin {yamlPath}" """.format(wrapper=wrapper,yamlPath=chPath+"/input/experiment.yaml")
-        postCmd = """{wrapper} python3 {location}/post-processing.py
-        -i {path}" """.format(wrapper=wrapper,location="/mnt/prefix/basefiles",path=chPath).replace("\n","")
-    elif method == "docker":
-        genCommand="""{outPutPath}/experiment.yaml  
-        --output-dir={output}/expe-out
-        --batcmd=\"batsim {batsimCMD}\"
-        --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
-        --failure-timeout=120 
-        --ready-timeout=31536000 
-        --simulation-timeout={mySimTime}
-        --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
-        myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
-        mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
-        postCmd = """python3 {location}/post-processing.py
-        -i {path}""".format(location="/home/sim/simulator/basefiles",path=path).replace("\n","")
-    elif method == "bare-metal":
-        genCommand="""{outPutPath}/experiment.yaml  
-        --output-dir={output}/expe-out
-        --batcmd=\"batsim {batsimCMD}\"
-        --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
-        --failure-timeout=120 
-        --ready-timeout=31536000 
-        --simulation-timeout={mySimTime}
-        --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
-        myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
-        mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
-        postCmd = """python3 {location}/post-processing.py
-        -i {path}""".format(location=scriptPath,path=path).replace("\n","")
-    print("real_start.py, finished making genCommand and myGenCmd",flush=True)
-    print(myGenCmd,flush=True)
+   
+if not batsimLog  == "-q":
+    if batsimLog == "info" or batsimLog == "information":
+        batsimLog = "-v information"
+    elif batsimLog == "network-only":
+        batsimLog = "-v network-only"
+    elif batsimLog == "debug":
+        batsimLog = "-v debug"
+    else:
+        batsimLog = "-q"
+
+if not batschedLog == "--verbosity quiet":
+    if batschedLog == "info" or batschedLog == "information":
+        batschedLog = "--verbosity info"
+    elif batschedLog == "silent":
+        batschedLog = "--verbosity silent"
+    elif batschedLog == "debug":
+        batschedLog = "--verbosity debug"
+    else:
+        batschedLog = "--verbosity quiet"
+if not type(syntheticWorkload) == bool:
+    workloadPath = syntheticWorkload["workloadFile"] if dictHasKey(syntheticWorkload,'workloadFile') else False
+    profileType = syntheticWorkload["profileType"] if dictHasKey(syntheticWorkload,'profileType') else False
+    speed = syntheticWorkload["speed"] if dictHasKey(syntheticWorkload,'speed') else False
+    if type(workloadPath) == bool:
+        workloadPath = createSyntheticWorkload(syntheticWorkload,path,scriptPath,nodes)
+elif not type(grizzlyWorkload) == bool:
+    workloadPath = grizzlyWorkload["workloadFile"] if dictHasKey(grizzlyWorkload,'workloadFile') else False
+    profileType = grizzlyWorkload["profileType"] if dictHasKey(grizzlyWorkload,'profileType') else False
+    speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
+    if type(workloadPath) == bool:
+        workloadPath = createGrizzlyWorkload(grizzlyWorkload,path,scriptPath,nodes)
+if type(platformPath) == bool:
+    platformPath = createPlatform(path,nodes,cores,speeds)
+
+#source_nix="source /home/sim/.nix-profile/etc/profile.d/nix.sh"
+batsimCMD="-s tcp://localhost:{socketCount}".format(socketCount=socketCount)
+if method == "charliecloud":
+    batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=chPath+"/output")
+else:
+    batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=path+"/output")
+#if not (batschedPolicy == "conservative_bf"):
+batsimCMD+=" --disable-schedule-tracing --disable-machine-state-tracing "
+batsimCMD+=" --enable-dynamic-jobs --acknowledge-dynamic-jobs {batsimLog}".format(batsimLog=batsimLog)
+if checkpointingOn:
+    batsimCMD+=" --checkpointing-on"
+if calculateCheckpointing and type(checkpointInterval)==bool:
+    batsimCMD+=" --compute_checkpointing"
+elif checkpointInterval == "optimal":
+    batsimCMD+=" --compute_checkpointing"
+elif type(checkpointInterval) == bool:
+    batsimCMD+=""
+elif not checkpointInterval == "optimal":
+    checkpointInterval = int(checkpointInterval)
+    batsimCMD+=" --checkpointing-interval {checkpointInterval}".format(checkpointInterval=checkpointInterval)
+if not type(SMTBF) == bool:
+    batsimCMD+=" --SMTBF {SMTBF}".format(SMTBF=SMTBF)
+if seedFailures:
+    batsimCMD+=" --seed-failures"
+if seedRepairTimes:
+    batsimCMD+=" --seed-repair-times"
+if not type(performanceFactor) == bool:
+    batsimCMD+=" --performance-factor {performanceFactor}".format(performanceFactor=performanceFactor)
+if not type(repairTime) == bool:
+    batsimCMD+=" --repair-time {repairTime}".format(repairTime=repairTime)
+if not type(fixedFailures) == bool:
+    batsimCMD+=" --fixed-failures {fixedFailures}".format(fixedFailures=fixedFailures)
+if not type(checkpointError) == bool:
+    batsimCMD+=" --compute_checkpointing_error {checkpointError}".format(checkpointError=checkpointError)
+if sharePacking:
+    batsimCMD+=" --share-packing"
+    batsimCMD+=" --enable-compute-sharing"
+if sharePackingHoldback:
+    batsimCMD+=" --share-packing-holdback {}".format(sharePackingHoldback)
+if not type(corePercent) == bool:
+    batsimCMD+=" --core-percent {corePercent}".format(corePercent=corePercent)
+if submitProfiles:
+    batsimCMD+=" --forward-profiles-on-submission "
+if queueDepth:
+    batsimCMD+=" --queue-depth {queueDepth}".format(queueDepth=queueDepth)
+if reservationsStart:
+    batsimCMD+=" --reservations-start {reservationsStart}".format(reservationsStart=reservationsStart)
+if (not type(MTTR) == bool) and (MTTR > 0) :
+    batsimCMD+=" --MTTR {MTTR}".format(MTTR=MTTR)
+
+print("finished making batsimCMD")
+print(batsimCMD)
+print("making genCommand",flush=True)
+if method == "charliecloud":
+    wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
+    genCommand="""{chPath}/experiment.yaml
+    --output-dir={output}/expe-out
+    --batcmd=\'batsim {batsimCMD}\'
+    --schedcmd=\'batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\'
+    --failure-timeout=120
+    --ready-timeout=31536000
+    --simulation-timeout={mySimTime}
+    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,chPath=chPath+"/input",output=chPath+"/output",batsimCMD=batsimCMD).replace("\n","")
+    myGenCmd="""{wrapper} robin generate {genCommand}" """.format(wrapper=wrapper,genCommand=genCommand)
+    mySimCmd=""" {wrapper} robin {yamlPath}" """.format(wrapper=wrapper,yamlPath=chPath+"/input/experiment.yaml")
+    postCmd = """{wrapper} python3 {location}/post-processing.py
+    -i {path}" """.format(wrapper=wrapper,location="/mnt/prefix/basefiles",path=chPath).replace("\n","")
+elif method == "docker":
+    genCommand="""{outPutPath}/experiment.yaml
+    --output-dir={output}/expe-out
+    --batcmd=\"batsim {batsimCMD}\"
+    --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
+    --failure-timeout=120
+    --ready-timeout=31536000
+    --simulation-timeout={mySimTime}
+    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
+    mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
+    postCmd = """python3 {location}/post-processing.py
+    -i {path}""".format(location="/home/sim/simulator/basefiles",path=path).replace("\n","")
+elif method == "bare-metal":
+    genCommand="""{outPutPath}/experiment.yaml
+    --output-dir={output}/expe-out
+    --batcmd=\"batsim {batsimCMD}\"
+    --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
+    --failure-timeout=120
+    --ready-timeout=31536000
+    --simulation-timeout={mySimTime}
+    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
+    mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
+    postCmd = """python3 {location}/post-processing.py
+    -i {path}""".format(location=scriptPath,path=path).replace("\n","")
+print("real_start.py, finished making genCommand and myGenCmd",flush=True)
+print(myGenCmd,flush=True)
+if not args["--only-output"]:
     os.system(myGenCmd)
     myReturn = os.system(mySimCmd)
     if myReturn >1:

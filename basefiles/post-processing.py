@@ -47,6 +47,7 @@ sharePacking = InConfig['share-packing'] if dictHasKey(InConfig,"share-packing")
 corePercent = float(InConfig['core-percent']) if dictHasKey(InConfig,"core-percent") else False
 checkpointing = InConfig['checkpointing-on'] if dictHasKey(InConfig,'checkpointing-on') else False
 SMTBF = float(InConfig['SMTBF']) if dictHasKey(InConfig,'SMTBF') else False
+MTTR = float(InConfig['MTTR']) if dictHasKey(InConfig,'MTTR') else False
 checkpointInterval = str(InConfig['checkpoint-interval']) if dictHasKey(InConfig,'checkpoint-interval') else False
 performanceFactor = float(InConfig['performance-factor']) if dictHasKey(InConfig,'performance-factor') else False
 calculateCheckpointing = InConfig['calculate-checkpointing'] if dictHasKey(InConfig,'calculate-checkpointing') else False
@@ -120,6 +121,9 @@ df["waiting_time"]=df["waiting_time"].astype(np.double)
 df["turnaround_time"]=df["turnaround_time"].astype(np.double)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
+df["util_work"]=df["execution_time"]*df["requested_number_of_resources"]
+ourMakespan = df["finish_time"].max() - df["starting_time"].min()
+utilization = df["util_work"].sum()/(ourMakespan*nodes)
 
 
 if set(['metadata','batsim_metadata']).issubset(df.columns):
@@ -314,7 +318,11 @@ df3['Average App Efficiency'] = avgAE
 
 if pp_slowdown:
         tau = pp_slowdown
-        df3['pp_slowdown']=max((df3.total_waiting_time + df3.total_execution_time)/(df3.requested_number_of_resources* max(df3.total_execution_time,tau)),1)
+else:
+        tau = 60
+        pp_slowdown = tau
+df3['pp_slowdown']=np.maximum((df3.total_waiting_time + df3.total_execution_time)/(df3.requested_number_of_resources* np.maximum(df3.total_execution_time,tau)),1)
+
 avg_slowdown = 0
 if reservations_as_jobs:
     avg_waiting = df3['total_waiting_time'].mean()
@@ -350,6 +358,7 @@ if makespan and checkpointing:
                                 "NMTBF":[np.round(SMTBF*numNodes)],
                                 "fixed-failures":[fixedFailures],
                                 "repair-time":[repairTime],
+                                "MTTR":[MTTR],
                                 "makespan_sec":[makespan],
                                 "makespan_dhms":[makespan_dhms],
                                 "AAE":[avgAE],
@@ -362,7 +371,9 @@ if makespan and checkpointing:
                                 "checkpointing_on_num":[checkpointing_on_num],
                                 "checkpointing_on_percent":[checkpointing_on_percent],
                                 "number_of_jobs":[len(df3)],
-                                "submission_time":[submissionTime]
+                                "submission_time":[submissionTime],
+                                "avg_utilization":[utilization]
+
                                 
                                })
     if pp_slowdown:
@@ -393,6 +404,7 @@ elif makespan:
                                 "NMTBF":[np.round(SMTBF*numNodes)],
                                 "fixed-failures":[fixedFailures],
                                 "repair-time":[repairTime],
+                                "MTTR":[MTTR],
                                 "makespan_sec":[makespan],
                                 "makespan_dhms":[makespan_dhms],
                                 "AAE":[avgAE],
@@ -401,7 +413,8 @@ elif makespan:
                                 "avg_waiting":[avg_waiting],
                                 "avg_waiting_dhms":[avg_waiting_dhms],
                                 "number_of_jobs":[len(df3)],
-                                "submission_time":[submissionTime]
+                                "submission_time":[submissionTime],
+                                "avg_utilization":[utilization]
                                 
                                })
     if pp_slowdown:
