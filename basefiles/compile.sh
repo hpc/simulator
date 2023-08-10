@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o cf:p:ho: --long clean,format:,path:,only:,help -- "$@")
+VALID_ARGS=$(getopt -o cf:p:ho:d --long clean,format:,path:,only:,debug,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -15,6 +15,7 @@ PREFIX=false
 LINE=false
 HELP=false
 CLEAN=false
+BUILDTYPE="release"
 ONLY="both"
 eval set -- "$VALID_ARGS"
 while true; do
@@ -35,6 +36,10 @@ while true; do
         ONLY="$2"
         shift 2
         ;;
+    -d | --debug)
+        BUILDTYPE="debug"
+        shift 1
+        ;;
     -h | --help)
         HELP=true
         break
@@ -44,6 +49,7 @@ while true; do
         ;;
   esac
 done
+
 # if help or no format
 # if not bare-metal but prefix or line set
 # if format not one of charliecloud | bare-metal | docker
@@ -51,7 +57,7 @@ done
 # if format is charliecloud but -n is not used and -up are used
 # if format is charliecloud and -n is used but both -up are used or -n is used but neither -up are used
 
-if [ $HELP = true ] || [ $FORMAT = false ] || [ $SRC_PATH = false ];then
+if [ $HELP = true ] || [ $FORMAT = false ] ;then
    
 
     cat <<"EOF"
@@ -59,7 +65,7 @@ if [ $HELP = true ] || [ $FORMAT = false ] || [ $SRC_PATH = false ];then
 
     
 Usage:
-    compile.sh -f <STR> -p <STR> [-o <STR>]
+    compile.sh -f <STR> [-p <STR>] [-o <STR>] [-d]
     compile.sh --clean
     compile.sh --help
 
@@ -68,13 +74,17 @@ Required Options 1:
     -f, --format <STR>              The format to build things for:
                                     bare-metal | charliecloud | docker
 
-    -p, --path <STR>                The path to batsim/batsched folders
-
 Optional Options 1:
+
+    -p, --path <STR>                The path to batsim/batsched folders,otherwise will use inplace default locations
+
 
     -o, --only <STR>                only compile:
                                     batsim | batsched | both
                                     [default: both]
+
+
+    -d, --debug                     compile with debugging and profiling
 
 Required Options 2:
 
@@ -91,20 +101,25 @@ prefix=${MY_PATH%/basefiles}
 if [ $FORMAT == "charliecloud" ];then
     ch_bin=$prefix/charliecloud/charliecloud/bin
     ch_loc=$prefix/batsim_ch
-    rm -rf $ch_loc/home/sim/simulator/Downloads/batsim4
-    rm -rf $ch_loc/home/sim/simulator/Downloads/batsched4
-    cp -R $SRC_PATH/batsim4 $ch_loc/home/sim/simulator/Downloads/batsim4
-    cp -R $SRC_PATH/batsched4 $ch_loc/home/sim/simulator/Downloads/batsched4
+    if [ $SRC_PATH != false ]; then
+        rm -rf $ch_loc/home/sim/simulator/Downloads/batsim4
+        rm -rf $ch_loc/home/sim/simulator/Downloads/batsched4
+        cp -R $SRC_PATH/batsim4 $ch_loc/home/sim/simulator/Downloads/batsim4
+        cp -R $SRC_PATH/batsched4 $ch_loc/home/sim/simulator/Downloads/batsched4
+    else
+        rm -rf $ch_loc/home/sim/simulator/Downloads/batsim4/build
+        rm -rf $ch_loc/home/sim/simulator/Downloads/batsched4/build
+    fi
     python_prefix=/home/sim/simulator/python_env
     install_prefix=/home/sim/simulator/Install
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsim" ]];then
-        $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c "source /home/sim/.environ; cd /home/sim/simulator/Downloads/batsim4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+        $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c "source /home/sim/.environ; cd /home/sim/simulator/Downloads/batsim4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
     fi
     if [[ $ONLY == "both" ]];then
         sleep 15
     fi
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsched" ]];then
-        $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c "source /home/sim/.environ; cd /home/sim/simulator/Downloads/batsched4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
+        $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c "source /home/sim/.environ; cd /home/sim/simulator/Downloads/batsched4;source /home/sim/simulator/python_env/bin/activate; $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE;$python_prefix/bin/ninja -C build;$python_prefix/bin/meson install -C build "
     fi
     exit 0
 fi
@@ -121,7 +136,7 @@ if [ $FORMAT == "docker" ]; then
 
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsim" ]];then
     cd $prefix/Downloads/batsim4
-    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
     fi
@@ -130,7 +145,7 @@ if [ $FORMAT == "docker" ]; then
     fi
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsched" ]];then
     cd $prefix/Downloads/batsched4
-    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
     fi
@@ -138,16 +153,21 @@ if [ $FORMAT == "docker" ]; then
 fi
 if [ $FORMAT == "bare-metal" ]; then
     source $prefix/basefiles/batsim_environment.sh
-    rm -rf $downloads_prefix/batsim4
-    rm -rf $downloads_prefix/batsched4
-    cp -R $SRC_PATH/batsim4 $downloads_prefix/
-    cp -R $SRC_PATH/batsched4 $downloads_prefix/
+    if [ $SRC_PATH != false ];then
+        rm -rf $downloads_prefix/batsim4
+        rm -rf $downloads_prefix/batsched4
+        cp -R $SRC_PATH/batsim4 $downloads_prefix/
+        cp -R $SRC_PATH/batsched4 $downloads_prefix/
+    else
+        rm -rf $downloads_prefix/batsim4/build
+        rm -rf $downloads_prefix/batsched4/build
+    fi
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig
     export BOOST_ROOT=$install_prefix
 
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsim" ]];then
     cd $downloads_prefix/batsim4
-    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
     fi
@@ -156,7 +176,7 @@ if [ $FORMAT == "bare-metal" ]; then
     fi
     if [[ $ONLY == "both" ]] || [[ $ONLY == "batsched" ]];then
     cd $prefix/Downloads/batsched4
-    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+    $python_prefix/bin/meson build --prefix=$install_prefix --buildtype $BUILDTYPE
     $python_prefix/bin/ninja -C build
     $python_prefix/bin/meson install -C build
     fi
