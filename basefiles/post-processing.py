@@ -81,6 +81,7 @@ with open(runPath+"/output/config.ini","r") as InFile:
 AAE = OutConfig['AAE'] if dictHasKey(OutConfig,'AAE') else False
 makespan = OutConfig['makespan'] if dictHasKey(OutConfig,'makespan') else False
 pp_slowdown = OutConfig['pp-slowdown'] if dictHasKey(OutConfig,'pp-slowdown') else False
+bins = OutConfig['bins'] if dictHasKey(OutConfig,'bins') else False
 
 if not reservations_as_jobs:
     reservations_as_jobs = OutConfig['reservations-as-jobs'] if dictHasKey(OutConfig,"reservations-as-jobs") else False
@@ -121,9 +122,7 @@ df["waiting_time"]=df["waiting_time"].astype(np.double)
 df["turnaround_time"]=df["turnaround_time"].astype(np.double)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
-df["util_work"]=df["execution_time"]*df["requested_number_of_resources"]
-ourMakespan = df["finish_time"].max() - df["starting_time"].min()
-utilization = df["util_work"].sum()/(ourMakespan*nodes)
+
 
 
 if set(['metadata','batsim_metadata']).issubset(df.columns):
@@ -185,7 +184,7 @@ df['resubmit']=resubmits_ext['resubmit']
 # and stored in 'total_execution_time'. ditto on waiting time. real
 # finish time is the max finish time in the group. num_resubmits is the count - 1
 # in the group. real_final_state is the last resubmit's final state.
-df2=df
+df2=df.copy()
 
 df2['total_execution_time'] = df.groupby('parent')['execution_time'].transform('sum')
 df2['total_waiting_time'] = df.groupby('parent')['waiting_time'].transform('sum')
@@ -323,83 +322,36 @@ else:
         pp_slowdown = tau
 df3['pp_slowdown']=np.maximum((df3.total_waiting_time + df3.total_execution_time)/(df3.requested_number_of_resources* np.maximum(df3.total_execution_time,tau)),1)
 
-avg_slowdown = 0
-if reservations_as_jobs:
-    avg_waiting = df3['total_waiting_time'].mean()
-    avg_tat = df3['total_turnaround_time'].mean()
-    if pp_slowdown:
-        avg_slowdown = df3['pp_slowdown'].mean()
 
-else:
-    df3_jobs=df3.loc[df3.purpose == "job"]
-    avg_waiting = df3_jobs['total_waiting_time'].mean()
-    avg_tat = df3_jobs['total_turnaround_time'].mean()
-    if pp_slowdown:
-        avg_slowdown = df3_jobs['pp_slowdown'].mean()
+from datetime import datetime, timedelta
+def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
+    numNodes = ourDf3["workload_num_machines"].values[0]
+    ourDf["util_work"]=ourDf["execution_time"]*ourDf["requested_number_of_resources"]
+    utilization = ourDf["util_work"].sum()/(total_makespan*numNodes)
+    makespan = ourDf3.real_finish_time.max() - ourDf3.starting_time.min()
+    avg_slowdown = 0
+    if reservations_as_jobs:
+        avg_waiting = ourDf3['total_waiting_time'].mean()
+        avg_tat = ourDf3['total_turnaround_time'].mean()
+        if pp_slowdown:
+            avg_slowdown = ourDf3['pp_slowdown'].mean()
 
-if makespan and checkpointing: 
-    makespan = df3.real_finish_time.max() - df3.starting_time.min()
-    checkpointed_num = len(df3.loc[df3.checkpointed == True])
-    checkpointing_on_num = len(df3.loc[df3.checkpointing_on == True])
-    percent_checkpointed = float(checkpointed_num/float(len(df3)))
-    checkpointing_on_percent = float(checkpointing_on_num/float(len(df3)))
-    outputMakespan = runPath + "/output/expe-out/makespan.csv"
-    from datetime import datetime, timedelta
+    else:
+        df3_jobs=ourDf3.loc[ourDf3.purpose == "job"]
+        avg_waiting = df3_jobs['total_waiting_time'].mean()
+        avg_tat = df3_jobs['total_turnaround_time'].mean()
+        if pp_slowdown:
+            avg_slowdown = df3_jobs['pp_slowdown'].mean()
+        
     sec = timedelta(seconds=(int(makespan)))
     sec2=timedelta(seconds=(int(avg_tat)))
     sec3=timedelta(seconds=(int(avg_waiting)))
     avg_waiting_dhms = str(sec3)
     avg_tat_dhms =str(sec2)
     makespan_dhms = str(sec)
-    numNodes = df3["workload_num_machines"].values[0]
+    
     
     makespan_df = pd.DataFrame({"nodes":numNodes,
-                                "SMTBF":[SMTBF],
-                                "NMTBF":[np.round(SMTBF*numNodes)],
-                                "fixed-failures":[fixedFailures],
-                                "repair-time":[repairTime],
-                                "MTTR":[MTTR],
-                                "makespan_sec":[makespan],
-                                "makespan_dhms":[makespan_dhms],
-                                "AAE":[avgAE],
-                                "checkpointed_num":[checkpointed_num],
-                                "percent_checkpointed":[percent_checkpointed],
-                                "avg_tat":[avg_tat],
-                                "avg_tat_dhms":[avg_tat_dhms],
-                                "avg_waiting":[avg_waiting],
-                                "avg_waiting_dhms":[avg_waiting_dhms],    
-                                "checkpointing_on_num":[checkpointing_on_num],
-                                "checkpointing_on_percent":[checkpointing_on_percent],
-                                "number_of_jobs":[len(df3)],
-                                "submission_time":[submissionTime],
-                                "avg_utilization":[utilization]
-
-                                
-                               })
-    if pp_slowdown:
-        sec = timedelta(seconds=(int(avg_slowdown)))
-        makespan_df["avg-pp-slowdown"]=[avg_slowdown]
-        makespan_df["avg-pp-slowdown_dhms"]=[str(sec)]
-        makespan_df["avg-pp-slowdown-Tau"]=[pp_slowdown]
-    makespan_df.to_csv(outputMakespan,mode='w',header=True)
-elif makespan:
-
-    makespan = df3.real_finish_time.max() - df3.starting_time.min()
-    
-    outputMakespan = runPath +  "/output/expe-out/makespan.csv"
-    from datetime import datetime, timedelta
-    sec = timedelta(seconds=(int(makespan)))
-    sec2=timedelta(seconds=(int(avg_tat)))
-    avg_tat_dhms =str(sec2)
-    sec3=timedelta(seconds=(int(avg_waiting)))
-    avg_waiting_dhms = str(sec3)
-    makespan_dhms = str(sec)
-    numNodes = df3["workload_num_machines"].values[0]
-    
-    makespan_df = pd.DataFrame({"nodes":numNodes,
-                                "cores":[cores],
-                                "speeds":[speeds],
-                                "core-percent":[corePercent],
                                 "SMTBF":[SMTBF],
                                 "NMTBF":[np.round(SMTBF*numNodes)],
                                 "fixed-failures":[fixedFailures],
@@ -411,18 +363,60 @@ elif makespan:
                                 "avg_tat":[avg_tat],
                                 "avg_tat_dhms":[avg_tat_dhms],
                                 "avg_waiting":[avg_waiting],
-                                "avg_waiting_dhms":[avg_waiting_dhms],
-                                "number_of_jobs":[len(df3)],
+                                "avg_waiting_dhms":[avg_waiting_dhms],    
+                                "number_of_jobs":[len(ourDf3)],
                                 "submission_time":[submissionTime],
-                                "avg_utilization":[utilization]
-                                
+                                "avg_utilization":[utilization] 
                                })
+    if checkpointing:
+        checkpointed_num = len(ourDf3.loc[ourDf3.checkpointed == True])
+        checkpointing_on_num = len(ourDf3.loc[ourDf3.checkpointing_on == True])
+        percent_checkpointed = float(checkpointed_num/float(len(ourDf3)))
+        checkpointing_on_percent = float(checkpointing_on_num/float(len(ourDf3)))
+        makespan_df["checkpointed_num"]=[checkpointed_num]
+        makespan_df["percent_checkpointed"]=[percent_checkpointed]
+        makespan_df["checkpointing_on_num"]=[checkpointing_on_num]
+        makespan_df["checkpointing_on_percent"]=[checkpointing_on_percent]
+
     if pp_slowdown:
         sec = timedelta(seconds=(int(avg_slowdown)))
         makespan_df["avg-pp-slowdown"]=[avg_slowdown]
         makespan_df["avg-pp-slowdown_dhms"]=[str(sec)]
         makespan_df["avg-pp-slowdown-Tau"]=[pp_slowdown]
-    makespan_df.to_csv(outputMakespan,mode='w',header=True)
+    return makespan_df
+
+if makespan:
+    total_makespan = df3.real_finish_time.max() - df3.starting_time.min()
+    makespan_df = get_makespan_df(df,df3,total_makespan,checkpointing)
+    makespan_df.to_csv(f"{runPath}/output/expe-out/makespan.csv",mode='w',header=True)
+    if bins:
+        os.makedirs(f"{runPath}/output/expe-out/bins",exist_ok=True)
+        bins=bins.strip("[]").split(",")
+        bins=[int(i) for i in bins]
+        count=len(bins)
+        for i in range(count):
+            if bins[i] == "-":
+                binDf3 = df3.loc[df3.requested_number_of_resources < bins[i+1]].copy()
+                binDf = df.loc[df.requested_number_of_resources < bins[i+1]].copy()
+
+            #if not the last one
+            elif i != (count-1):
+                #check if next one is +
+                if bins[i+1] == "+":
+                    binDf3 = df3.loc[df3.requested_number_of_resources >= bins[i]].copy()
+                    binDf = df.loc[df.requested_number_of_resources >= bins[i]].copy()
+                else:
+                    binDf3 = df3.loc[(df3.requested_number_of_resources >= bins[i]) & (df3.requested_number_of_resources < bins[i+1])].copy()
+                    binDf = df.loc[(df.requested_number_of_resources >= bins[i]) & (df.requested_number_of_resources < bins[i+1])].copy()
+
+            #if it is the last one we skip it
+            else:
+                break
+            #ok now binDf should have the info we are looking for:
+            if len(binDf3)>0:
+                makespan_df = get_makespan_df(binDf,binDf3,total_makespan,checkpointing)
+                makespan_df.to_csv(f"{runPath}/output/expe-out/bins/makespan_{bins[i]}_{bins[i+1]}.csv",mode='w',header=True)
+
 df3.to_csv(outfile)
 avgAE_path = runPath + "/output/expe-out/avgAE.csv"
 if (not(MTBF == -1)):
