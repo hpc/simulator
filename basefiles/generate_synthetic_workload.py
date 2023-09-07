@@ -183,10 +183,14 @@ def parseTimeString(aTimeStr,durations_times,newSize):
     
     return times
 
-def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize):
+def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize,seed):
     # if there is a colon (:)
     import os
     times=[]
+    if seed:
+        np.random.seed(seed)
+    else:
+        np.random.seed()
     if not aTimeStr.find(":") == -1:
         STR = aTimeStr.split(":")
         #check if csv durations
@@ -312,10 +316,17 @@ def generate_workload_from_json(workload_json):
         numberResources = workload_json["number-of-resources"]
         durationTime = workload_json["duration-time"]
         submissionTime = workload_json["submission-time"]
+        seed = workload_json["seed"] if dictHasKey(workload_json,"seed") and (workload_json["seed"]!="False") else False
         wallclockLimit = workload_json["wallclock-limit"] if dictHasKey(workload_json,"wallclock-limit") else False
         dumpTime = workload_json["dump-time"] if dictHasKey(workload_json,"dump-time") else False
         readTime = workload_json["read-time"] if dictHasKey(workload_json,"read-time") else False
         checkpointInterval = workload_json["checkpoint-interval"] if dictHasKey(workload_json,"checkpoint-interval") else False
+        if seed:
+            print(f"seed:{seed}")
+            np.random.seed(int(seed))
+        else:
+            print(f"no seed")
+            np.random.seed()
         workload=generate_workload(speed=speed,profile_type=profileType,number_of_jobs=numberOfJobs,total_resources=totalResources,\
                             number_resources=numberResources,duration_time=durationTime,submission_time=submissionTime,\
                             wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,checkpoint_interval=checkpointInterval)
@@ -324,7 +335,7 @@ def generate_workload_from_json(workload_json):
 
 def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number_resources,\
                     duration_time,submission_time,percent=100,wallclock_limit=None,read_time=None,dump_time=None,\
-                    checkpoint_interval=None,add_to_workload=None):
+                    checkpoint_interval=None,add_to_workload=None,seed=False):
     startIds=1
     previousJobs=pd.DataFrame()
     previousProfiles=pd.DataFrame()
@@ -351,11 +362,11 @@ def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number
     #Handle Required Options
     #--------------------------------------------------
     if number_resources:
-        resources = parseRandomChoiceString(number_resources,"--number-of-resources",int,["fixed","unif","norm","exp","csv"],number_of_jobs)
+        resources = parseRandomChoiceString(number_resources,"--number-of-resources",int,["fixed","unif","norm","exp","csv"],number_of_jobs,seed)
     if duration_time:
-        durations = parseRandomChoiceString(duration_time,"--duration-time",float,["fixed","unif","norm","exp","csv"],number_of_jobs)
+        durations = parseRandomChoiceString(duration_time,"--duration-time",float,["fixed","unif","norm","exp","csv"],number_of_jobs,seed)
     if submission_time:
-        submissions = parseRandomChoiceString(submission_time,"--submission-time",float,["fixed","unif","norm","exp"],number_of_jobs)
+        submissions = parseRandomChoiceString(submission_time,"--submission-time",float,["fixed","unif","norm","exp"],number_of_jobs,seed)
 
     #set the required columns
     cols=[ids,submissions,resources,ids]
@@ -686,13 +697,15 @@ if args["--db"]:
     dumpTime=df["dump-time"].values[0]
     checkpointInterval=df["checkpoint-interval"].values[0]
     reservation_json=df["reservation-json"].values[0]
+    seed=int(df["seed"].values[0]) if df["seed"].values[0]!="False" else False
+
     reservations=False
     if not ((reservation_json == False) or (reservation_json == "False")):
         reservations=generate_reservations_from_json(reservation_json)
         
     workload=generate_workload(speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,total_resources=totalResources,number_resources=numberResources,\
                         duration_time=durationTime,submission_time=submissionTime,wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
-                        checkpoint_interval=checkpointInterval)
+                        checkpoint_interval=checkpointInterval,seed=seed)
     if reservations:
         workload=add_reservations_to_workload(workload, reservations)
     jsonData={"nb_res":totalResources,"jobs":workload[1],"profiles":workload[2]}

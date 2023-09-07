@@ -35,8 +35,11 @@ Optional Options:
     -o <FILE> --output <FILE>               Where to output the workload
                                             [default: ./grizzly_workload.json]
 
-    --random-selection                      To get a random selection of jobs. '--number-of-jobs'
+    --random-selection <int>                To get a random selection of jobs. '--number-of-jobs'
                                             needs to be set for this option.
+                                            <int> is the seed if you want deterministic behavior
+                                            use -1 to use clock for seed, the default behavior
+                                            
 
     --profile-type <STR>                    The profile type to use in the workload.
                                             Currently: 'parallel_homogeneous' || 'delay'
@@ -53,11 +56,14 @@ Optional Options:
                                             exp: This will be exponentially distributed, random values with mean time between submissions to be FLOAT.
                                             fixed: All jobs will have this time between them unless zero is used for a FLOAT.
                                             unif: This will be uniform, random values from min:max
+                                            a seed can be put on the end of the string to use for deterministic behavior
                                             ex:
                                                     '--submission-time "200.0:exp"'
                                                     '--submission-time "100.0:fixed"'
                                                     '--submission-time "0.0:fixed"'
                                                     '--submission-time "0:200.0:unif"'
+                                                    '--submission-time "200.0:exp:10"'  <-- 10 is the seed
+                                                    '--submission-time "0:200.0:unif:20"' <-- 20 is the seed
 
 
     --wallclock-limit <FLOAT|INT%|STR>      wallclock limits will all be set to this for FLOAT. (-1) means the value will not be used in Batsim.
@@ -65,41 +71,50 @@ Optional Options:
                                             wallclock limits will be random from min % of runtime to max % in STR format '"min%:max%"'
                                             wallclock limits will be random seconds from min to max in STR format  '"min:max"'
                                             wallclock limits will be what the grizzly data is if not set.
+                                            a seed can be put on the end of the string to use for deterministic behavior
                                             ex:     '--wallclock-limit -1'
                                                     '--wallclock-limit 500.3'
                                                     '--wallclock-limit 101%'
                                                     '--wallclock-limit "50%:150%"'
                                                     '--wallclock-limit "100:3000"'
+                                                    '--wallclock-limit "50%:150%:10"' <-- 10 is the seed
+                                                    '--wallclock-limit "100:3000:20"' <-- 20 is the seed
 
     --read-time <FLOAT|INT%|STR>            set this fixed time to readtime in seconds for FLOAT.
                                             set this to % of run time for INT%.
                                             set this to random % of run time for STR format "min%:max%"
                                             set this to random seconds from min to max in STR format   "min:max".
                                             readtime will be omitted in the workload if not included.
+                                            a seed can be put on the end of the string to use for deterministic behavior
                                             ex:     '--read-time 20'
                                                     '--read-time 2%'
                                                     '--read-time "2%:4%"'
                                                     '--read-time "2:20"'
+                                                    '--read-time "2%:4%:10"'  <-- 10 is the seed
 
     --dump-time <FLOAT|INT%|STR>            set this fixed time to dumptime in seconds for FLOAT.
                                             set this to % of run time for INT%.
                                             set this to random % of run time for STR format "min%:max%"
                                             set this to random seconds from min to max in STR format   "min:max".
                                             dumptime will be omitted in the workload if not included.
+                                            a seed can be put on the end of the string to use for deterministic behavior
                                             ex:     '--dump-time 20'
                                                     '--dump-time 3%'
                                                     '--dump-time "3%:5%"'
                                                     '--dump-time "3:30"'
+                                                    '--dump-time "3%:5%:10"' <-- 10 is the seed
 
     --checkpoint-interval <FLOAT|INT%|STR>  set this fixed time to checkpoint in seconds for FLOAT.
                                             set this to % of run time for INT%.
                                             set this to random % of run time for STR format "min%:max%"
                                             set this to random seconds from min to max in STR format   "min:max".
                                             checkpoint will be omitted in the workload if not included.
+                                            a seed can be put on the end of the string to use for deterministic behavior
                                             ex:     '--checkpoint-interval 120'
                                                     '--checkpoint-interval 30%'
                                                     '--checkpoint-interval "10%:30%"'
                                                     '--checkpoint-interval "120:240"'
+                                                    '--checkpoint-interval "120:240:10"' <-- 10 is the seed
 """
 
 
@@ -253,7 +268,7 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
         sys.exit(1)
 
     # set our submit times
-    if submission == False:
+    if submission == "False" or submission == False:
         #convert submit times to integers starting at time 0
         subtract = df.submit_time.min()
         df.sort_values(by="submit_time",axis=0,inplace=True)
@@ -276,19 +291,19 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
     cols=[ids,submits,resources,ids]
     column_names=["id","subtime","res","profile"]
     if wallclock_limit:
-        walltimes = parseTimeString(wallclockLimit,durations_times,newSize)
+        walltimes = parseTimeString(wallclockLimit,durations_times,newSize,error="Wallclock Limit")
     cols.append(walltimes)
     column_names.append("walltime")
     if readTime:
-        readtimes = parseTimeString(read_time,durations_times,newSize)
+        readtimes = parseTimeString(read_time,durations_times,newSize,error="Read Time")
         cols.append(readtimes)
         column_names.append("readtime")
     if dumpTime:
-        dumptimes = parseTimeString(dump_time,durations_times,newSize)
+        dumptimes = parseTimeString(dump_time,durations_times,newSize,error="Dump Time")
         cols.append(dumptimes)
         column_names.append("dumptime")
     if checkpoint_interval:
-        checkpoint = parseTimeString(checkpoint_interval,durations_times,newSize)
+        checkpoint = parseTimeString(checkpoint_interval,durations_times,newSize,error="Checkpoint Interval")
         cols.append(checkpoint)
         column_names.append("checkpoint_interval")
     data=list(zip(*cols))
@@ -321,63 +336,114 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
 
 
 
-def parseTimeString(aTimeStr,durations_times,newSize):
-    # if there is a colon (:)
+def parseTimeString(aTimeStr,durations_times,newSize,error="Generic Time String"):
+    import re
+    import sys
+    import numpy as np
     times=[]
-    if not aTimeStr.find(":") == -1:
-        minMax = aTimeStr.split(":")
-        #if there are %'s and a colon
-        if not minMax[0].find("%")== -1 and not minMax[1].find("%")== -1:
-            minPercent = int(minMax[0].rstrip("%"))
-            maxPercent = int(minMax[1].rstrip("%"))
-            percents = (np.random.randint(low=minPercent,high=maxPercent+1,size=newSize))/100
+    decimal="(?:\d+(?:\.\d*)?|\.\d+)"
+    #integer followed by ':' followed by integer followed by the end or a ':integer' 
+    regEx=re.compile("([0-9]+):([0-9]+)(?:$|(?:[:]([0-9]+)))")
+    match=regEx.match(aTimeStr)
+    #match.groups() [0]=int [1]=int [2]=None|int
+    if match != None:
+        myMin=int(match.groups()[0])
+        myMax=int(match.groups()[1])
+        #we have a int:int[:int]
+        if match.groups()[2] == None:
+            #no seed for random
+            np.random.seed()
+        else:
+            np.random.seed(int(match.groups()[2]))
+        times = np.random.randint(low=myMin,high=myMax+1,size=newSize)
+    else:
+        #integer followed by '%' followed by ':' followed by integer followed by '%' followed by end or ':integer'
+        regEx=re.compile("([0-9]+)[%]:([0-9]+)[%](?:$|(?:[:]([0-9]+)))")
+        match=regEx.match(aTimeStr)
+        #match.groups() [0]=int [1]=int [2]=None|int
+        if match != None:
+            #we have a INT%:INT%
+            myMin = int(match.groups()[0])
+            myMax = int(match.groups()[1])
+            if match.groups()[2] == None:
+                #no seed for random
+                np.random.seed()
+            else:
+                np.random.seed(int(match.groups()[2]))
+            percents = (np.random.randint(low=myMin,high=myMax+1,size=newSize))/100
             times = percents * durations_times
             times = np.ceil(times)
-        # != is the same as xor. if only one has a % but there is a colon
-        elif (not minMax[0].find("%")==-1) != (not minMax[1].find("%")==-1):
-            print("you provided a random string from min:max but one had a percent sign and the other didn't")
-            print(aTimeStr)
-            sys.exit(1)
-        # only a colon
         else:
-            times = np.random.randint(low=int(minMax[0]),high=int(minMax[1])+1,size=newSize)
-    # only a percent
-    elif not aTimeStr.find("%")== -1:
-        percent = int(aTimeStr.rstrip("%"))
-        for time in durations_times:
-            times.append(np.ceil(time*(percent/100)))
-    # only a float
-    else:
-        time = float(aTimeStr)
-        times = [time] * newSize
+            #integer followed by '%'
+            regEx=re.compile("([0-9]+)[%]")
+            match=regEx.match(aTimeStr)
+            #match.groups() [0]=int
+            if match != None:
+                #we have an INT%
+                percent = int(match.groups()[0])
+                for time in durations_times:
+                    times.append(np.ceil(time*(percent/100)))
+            else:
+                #decimal
+                regEx=re.compile(f"({decimal})")
+                match=regEx.match(aTimeStr)
+                #match.groups() [0]=float
+                if match != None:
+                    #we have a float
+                    time=float(match.groups()[0])
+                    times = [time] * newSize
+    if len(times) == 0:
+        print(f"you provided a String for {error}  in the wrong format")
+        print(aTimeStr)
+        sys.exit(1)
     return times
+                
 
 def parseSubmissionTime(aTimeStr,newSize):
-    # if there is a colon (:)
+    import re
     times=[]
-    if not aTimeStr.find(":") == -1:
-        STR = aTimeStr.split(":")
-        #check if a uniform randomness
-        if len(STR) == 3:
-            if not STR[2].find("unif")== -1:
-                times = np.random.uniform(low=float(STR[0]),high=float(STR[1]),size=newSize)
-                times[0] = 0
-                times = np.cumsum(times)
-        #check if fixed or exp
-        elif len(STR)==2:
-            if not STR[1].find("fixed")== -1:
-
-                time = float(STR[0])
-                if time == 0:
-                    times = [0] * newSize
-                else:
-                    times = [time] * newSize
-                    times[0]=0
-                    times = np.cumsum(times)
-            elif not STR[1].find("exp"):
-                times = np.random.exponential(float(STR[0]),newSize)
+    decimal="(?:\d+(?:\.\d*)?|\.\d+)"
+    #decimal followed by ':' followed by either exp or fixed followed by either end or ':' and if previous was 'exp:' an integer number
+    regEx=re.compile(f"({decimal}):(exp|fixed)(?:$|(?:[:](?<=exp[:])([0-9]+)))")
+    match = regEx.match(aTimeStr)
+    #match.groups()  [0]=float  [1]=exp|fixed  [2]=None|integer
+    if match != None:
+        value=float(match.groups()[0])
+        randomType = match.groups()[1]
+        seed = match.groups()[2]
+        if randomType == "exp":
+            if seed:
+                np.random.seed(int(seed))
+            else:
+                np.random.seed()
+            times = np.random.exponential(value,newSize)
+            times[0]=0
+            times=np.cumsum(times)
+        elif randomType == "fixed":
+            time = value
+            if time == 0:
+                times = [0] * newSize
+            else:
+                times = [time] * newSize
                 times[0]=0
-                times=np.cumsum(times)
+                times = np.cumsum(times)
+
+    else:
+        #decimal followed by ':' followed by decimal followed by ':unif' and followed by 0 or 1 occurance of ':integer'
+        regEx=re.compile(f"({decimal}):({decimal}):unif(?:[:]([0-9]+))?")
+        match = regEx.match(aTimeStr)
+        #match.groups() [0]=float [1]=float [2]=None|integer
+        if match != None:
+            low=float(match.groups()[0])
+            high=float(match.groups()[1])
+            seed=match.groups()[2]
+            if seed:
+                np.random.seed(int(seed))
+            else:
+                np.random.seed()
+            times = np.random.uniform(low=low,high=high,size=newSize)
+            times[0] = 0
+            times = np.cumsum(times)
     if len(times) == 0:
         print("you provided a String for --submission-time in the wrong format")
         print(aTimeStr)
@@ -436,7 +502,7 @@ if args["<type-of-info>"] == "json":
         "grizzly-workload":[
                                 {
                                     "time":"05-03-2018:07-04-2018",
-                                    "input-path":"sanitized_jobs.csv",
+                                    "input":"sanitized_jobs.csv",
                                     "number-of-jobs":3000,
                                     "random-selection":true,
                                     "submission-time":"0:fixed",
@@ -515,7 +581,8 @@ if dbfile:
     reservation_json=df["reservation-json"].values[0]
     index = df["index"].values[0]
     filename=os.path.dirname(str(args["--db"]))+"/"+str(args["--file-name"])
-    copies=int(df["copy"].values[0]) if df["copy"].values[0] != "False" else False
+    copies=str(df["copy"].values[0]) if df["copy"].values[0]!="False" else False
+    
 
 else:
 
@@ -525,7 +592,7 @@ else:
     nodes = int(args["--nodes"]) if dictHasKey(args,"--nodes") else False
     inputPath = args["--input"]
     number_of_jobs = int(args["--number-of-jobs"]) if args["--number-of-jobs"] else False
-    randomSelection = args["--random-selection"]
+    randomSelection = int(args["--random-selection"]) if args["--random-selection"] else False
     submission = args["--submission-time"] if args["--submission-time"] else False
     profile_type = str(args["--profile-type"])
     speed=int(args["--machine-speed"])
@@ -551,7 +618,7 @@ jsonData={"nb_res":nodes,"jobs":workload[1],"profiles":workload[2]}
 with open(filename, 'w') as outfile:
     json.dump(jsonData, outfile,indent=4)
     
-if copies != False:
+if (copies != False) and (copies !="False"):
     from edit_workload import copyWorkload
     ourFile=filename
     copyWorkload(ourFile,ourFile,copies)

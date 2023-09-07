@@ -11,13 +11,13 @@ Optional Options:
                                 [default: scriptPath]
 
     --parallel-method <string>  parallel method:
-                                none | bare-metal | tasks
-                                bare-metal: will spin up multiple threads
+                                none | background | tasks
+                                background: will spin up multiple processes by backgrounding
                                 tasks: will use SLURM's sbatch/tasks
                                 [default: none]
 
-    --tasks <int>               used with --parallel-method: bare-metal & tasks
-                                bare-metal: will use <int> threads at once
+    --tasks <int>               used with --parallel-method: background & tasks
+                                background: will use <int> processes at once
                                 tasks: will use <int> tasks on each node
                                 [default: 1]
 
@@ -110,7 +110,7 @@ for exp in experiments:
                         with open(f"{path}/{exp}/{job}/{theId}/{run}/output/config.ini","w") as IOFile:
                             config["bins"]=bins
                             json.dump(config,IOFile,indent=4)
-                    if parallel == "bare-metal":
+                    if parallel == "background":
                             if (count < tasks) and (total_count<total_jobs):
                                 cmd = f"python3 {basePath}/real_start.py --path {path}/{exp}/{job}/{theId}/{run} --method bare-metal --only-output &"
                                 count+=1

@@ -106,7 +106,7 @@ if checkpointing:
 
 
 
-df = pd.read_csv(path,sep=',',header=0,dtype={"job_id": str, "profile": str,"metadata":str,"batsim_metadata":str})
+df = pd.read_csv(path,sep=',',header=0,dtype={"job_id": str, "profile": str,"metadata":str,"batsim_metadata":str,"jitter":str})
 MTBF = df["MTBF"].iloc[0] if not df["MTBF"].isnull().iloc[0] else -1
 SMTBF = df["SMTBF"].iloc[0] if not df["SMTBF"].isnull().iloc[0] else -1
 fixedFailures = df["fixed-failures"].iloc[0] if not df["fixed-failures"].isnull().iloc[0] else -1
@@ -278,12 +278,12 @@ if checkpointing:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources',\
             'requested_time','success','real_final_state','starting_time','total_execution_time',\
             'purpose','num_resubmits','real_finish_time','checkpointed','total_waiting_time','total_turnaround_time','total_dumps','work_progress',\
-            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error']
+            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
 else:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources'\
             ,'requested_time','success','real_final_state','starting_time','total_execution_time'\
             ,'purpose'\
-            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error']
+            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
 df3=df3[cols]
 if checkpointing and profileType == "delay":
     df3.loc[~(df3['delay'] == df3['real_delay']),'checkpointing_on']=True
@@ -363,10 +363,13 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
                                 "avg_tat":[avg_tat],
                                 "avg_tat_dhms":[avg_tat_dhms],
                                 "avg_waiting":[avg_waiting],
-                                "avg_waiting_dhms":[avg_waiting_dhms],    
+                                "avg_waiting_dhms":[avg_waiting_dhms], 
+                                "avg_pp_slowdown":[avg_slowdown],
+                                "avg-pp-slowdown-tau":[pp_slowdown],   
                                 "number_of_jobs":[len(ourDf3)],
                                 "submission_time":[submissionTime],
-                                "avg_utilization":[utilization] 
+                                "avg_utilization":[utilization],
+                                "jitter":[str(ourDf3['jitter'].dropna().unique())]
                                })
     if checkpointing:
         checkpointed_num = len(ourDf3.loc[ourDf3.checkpointed == True])
@@ -392,7 +395,7 @@ if makespan:
     if bins:
         os.makedirs(f"{runPath}/output/expe-out/bins",exist_ok=True)
         bins=bins.strip("[]").split(",")
-        bins=[int(i) for i in bins]
+        bins=[int(i) if ((i!="+") and (i!="-")) else i for i in bins]
         count=len(bins)
         for i in range(count):
             if bins[i] == "-":

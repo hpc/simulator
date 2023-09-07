@@ -161,10 +161,11 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     checkpoint = config['checkpoint-interval'] if dictHasKey(config,'checkpoint-interval') else False
     scaleWidths=int(config['scale-widths-based-on']) if dictHasKey(config,'scale-widths-based-on') else False
     scaleTimeWidth=int(config['scale-time-width-based-on']) if dictHasKey(config,'scale-time-width-based-on') else False
-    cols=["filename","nodes","number-of-jobs","index","type","machine-speed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_for_folder=["folder","experiment","filename","nodes","number-of-jobs","index","type","machine-speed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_without_filename=["nodes","number-of-jobs","index","type","machine-speed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_without_scale=["nodes","number-of-jobs","index","type","machine-speed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
+    seed = int(config["seed"]) if dictHasKey(config,"seed") else False
+    cols=["filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
+    cols_for_folder=["folder","experiment","filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
+    cols_without_filename=["nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
+    cols_without_scale=["nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
     df["nodes"]=[str(nodes)]
     df["number-of-jobs"]=[str(numberOfJobs)]
     df["index"]=[str(index)]
@@ -180,6 +181,7 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     df["scale-widths-based-on"]=[str(scaleWidths)]
     df["scale-time-width-based-on"]=[str(scaleTimeWidth)]
     df["reservation-json"]=[str(resv)]
+    df["seed"]=[str(seed)]
     
       
     filename = "%d_nodes_%d_jobs_%s.json"%(nodes,numberOfJobs,str(uuid.uuid4()))
@@ -224,7 +226,7 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     location=""
     folderDF_filename = filename
     filegood=False
-    if (len(equal) > 0):
+    if (len(equal) > 0) and not noCheck:
     #ok supposedly we have a workload file
     #lets make sure
         #print("line 200")
@@ -251,6 +253,7 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     if (len(equal) == 0) or database.empty or filegood == False or noCheck == True:
        
         #ok we need to make a workload
+        print(f"making synthetic workload: {filename}")
         df["filename"] =[filename]
         if not database.empty:
             database=pd.concat([database,df])
@@ -333,7 +336,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     dumptime = config['dump-time'] if dictHasKey(config,'dump-time') else False
     checkpoint = config['checkpoint-interval'] if dictHasKey(config,'checkpoint-interval') else False
     machine_speed = config["machine-speed"] if dictHasKey(config,"machine-speed") else False
-    copies=int(config["copy"]) if dictHasKey(config,"copy") else False
+    copies=config["copy"] if dictHasKey(config,"copy") else False
    
     cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
     cols_for_folder=["folder","experiment","filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
@@ -370,7 +373,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     location=""
     filegood=False
     folderDF_filename = filename
-    if (len(equal) > 0):
+    if (len(equal) > 0) and not noCheck:
     #ok supposedly we have a workload file
     #lets make sure
         print("not mask empty and len database[mask]) > 0")
@@ -394,9 +397,11 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     else:
         folderDatabase = folderDF
     folderDatabase.to_csv(folderDBPath,header=True,sep="|",index=False)
+    
 
     if (len(equal) == 0 or filegood == False or noCheck == True):
         #ok we need to make a workload
+        print(f"making 'grizzly' workload: {filename}")
         df["filename"]=[filename]
         if not database.empty:
             database=pd.concat([database,df])

@@ -42,6 +42,7 @@ startRun=args["--start-run"] if args["--start-run"] else 1
 endRun=args["--end-run"] if args["--end-run"] else False
 df = pd.DataFrame()
 df4 = pd.DataFrame()
+df5 = pd.DataFrame()
 runs = 1
 neCount=0
 eCount=0
@@ -157,10 +158,15 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                         dfTmp["job"] = job
                         dfTmp["exp"] = exp
                         df = pd.concat([df,dfTmp],axis=0)
+                
                 jobNeCount[str(exp)+"  "+str(job)]=neCountJob
                 jobECount[str(exp)+"  "+str(job)]=eCountJob
                 neCountJob=0
                 eCountJob=0 
+            if len(ids)>1:
+                    
+                    
+                    df5 = pd.concat
             groups=df.groupby(df.exp).groups
             dfavg=pd.DataFrame()
 

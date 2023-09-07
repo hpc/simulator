@@ -99,7 +99,7 @@ partition = args["--partition"]
 parallelMode = args["--parallel-mode"]
 method = args["--method"]
 coresPerJob = int(args["--cores-per-job"]) if args["--parallel-mode"] == "sbatch" else False
-tasksPerNode=int(args["--tasks-per-node"]) if args["--parallel-mode"] == "tasks" else False
+tasksPerNode=int(args["--tasks-per-node"]) if (args["--parallel-mode"] == "tasks") or (args["--parallel-mode"] == "background") else False
 socketStart=int(args["--socket-start"])
 myTime="--time {time}".format(time=args["--time"]) if args["--time"] else " "
 addToSbatch=args["--add-to-sbatch"] if args["--add-to-sbatch"] else " "
@@ -148,7 +148,7 @@ if parallelMode == "sbatch":
                     command = """source {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
                     --output={jobPath}/output/slurm-%j.out --comment='{folder}_{exp}_{job}j_{ourId}i_{run}r' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
-                    """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=folder,priority=priority,\
+                    """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=os.path.basename(path),priority=priority,\
                     socketCount=socketCount,myTime=myTime,mySimTime=mySimTime, \
                     parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
                     print(command,flush=True)
@@ -174,11 +174,12 @@ elif parallelMode == "tasks":
     experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i)]
     total_sims=0
     for exp in experiments:
-        jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
-        jobs.sort(key=natural_keys)
-        ids = [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+i)]
-        runs =len( [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/" + i)])
-        total_sims+=len(jobs)*len(ids)*runs
+        jobs = [i for i in os.listdir(path+"/"+exp+"/")]
+        for job in jobs:
+            ids = [i for i in os.listdir(path+"/"+exp+"/"+job) if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
+            for theId in ids:
+                runs = [i for i in os.listdir(path+"/"+exp+"/"+job+"/"+theId) if os.path.isdir(path+"/"+exp+"/"+job + "/" + theId +"/"+ i)]
+                total_sims+=len(runs)
     batch_num=1
     for exp in experiments:
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
@@ -190,7 +191,7 @@ elif parallelMode == "tasks":
         if endRun:
             end=endRun
         else:
-            end=runs
+            end=len(runs)
         for number in range(start,end+1,1):
             run = "Run_" + str(number)
             for job in jobs:
@@ -235,8 +236,20 @@ elif parallelMode == "tasks":
                         print(command,flush=True)
                         os.system(command)
                     socketCount+=1
-elif parallelMode == "none":
+elif parallelMode == "background":
+    count = 1
+    total_sims=0
+    total_count=0
     experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i)]
+    for exp in experiments:
+        jobs = [i for i in os.listdir(path+"/"+exp+"/")]
+        for job in jobs:
+            ids = [i for i in os.listdir(path+"/"+exp+"/"+job) if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
+            for theId in ids:
+                runs = [i for i in os.listdir(path+"/"+exp+"/"+job+"/"+theId) if os.path.isdir(path+"/"+exp+"/"+job + "/" + theId +"/"+ i)]
+                total_sims+=len(runs)
+    if total_sims < tasksPerNode:
+        tasksPerNode=total_sims
     for exp in experiments:
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
         jobs.sort(key=natural_keys)
@@ -261,12 +274,17 @@ elif parallelMode == "none":
                         os.system(cmd)
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
-                    command = [baseFilesPath+"/experiment.sh"]
-                    args=[str(parallelMode),str(method),str(jobPath),str(socketCount),str(mySimTime)]
-                    command.extend(args)
                     out=jobPath.replace(":PATH:","") +"/output/slurm.out"
+                    if (count < tasksPerNode) and (total_count<total_sims):
+                        command = f"{baseFilesPath}/experiment.sh {str(parallelMode)} {str(method)} {str(jobPath)} {str(socketCount)} {str(mySimTime)} 2>&1 > {out}  &"
+                        count+=1
+                        total_count+=1
+                    else:
+                        command = f"{baseFilesPath}/experiment.sh {str(parallelMode)} {str(method)} {str(jobPath)} {str(socketCount)} {str(mySimTime)} 2>&1 > {out}"
+                        count = 1
+                        total_count+=1
                     print(command,flush=True)
-                    import subprocess
-                    myFile = open(out,"w")
-                    output = subprocess.Popen(command, stdout=myFile).communicate()[0]
-                    myFile.close()
+                    os.system(command) 
+                    socketCount+=1 
+                              
+                    

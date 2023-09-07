@@ -92,6 +92,10 @@ queueDepth = InConfig['queue-depth'] if dictHasKey(InConfig,'queue-depth') else 
 reservationsStart = InConfig['reservations-start'] if dictHasKey(InConfig,'reservations-start') else False
 MTTR = float(InConfig['MTTR']) if dictHasKey(InConfig,"MTTR") else False
 seedRepairTimes = InConfig['seed-repair-times'] if dictHasKey(InConfig, 'seed-repair-times') else False
+checkpoint_batsim_interval = InConfig['checkpoint-batsim-interval']if dictHasKey(InConfig,"checkpoint-batsim-interval") else False
+submitTimeAfter=str(InConfig['submission-time-after']) if dictHasKey(InConfig,'submission-time-after') else False
+submitTimeBefore=str(InConfig['submission-time-before']) if dictHasKey(InConfig,'submission-time-before') else False
+copyWorkload = str(InConfig['copy']) if dictHasKey(InConfig,'copy') else False
 
 
 if batschedPolicy == "conservative_bf":
@@ -185,6 +189,14 @@ if reservationsStart:
     batsimCMD+=" --reservations-start {reservationsStart}".format(reservationsStart=reservationsStart)
 if (not type(MTTR) == bool) and (MTTR > 0) :
     batsimCMD+=" --MTTR {MTTR}".format(MTTR=MTTR)
+if checkpoint_batsim_interval:
+    batsimCMD+=f" --checkpoint-batsim-interval {checkpoint_batsim_interval}"
+if copyWorkload:
+    batsimCMD+=f" --copy {copyWorkload}"
+if submitTimeBefore:
+    batsimCMD+=f" --submission-time-before {submitTimeBefore}"
+if submitTimeAfter:
+    batsimCMD+=f" --submission-time-after {submitTimeAfter}"
 
 print("finished making batsimCMD")
 print(batsimCMD)

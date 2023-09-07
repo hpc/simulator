@@ -46,7 +46,7 @@ case $parallelMode in
                 ;;    
         esac
         ;;
-    "none")
+    "background")
         case $method in
             "bare-metal" | "docker" | "charliecloud")
                 echo ""

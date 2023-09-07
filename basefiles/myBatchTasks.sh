@@ -133,8 +133,8 @@ Required Options:
                                     to put stuff within the default locations ( $PREFIX/experiments/<folder_name>)
 
     -t, --tasks-per-node <INT>      How many tasks to put on each node
-                                    Only used with --parallel-method 'tasks'
-                                    and mandatory with this parallel-method
+                                    Only used with --parallel-method 'tasks' and 'background'
+                                    and mandatory with these parallel-methods
 
 Optional Options:
     -a, --add-to-sbatch <STR>       Commands to add to sbatch, in the form:
@@ -152,7 +152,11 @@ Optional Options:
                                     [default: 'charliecloud']
 
     -p, --parallel-method <STR>     What method to spawn multiple batsims:
-                                    'sbatch' | 'tasks' | 'none'
+                                    'sbatch' | 'tasks' | 'none' | 'background'
+                                    sbatch: individual sbatch commands for each sim
+                                    tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
+                                    none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
+                                    background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
                                     [default: 'tasks']
 
     -s, --socket-start <INT>        What socket number to start at. You must do your own housekeeping of sockets.  If you already
@@ -220,7 +224,12 @@ elif [ $P_METHOD = 'sbatch' ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
-elif [ $P_METHOD = 'none' ]; then
+elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
+    if [ $P_METHOD = 'none' ];then
+        TASKS_PER_NODE=1
+        P_METHOD='background'
+    fi    
+
     case $METHOD in
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
@@ -237,5 +246,6 @@ elif [ $P_METHOD = 'none' ]; then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START}
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node ${TASKS_PER_NODE}
 fi
+
