@@ -96,6 +96,7 @@ checkpoint_batsim_interval = InConfig['checkpoint-batsim-interval']if dictHasKey
 submitTimeAfter=str(InConfig['submission-time-after']) if dictHasKey(InConfig,'submission-time-after') else False
 submitTimeBefore=str(InConfig['submission-time-before']) if dictHasKey(InConfig,'submission-time-before') else False
 copyWorkload = str(InConfig['copy']) if dictHasKey(InConfig,'copy') else False
+disableDynamic = bool(InConfig['disable-dynamic-jobs']) if dictHasKey(InConfig,'disable-dynamic-jobs') else False
 
 
 if batschedPolicy == "conservative_bf":
@@ -147,8 +148,9 @@ if method == "charliecloud":
 else:
     batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=path+"/output")
 #if not (batschedPolicy == "conservative_bf"):
-batsimCMD+=" --disable-schedule-tracing --disable-machine-state-tracing "
-batsimCMD+=" --enable-dynamic-jobs --acknowledge-dynamic-jobs {batsimLog}".format(batsimLog=batsimLog)
+batsimCMD+=" --disable-schedule-tracing --disable-machine-state-tracing {batsimLog}".format(batsimLog=batsimLog)
+if not disableDynamic:
+    batsimCMD+=" --enable-dynamic-jobs --acknowledge-dynamic-jobs"
 if checkpointingOn:
     batsimCMD+=" --checkpointing-on"
 if calculateCheckpointing and type(checkpointInterval)==bool:

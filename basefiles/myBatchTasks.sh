@@ -186,6 +186,16 @@ fi
 mkdir -p $basefiles/workloads
 date
 
+#first check file
+echo -e "\n\n *********************  Checking JSON config file  *********************\n"
+cat $FILE1 | python3 -m json.tool 1>/dev/null
+if [ $? -eq 1 ];then
+    echo -e "\n!!!!!!!!!!!!!!!!!!!!!  ERROR with Json File.  See message above  !!!!!!!!!!!!!!!!!!!!!\n"
+    exit
+else
+    echo "*********************  JSON Check Appears To Be SUCCESSFUL *********************"
+fi
+
 
 if [ $P_METHOD = 'tasks' ];then
     case $METHOD in

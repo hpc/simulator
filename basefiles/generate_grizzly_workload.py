@@ -617,7 +617,7 @@ jsonData={"nb_res":nodes,"jobs":workload[1],"profiles":workload[2]}
 
 with open(filename, 'w') as outfile:
     json.dump(jsonData, outfile,indent=4)
-    
+
 if (copies != False) and (copies !="False"):
     from edit_workload import copyWorkload
     ourFile=filename
