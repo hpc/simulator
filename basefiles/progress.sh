@@ -17,10 +17,89 @@ function get_interval()
     done
     echo "${numbers[*]}"
 }
+print_mem()
+{
+    format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
+    if [[ $divideBy == -1 ]];then
+            myOutput="$myOutput|\\033[${color}m`echo "$entry" \
+            | awk -F, -v field=$field '{num=$field;if (num>2**30){div=2**30;u="TiB"}else if (num>2**20){div=2**20;u="GiB"}else if (num>2**10){div=2**10;u="MiB"}else{div=1;u="KiB"};num=int(num/div) ;printf("%'"'"'d %s",num,u)}'`\\033[0m"
+    else
+            myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, -v field=$field -v div=$divideBy -v u=$memSize '{num=($field/div);num=int(num);printf("%'"'"'d %s",num,u)}'`\\033[0m"
+    fi
+}
+print_number()
+{
+    format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
+    number=$(echo "$entry" |awk -F, -v field=$field '{printf("%'"'"'d",$field)}')
+    myOutput="$myOutput|\\033[${color}m$number\\033[0m"
+}
+print_entry()
+{
+    format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
+    number=$(echo "$entry" |awk -F, -v field=$field '{printf("%s",$field)}')
+    myOutput="$myOutput|\\033[${color}m$number\\033[0m"
+}
+
+
+completed_jobs()
+{
+    color=$color1; field=1; name="actually_completed_jobs"; print_number;
+    color=$color2; field=2; name="nb_jobs"; print_number;
+}
+
+percent_done()
+{
+    color=$color3; field=3; name="percent_done"; print_entry;
+}
+times()
+{
+    color=$color4; field=4; name="real_time"; print_entry;
+    color=$color5; field=5; name="sim_time"; print_entry;
+}
+queue_size()
+{
+    color=$color6; field=6; name="queue_size"; print_number;
+}
+schedule_size()
+{
+    color=$color7; field=7; name="schedule_size"; print_number;
+}
+schedule_info()
+{
+    queue_size
+    schedule_size
+    color=$color8; field=8; name="nb_jobs_running"; print_number;
+}
+utilization()
+{
+    color=$color9; field=9; name="utilization"; print_number;
+    color=$color10; field=10; name="utilization_no_resv"; print_number;
+}
+mem_avail()
+{
+        
+    color=$color11; field=11; name="node_mem_total"; print_mem;
+    color=$color12; field=12; name="node_mem_avail"; print_mem;
+        
+}
+mem_batsim()
+{
+    color=$color13; field=13; name="batsim_USS"; print_mem;
+    color=$color14; field=14; name="batsim_PSS"; print_mem;
+    color=$color15; field=15; name="batsim_RSS"; print_mem;
+}
+mem_batsched()
+{
+    color=$color16; field=16; name="batsched_USS"; print_mem;
+    color=$color17; field=17; name="batsched_PSS"; print_mem;
+    color=$color18; field=18; name="batsched_RSS"; print_mem;
+}
+
+
+
 
 function print_output()
 {
-    if [ $all = true ];then
         color1=$light_blue
         color2=$gold
         color3=$dark_purple
@@ -39,180 +118,64 @@ function print_output()
         color16=$dark_pink
         color17=$pink
         color18=$light_pink
-
-        color=$color1
-        format="$format|\\033[${color}mactually_completed_jobs\\033[0m"
-        number=$(echo "$entry" |awk -F, '{printf("%'"'"'d",$1)}')
-        myOutput="$myOutput|\\033[${color}m$number\\033[0m"
-        color=$color2
-        format="$format|\\033[${color}mnb_jobs\\033[0m"
-        number=$(echo "$entry" |awk -F, '{printf("%'"'"'d",$2)}')
-        myOutput="$myOutput|\\033[${color}m$number\\033[0m"
-        color=$color3
-        format="$format|\\033[${color}mpercent_done\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{print $3}'`\\033[0m"
-        color=$color4
-        format="$format|\\033[${color}mreal_time\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{print $4}'`\\033[0m"
-        color=$color5
-        format="$format|\\033[${color}msim_time\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{print $5}'`\\033[0m"
-        color=$color6
-        format="$format|\\033[${color}mqueue_size\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$6)}'`\\033[0m"
-        color=$color7
-        format="$format|\\033[${color}mschedule_size\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$7)}'`\\033[0m"
-        color=$color8
-        format="$format|\\033[${color}mnb_jobs_running\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$8)}'`\\033[0m"
-        color=$color9
-        format="$format|\\033[${color}mutilization\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{print $9}'`\\033[0m"
-        color=$color10
-        format="$format|\\033[${color}mutilization_without_resv\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{print $10}'`\\033[0m"
-        color=$color11
-        format="$format|\\033[${color}mnode_mem_total\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$11)}'`\\033[0m"
-        color=$color12
-        format="$format|\\033[${color}mnode_mem_available\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$12)}'`\\033[0m"
-        color=$color13
-        format="$format|\\033[${color}mbatsim_USS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$13)}'`\\033[0m"
-        color=$color14
-        format="$format|\\033[${color}mbatsim_PSS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$14)}'`\\033[0m"
-        color=$color15
-        format="$format|\\033[${color}mbatsim_RSS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$15)}'`\\033[0m"
-        color=$color16
-        format="$format|\\033[${color}mbatsched_USS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$16)}'`\\033[0m"
-        color=$color17
-        format="$format|\\033[${color}mbatsched_PSS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$17)}'`\\033[0m"
-        color=$color18
-        format="$format|\\033[${color}mbatsched_RSS\\033[0m"
-        myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, '{printf("%'"'"'d",$18)}'`\\033[0m"
-
+        space=" "
+    if [ $all = true ] || [ $print = false ];then
+        space=""
+        completed_jobs
+        percent_done
+        times
+        schedule_info
+        utilization
+        mem_avail
+        mem_batsim
+        mem_batsched
         echo -e "$myOutput"
     else
 
-        if [ $percent = true ];then
-            color=$dark_purple
-            format="$format|  \\033[${color}mpercent_done\\033[0m"
-            myOutput="$myOutput  |  \\033[${color}m`echo "$entry" |awk -F, '{print $3}'`\\033[0m"
-        fi
+        
         if [ $completed = true ];then
-            color=$light_blue
-            format="$format |  \\033[${color}mactually_completed_jobs\\033[0m"
-            number=$(echo "$entry" |awk -F, '{printf("%'"'"'d",$1)}')
-            myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+            completed_jobs
         fi
-        if [ $queue = true ];then
-            color=$dark_green
-            format="$format  |  \\033[${color}mqueue_size\\033[0m"
-            number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$6)}')
-            myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+        if [ $percent = true ];then
+            percent_done
         fi
-        if [ $schedule = true ];then
-            color=$light_purple
-            format="$format  |  \\033[${color}mschedule_size\\033[0m"
-            number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$7)}')
-            myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+        if [ $timeO = true ];then
+            times
+        fi
+        if [ $scheduleInfo = true ];then
+            schedule_info
+        elif [ $queue = true ];then
+            queue_size
+            if [ $schedule = true ];then
+                schedule_size
+            fi
+        elif [ $schedule = true ];then
+            schedule_size
+        fi
+        if [ $utilization = true ];then
+            utilization
         fi
         if [ $memory != false ];then
-            color1=$dark_teal
-            color2=$teal
-            color3=$light_teal
-            color4=$dark_pink
-            color5=$pink
-            color6=$light_pink
-            color7=$dark_grey
-            color8=$light_grey
+            
+
             case "$memory" in
             "both")
-                format="$format  |  \\033[${color1}mbatsim_USS\\033[0m  |  \\033[${color2}mbatsim_PSS\\033[0m  |  \\033[${color3}mbatsim_RSS\\033[0m  |  \\033[${color4}mbatsched_USS\\033[0m  |  \\033[${color5}mbatsched_PSS\\033[0m  |  \\033[${color6}mbatsched_RSS\\033[0m"
-                color=$color1
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$13)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color2
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$14)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color3
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$15)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color4
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$16)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color5
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$17)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color6
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$18)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+                mem_batsim
+                mem_batsched
                 ;;
             "batsim")
-                format="$format  |  \\033[${color1}mbatsim_USS\\033[0m  |  \\033[${color2}mbatsim_PSS\\033[0m  |  \\033[${color3}mbatsim_RSS\\033[0m"
-                color=$color1
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$13)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color2
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$14)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color3
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$15)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+                mem_batsim                
                 ;;
             "batsched")
-                format="$format  |  \\033[${color4}mbatsched_USS  |  \\033[${color5}mbatsched_PSS\\033[0m  |  \\033[${color6}mbatsched_RSS\\033[0m"
-                color=$color4
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$16)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color5
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$17)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color6
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$18)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+                mem_batsched
                 ;;
             "all")
-                format="$format  |  \\033[${color7}mnode_mem_total\\033[0m  |  \\033[${color8}mnode_mem_available\\033[0m  |  \\033[${color1}mbatsim_USS\\033[0m  |  \\033[${color2}mbatsim_PSS\\033[0m  |  \\033[${color3}mbatsim_RSS\\033[0m  |  \\033[${color4}mbatsched_USS\\033[0m  |  \\033[${color5}mbatsched_PSS\\033[0m  |  \\033[${color6}mbatsched_RSS\\033[0m"
-                color=$color7
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$11)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color8
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$12)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color1
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$13)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color2
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$14)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color3
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$15)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color4
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$16)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color5
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$17)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color6
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$18)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+                mem_avail
+                mem_batsim
+                mem_batsched
                 ;;
             "available")
-                format="$format  |  \\033[${color7}mnode_mem_total  |  \\033[${color8}mnode_mem_available\\033[0m"
-                color=$color7
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$11)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
-                color=$color8
-                number=$(echo "$entry" | awk -F, '{printf("%'"'"'d",$12)}')
-                myOutput="$myOutput  |  \\033[${color}m$number\\033[0m"
+                mem_avail
                 ;;
             esac
         fi
@@ -229,7 +192,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:H --long input:,all,percent,completed,memory:,queue-size,schedule-size,experiment:,job:,id:,run:,before:,head,help -- "$@")
+VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSu --long input:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,before:,head,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -240,12 +203,18 @@ id=false
 run=false
 percent=false
 completed=false
+timeO=false
 memory=false
 queue=false
+scheduleInfo=false
+utilization=false
 schedule=false
 before=1
 all=false
 head=false
+memSize="KiB"
+divideBy=1
+print=false
 
 
 eval set -- "$VALID_ARGS"
@@ -289,31 +258,81 @@ while true; do
     -a | --all)
         echo "a"
         all=true
+        print=true
         shift 1
         ;;
     -p | --percent)
         echo "p"
         percent=true
+        print=true
         shift 1
         ;;
     -c | --completed)
         echo "c"
         completed=true
+        print=true
+        shift 1
+        ;;
+    -t | --time)
+        echo "t"
+        timeO=true
+        print=true
         shift 1
         ;;
     -m | --memory)
         echo "m $2"
+        print=true
         memory="$2"
         shift 2
         ;;
+    -M | --memory-size)
+        echo "M $2"
+        memSize="$2"
+        case $memSize in
+                "KB" | "K")
+                    divideBy=1
+                    memSize="KiB"
+                    ;;
+                "MB" | "M")
+                    divideBy=1024
+                    memSize="MiB"
+                    ;;
+                "GB" | "G")
+                    divideBy=1048576
+                    memSize="GiB"
+                    ;;
+                "TB" | "T")
+                    divideBy=1073741824
+                    memSize="TiB"
+                    ;;
+                "H")
+                    divideBy=-1
+                    ;;
+        esac
+        shift 2
+        ;;
+    -S | --schedule-info)
+        echo "S"
+        print=true
+        scheduleInfo=true
+        shift 1
+        ;;
     -q | --queue-size)
         echo "q"
+        print=true
         queue=true
         shift 1
         ;;
     -s | --schedule-size)
         echo "s"
+        print=true
         schedule=true
+        shift 1
+        ;;
+    -u | --utilization)
+        echo "u"
+        print=true
+        utilization=true
         shift 1
         ;;
     -b | --before)
@@ -340,13 +359,16 @@ cat <<"EOF"
 progress.sh: used to show the progress of all simulations in a folder, or just certain ones, with options for what to show.
 
 Usage:
-    progress.sh -i <folder> [-e <folder>] [-j <array string>] [-d <array string>] [-r <array string>] [-b <int>] [-p] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [--head]
+    progress.sh -i <folder> [-e <folder>] [-j <array string>] [-d <array string>] [-r <array string>] 
+                            [-b <int>] [-H] [-p] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [-M K|M|G|T|H] 
 
 Required Options:
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh
                                    If it has a forward slash '/' in the name it will assume it is an absolute path.
                                    If it does not have a forward slash '/' in the name it will assume it is located in "$prefix/experiments/<input>"
 Optional Options:
+
+Which-Simulation Options:
 
     -e, --experiment <folder>      If you want to focus on just one experiment (in the sense of config files where there was an input and output json for each experiment)
                                    then use this to enter the folder.  The path retrieved will then be ".../<input>/<experiment>/*"
@@ -363,21 +385,34 @@ Optional Options:
     -r, --run                      If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
                                    Basically the same as --job and --id as far as how it works, except we focus on the run(s)
 
+What-Info Options:
+
     -b, --before <int>             The amount of entries, starting from the last one, to include
 
     -H, --head                     Print the first entry in the out_extra_info.csv file first ( possilbe use is to check on how long the sim has been going )
 
-    -a, --all                      Print out all data in the entry
+    -a, --all                      Print out all data in the entry.  Default if nothing else is chosen to print.
 
     -p, --percent                  Include the percentage done that the sim has done
 
-    -c, --completed                Include the amount of ACTUALLY completed jobs and TOTAL jobs in output
+    -c, --completed                Include the amount of ACTUALLY completed jobs and TOTAL jobs
+
+    -t, --time                     Include the real-time and sim-time
     
+    -S, --schedule-info            Include queue-size,schedule-size,nb-jobs-running
+
     -q, --queue-size               Include the queue-size in output
 
     -s, --schedule-size            Include the schedule-size in output
 
+    -u, --utilization              Include utilization and utilization-without-reservations
+
     -m, --memory <string>          Include the memory usage.  Will include the USS,PSS,RSS for "batsim|batsched|both".  Other options are "all|available"
+
+    -M, --memory-size              When displaying memory, what size to display: KB | MB | GB | TB | H.  Single letter is fine too:  K | M | G | T | H
+                                   This will actually be in KiB, MiB, GiB, or TiB
+                                   H signifies you want human-readable units.  This is the largest unit that makes sense for the data.
+                                   [default: KB]
 
     -h, --help                     Display this usage page
 
@@ -475,7 +510,7 @@ for exp in "${experiments[@]}"; do
             fi
             for r in "${runs[@]}";do
                 lines="`tail -n $before "$r/output/expe-out/out_extra_info.csv" 2>/dev/null`"
-                runOutput=`echo $r | sed "s@$input_dir@@g"`
+                runOutput=`echo $r | sed "s@$input_dir/$input_base@@g"`
                 line_count=$(wc -l "$r/output/expe-out/out_extra_info.csv" 2>/dev/null | awk '{print $1}')
                 
                 if ! test -f "$r/output/expe-out/out_extra_info.csv" ;then
