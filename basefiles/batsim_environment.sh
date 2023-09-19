@@ -13,12 +13,32 @@
 # so no sims are overlapping with socket numbers
 #############################################################################
 
+
+
+
+#export prefix=?
+
+#export SBATCH_PARTITION=standard
+#export SBATCH_QOS=standard
+#export SBATCH_NO_REQUEUE="yes"
+
+export basefiles_prefix=$prefix/basefiles
+export install_prefix=$prefix/Install
+export downloads_prefix=$prefix/Downloads
+export python_prefix=$prefix/python_env
+
+export PATH=$PATH:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$install_prefix/bin:/usr/bin:/usr/sbin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
+export LMOD_SH_DBG_ON=1
+source $python_prefix/bin/activate
+
+
 # batFile can be invoked after sourcing this file
 # it will help you choose a config file in your $prefix/configs and set it to file1
 # as well as help with setting folder1
-
 batFile()
 {   
+    bind '"\ey":history-search-backward'
     if [[ $1 == "-h" ]];then
         cat <<"EOF"
                 batFile             batFile can be invoked after sourcing this file
@@ -32,6 +52,10 @@ batFile()
                                     Just pass the ls options you normally want to use to batFile and you should be fine.
                                     I suggest using batFile like so:
                                     batFile -ltr
+            ----------------------------------------------------------------------------------------------------------------
+            post-running            After running this script you will see the start of a myBatchTasks.sh command
+                                    Press Alt+ y at the end of that line to get the last arguments passed to myBatchTasks.sh
+                                    Tweak them as necessary
 EOF
     
     else
@@ -49,23 +73,8 @@ EOF
         folder1=$REPLY
         echo "file1   = $file1"
         printf "\\033[48;5;23;38;5;16;1mNow complete your myBatchTasks command\\033[0m\n"
-        bind '"\e[0n":"myBatchTasks.sh -f ${file1} -o ${folder1} "';printf "\e[5n"
+        bind '"\e[0n":"myBatchTasks.sh -f ${file1} -o ${folder1}"';printf "\e[5n"
     fi
 
 }
-#export prefix=?
-
-#export SBATCH_PARTITION=standard
-#export SBATCH_QOS=standard
-#export SBATCH_NO_REQUEUE="yes"
-
-export basefiles_prefix=$prefix/basefiles
-export install_prefix=$prefix/Install
-export downloads_prefix=$prefix/Downloads
-export python_prefix=$prefix/python_env
-
-export PATH=$PATH:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$install_prefix/bin:/usr/bin:/usr/sbin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
-export LMOD_SH_DBG_ON=1
-source $python_prefix/bin/activate
 
