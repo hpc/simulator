@@ -13,6 +13,46 @@
 # so no sims are overlapping with socket numbers
 #############################################################################
 
+# batFile can be invoked after sourcing this file
+# it will help you choose a config file in your $prefix/configs and set it to file1
+# as well as help with setting folder1
+
+batFile()
+{   
+    if [[ $1 == "-h" ]];then
+        cat <<"EOF"
+                batFile             batFile can be invoked after sourcing this file
+                                    It will help you choose a config file in your $prefix/configs and set it to file1
+                                    It will also help with setting folder1
+        Usage:
+            batFile [ls options]
+
+            -[ls options]           Normally 'ls' is invoked to read your $prefix/configs folder without any options.
+                                    You may find it helpful to use options to 'ls' such as: sort by time, reverse etc...
+                                    Just pass the ls options you normally want to use to batFile and you should be fine.
+                                    I suggest using batFile like so:
+                                    batFile -ltr
+EOF
+    
+    else
+
+        ls $@ "$prefix/configs" | nl
+        files="`ls $@ "$prefix/configs" | nl`"
+        IFS=$'\n' read -d '' -ra filesArray <<< "$files"
+        printf "\\033[48;5;23;38;5;16;1mEnter a choice:\\033[0m "
+        read choice
+        choice=`echo $choice | awk '{num=$1-1;print num}'`
+        file1="${filesArray[$choice]}"
+        file1="`echo "$file1" | awk '{print $NF}'`"
+        printf "\\033[48;5;23;38;5;16;1mEnter your folder1 name:\\033[0m \n"
+        read -er -i "${file1%.config}" -p "folder1 = "
+        folder1=$REPLY
+        echo "file1   = $file1"
+        printf "\\033[48;5;23;38;5;16;1mNow complete your myBatchTasks command\\033[0m\n"
+        bind '"\e[0n":"myBatchTasks.sh -f ${file1} -o ${folder1} "';printf "\e[5n"
+    fi
+
+}
 #export prefix=?
 
 #export SBATCH_PARTITION=standard

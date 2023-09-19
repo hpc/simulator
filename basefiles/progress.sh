@@ -192,7 +192,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSu --long input:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,before:,head,help -- "$@")
+VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSuUFT:h --long input:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -201,6 +201,9 @@ experiment=false
 job=false
 id=false
 run=false
+finished=false
+unfinished=false
+threshold=(false 0)
 percent=false
 completed=false
 timeO=false
@@ -215,6 +218,7 @@ head=false
 memSize="KiB"
 divideBy=1
 print=false
+
 
 
 eval set -- "$VALID_ARGS"
@@ -253,6 +257,21 @@ while true; do
     -r | --run)
         echo "r $2"
         run="$2"
+        shift 2
+        ;;
+    -F | --finished-sims)
+        echo "F"
+        finished=true
+        shift 1
+        ;;
+    -U | --unfinished-sims)
+        echo "U"
+        unfinished=true
+        shift 1
+        ;;
+    -T | --threshold)
+        echo "T $2"
+        read -ra threshold <<<"$2"
         shift 2
         ;;
     -a | --all)
@@ -382,8 +401,16 @@ Which-Simulation Options:
     -d, --id <array string>        If you want to focus on just one id (in the sense of folders named id_#) then use this to enter the folder number.
                                    Basically the same as --job as far as how it works, except we focus on the id(s)
 
-    -r, --run                      If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
+    -r, --run <array string>       If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
                                    Basically the same as --job and --id as far as how it works, except we focus on the run(s)
+
+    -F, --finished-sims            Only include sims that have percent_done = 100.0  (due to rounding may get false positives)
+
+    -U, --unfinished-sims          Only include sims that have percent_done < 100.0  (should be ok as far as rounding etc... )
+
+    -T, --threshold <string>       Only include sims that are above or below a threshold
+                                   format of string: "(+|-) <threshold float>"
+                                   Can use in conjunction with -U or -F
 
 What-Info Options:
 
@@ -409,7 +436,7 @@ What-Info Options:
 
     -m, --memory <string>          Include the memory usage.  Will include the USS,PSS,RSS for "batsim|batsched|both".  Other options are "all|available"
 
-    -M, --memory-size              When displaying memory, what size to display: KB | MB | GB | TB | H.  Single letter is fine too:  K | M | G | T | H
+    -M, --memory-size <string>     When displaying memory, what size to display: KB | MB | GB | TB | H.  Single letter is fine too:  K | M | G | T | H
                                    This will actually be in KiB, MiB, GiB, or TiB
                                    H signifies you want human-readable units.  This is the largest unit that makes sense for the data.
                                    [default: KB]
@@ -417,6 +444,7 @@ What-Info Options:
     -h, --help                     Display this usage page
 
 EOF
+exit
 fi
 black="48;5;16"
 gold="48;5;94"
@@ -444,6 +472,7 @@ dark_yellow="48;5;100"
 dark_pink="48;5;162"
 pink="48;5;165"
 light_pink="48;5;132"
+endingFormat="false"
 
 
 
@@ -454,7 +483,9 @@ else
     experiments=("$input/$experiment")
 fi
 
-for exp in "${experiments[@]}"; do
+for exp in "${experiments[@]}";do
+   expOutput="`echo "$exp" | sed "s@$input_dir@@g"`"
+   printf "\e[2K  searching: ...$exp\r"
    jobs=()
     if [ "$job" = false ];then
         folders="$(find "$exp"/* -maxdepth 0 -type d)"
@@ -530,6 +561,31 @@ for exp in "${experiments[@]}"; do
                     myHead="`head -n 2 "$r/output/expe-out/out_extra_info.csv" | tail -n 1 `"
                     entries=("$myHead" "${entries[@]}")
                 fi
+                if [ ${threshold[0]} != false ];then
+                    lastEntry=$(( ${#entries[@]} - 1 ))
+                    if [[ ${threshold[0]} == "+" ]];then
+                        result=$(echo "${entries[$lastEntry]}" | awk -F, -v thresh=${threshold[1]} '{print ($3>thresh) ? 0 : 1}')
+                    elif [[ ${threshold[0]} == "-" ]];then
+                        result=$(echo "${entries[$lastEntry]}" | awk -F, -v thresh=${threshold[1]} '{print ($3<thresh) ? 0 : 1}')
+                    fi
+                    if [ $result -eq 1 ];then
+                        continue
+                    fi
+                fi
+                if [ $finished = true ];then
+                    lastEntry=$(( ${#entries[@]} - 1 )) 
+                    result=$(echo "${entries[$lastEntry]}" | awk -F, '{print ($3==100.00) ? 0 : 1}')
+                    if [ $result -eq 1 ];then
+                        continue
+                    fi
+                elif [ $unfinished = true ];then
+                    lastEntry=$(( ${#entries[@]} - 1 )) 
+                    result=$(echo "${entries[$lastEntry]}" | awk -F, '{print ($3<100.00) ? 0 : 1}')
+                    if [ $result -eq 1 ];then
+                        continue
+                    fi
+                fi
+                printf "\e[2K"
                 if [ ${#entries[@]} -gt 1 ];then
                         echo "$myOutput"
                 fi
@@ -541,6 +597,9 @@ for exp in "${experiments[@]}"; do
                         format=""
                     fi
                     print_output
+                    if [[ "$endingFormat" == "false" ]];then
+                        endingFormat="$format"
+                    fi
 
                         
                 done
@@ -548,4 +607,4 @@ for exp in "${experiments[@]}"; do
         done
     done
 done
-echo -e "\nFormat: $format"
+echo -e "\nFormat: $endingFormat"
