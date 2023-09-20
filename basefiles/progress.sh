@@ -218,14 +218,14 @@ head=false
 memSize="KiB"
 divideBy=1
 print=false
-
+options=""
 
 
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
     -i | --input)
-        echo "i $2"
+        options="$options, i $2"
         myString="$2"
         grep "/" <<<"$myString" > /dev/null
         if [ $? -eq 0 ];then
@@ -240,72 +240,72 @@ while true; do
         shift 2
         ;;
      -e | --experiment)
-        echo "e $2"
+        options="$options, e $2"
         experiment="$2"
         shift 2
         ;;
     -j | --job)
-        echo "j $2"
+        options="$options, j $2"
         job="$2"
         shift 2
         ;;
     -d | --id)
-        echo "id $2"
+        options="$options, id $2"
         id="$2"
         shift 2
         ;;
     -r | --run)
-        echo "r $2"
+        options="$options, r $2"
         run="$2"
         shift 2
         ;;
     -F | --finished-sims)
-        echo "F"
+        options="$options, F"
         finished=true
         shift 1
         ;;
     -U | --unfinished-sims)
-        echo "U"
+        options="$options, U"
         unfinished=true
         shift 1
         ;;
     -T | --threshold)
-        echo "T $2"
+        options="$options, T $2"
         read -ra threshold <<<"$2"
         shift 2
         ;;
     -a | --all)
-        echo "a"
+        options="$options, a"
         all=true
         print=true
         shift 1
         ;;
     -p | --percent)
-        echo "p"
+        options="$options, p"
         percent=true
         print=true
         shift 1
         ;;
     -c | --completed)
-        echo "c"
+        options="$options, c"
         completed=true
         print=true
         shift 1
         ;;
     -t | --time)
-        echo "t"
+        options="$options, t"
         timeO=true
         print=true
         shift 1
         ;;
     -m | --memory)
-        echo "m $2"
+        options="$options, m $2"
         print=true
         memory="$2"
         shift 2
         ;;
     -M | --memory-size)
-        echo "M $2"
+        options="$options, M $2"
         memSize="$2"
         case $memSize in
                 "KB" | "K")
@@ -331,36 +331,36 @@ while true; do
         shift 2
         ;;
     -S | --schedule-info)
-        echo "S"
+        options="$options, S"
         print=true
         scheduleInfo=true
         shift 1
         ;;
     -q | --queue-size)
-        echo "q"
+        options="$options, q"
         print=true
         queue=true
         shift 1
         ;;
     -s | --schedule-size)
-        echo "s"
+        options="$options, s"
         print=true
         schedule=true
         shift 1
         ;;
     -u | --utilization)
-        echo "u"
+        options="$options, u"
         print=true
         utilization=true
         shift 1
         ;;
     -b | --before)
-        echo "b $2"
+        options="$options, b $2"
         before=$2
         shift 2
         ;;
     -H | --head)
-        echo "head"
+        options="$options, head"
         head=true
         shift 1
         ;;
@@ -391,6 +391,10 @@ Which-Simulation Options:
 
     -e, --experiment <folder>      If you want to focus on just one experiment (in the sense of config files where there was an input and output json for each experiment)
                                    then use this to enter the folder.  The path retrieved will then be ".../<input>/<experiment>/*"
+                                   <folder> can include wildcard (*) characters as well. For instance...
+                                        progress.sh -i ${folder1} -e "*shuffled*"
+                                        if you were going to shuffle some experiments and named those experiments with 'shuffled' in the name,
+                                        then this would get you all the experiments with the word 'shuffled' in it.
     
     -j, --job <array string>       If you want to focus on just one job (in the sense of folders named experiment_#) then use this to enter the folder number.
                                    If used with --experiment then it will retrieve paths ".../<input>/<experiment>/experiment_<job>/*
@@ -404,13 +408,12 @@ Which-Simulation Options:
     -r, --run <array string>       If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
                                    Basically the same as --job and --id as far as how it works, except we focus on the run(s)
 
-    -F, --finished-sims            Only include sims that have percent_done = 100.0  (due to rounding may get false positives)
+    -F, --finished-sims            Only include sims that have percent_done = 100.0  (due to rounding may get false positives. You are advised to look at completed jobs)
 
-    -U, --unfinished-sims          Only include sims that have percent_done < 100.0  (should be ok as far as rounding etc... )
+    -U, --unfinished-sims          Only include sims that have percent_done < 100.0  (due to rounding may get false negatives.)
 
-    -T, --threshold <string>       Only include sims that are above or below a threshold
+    -T, --threshold <string>       Only include sims that are above or below a threshold for percent_done
                                    format of string: "(+|-) <threshold float>"
-                                   Can use in conjunction with -U or -F
 
 What-Info Options:
 
@@ -446,6 +449,7 @@ What-Info Options:
 EOF
 exit
 fi
+echo "$options"
 black="48;5;16"
 gold="48;5;94"
 dark_grey="48;5;235"
@@ -480,14 +484,17 @@ if [ "$experiment" = false ];then
     folders="$(find "$input"/* -maxdepth 0 -type d)"
     IFS=$'\n' read -d '' -ra experiments <<< "$folders"
 else
-    experiments=("$input/$experiment")
+    folders="$(find "$input"  -maxdepth 1 -type d -name "$experiment")"
+    IFS=$'\n' read -d '' -ra experiments <<< "$folders"
 fi
-
+count=0
 for exp in "${experiments[@]}";do
+   count=$(( $count + 1 ))
    expOutput="`echo "$exp" | sed "s@$input_dir@@g"`"
-   printf "\e[2K  searching: ...$exp\r"
+   printf "\e[2K  searching: ...$exp{$count/${#experiments[@]}}\r"
    jobs=()
     if [ "$job" = false ];then
+        
         folders="$(find "$exp"/* -maxdepth 0 -type d)"
         IFS=$'\n' read -d '' -ra jobs <<< "$folders"
     else
@@ -607,4 +614,5 @@ for exp in "${experiments[@]}";do
         done
     done
 done
+printf "\e[2K"
 echo -e "\nFormat: $endingFormat"

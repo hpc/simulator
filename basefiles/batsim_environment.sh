@@ -41,7 +41,7 @@ batFile()
     bind '"\ey":history-search-backward'
     if [[ $1 == "-h" ]];then
         cat <<"EOF"
-                batFile             batFile can be invoked after sourcing this file
+        batFile                     batFile can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
                                     It will help you choose a config file in your $prefix/configs and set it to file1
                                     It will also help with setting folder1
         Usage:
@@ -49,10 +49,10 @@ batFile()
 
             -[ls options]           Normally 'ls' is invoked to read your $prefix/configs folder without any options.
                                     You may find it helpful to use options to 'ls' such as: sort by time, reverse etc...
-                                    Just pass the ls options you normally want to use to batFile and you should be fine.
+                                    Just pass the ls options you would normally want to use to batFile and you should be fine.
                                     I suggest using batFile like so:
                                     batFile -ltr
-            ----------------------------------------------------------------------------------------------------------------
+            ------------------------------------------------------------------------------------------------------------------
             post-running            After running this script you will see the start of a myBatchTasks.sh command
                                     Press Alt+ y at the end of that line to get the last arguments passed to myBatchTasks.sh
                                     Tweak them as necessary
