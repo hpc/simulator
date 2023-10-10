@@ -5,6 +5,7 @@ Usage:
 Required Option:
     --input FILE     The file to strip
     --output FILE    The file to output
+                     'STDOUT' will simply output to screen.
 """
 
 def stripComments(myString,kind="C"):
@@ -51,7 +52,10 @@ if __name__ == '__main__':
     outputFile=args["--output"]
     myString = loadFile(inputFile)
     myString = stripComments(myString)
-    #saveFile(outputFile,myString)
+    if outputFile == "STDOUT":
+        print(myString)
+    else:
+        saveFile(outputFile,myString)
 
 
 

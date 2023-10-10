@@ -1,7 +1,7 @@
 """
 Usage:
     generate_config_docker.py --config-info <type>
-    generate_config_docker.py -i FILE -o PATH [--basefiles PATH] [--output-config] [--increase-heldback-nodes]
+    generate_config_docker.py -i FILE -o PATH [--basefiles PATH] [--output-config] [--increase-heldback-nodes] [--start-from-checkpoint <INT>]
 
 Required Options 1:
     --config-info <type>                Display how the json config is supposed to look like
@@ -13,7 +13,7 @@ Required Options 1:
                                                 input-options | output
 Required Options 2:
     -i <FILE> --input <FILE>            Where our config lives
-    -o <PATH> --output <PATH>           Where to start outputing stuff
+    -o <PATH> --output <PATH>           Where to start outputting stuff
                                         
 Options:
     --basefiles <PATH>                  Where base files go.  Make sure you have a 'workloads' and 'platforms' folder
@@ -24,6 +24,10 @@ Options:
                                         as --input filename
 
     --increase-heldback-nodes           If this flag is included, will treat heldback nodes as additional nodes
+
+    --start-from-checkpoint <INT>       Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
+                                        Typically '1', the latest. -1 means to not to start from a checkpoint...the default.
+                                        [default: -1]
 
 """
 
@@ -41,6 +45,7 @@ import sweeps
 from copy import deepcopy
 import re
 import stripJsonComments
+import start_from_checkpoint
 import functions
 
 #we need these to be global variables
@@ -480,7 +485,12 @@ if args["--config-info"]:
 ###########################################################################################################
 profile_type=""
 base = args["--output"].rstrip('/')
-os.makedirs(base)
+startFromCheckpoint = int(args["--start-from-checkpoint"])
+if startFromCheckpoint != -1:
+    start_from_checkpoint.changeInputFiles(startFromCheckpoint,base)
+    exit
+    
+os.makedirs(base,exist_ok=True)
 basefiles= os.path.expanduser(str(os.path.dirname(os.path.abspath(__file__)))).rstrip("/") if args["--basefiles"] == "False" else os.path.expanduser(str(args["--basefiles"]).rstrip("/"))
 
 myString = stripJsonComments.loadFile(args["--input"])
@@ -581,8 +591,6 @@ for experiment in experiments:
                                 else:
                                     resv_start_strings[count+runs_before] = f"{resv_start_strings[count+runs_before]} , {order_num}:+{seconds}"
                                     count+=1
-
-                
     # each i is a key in the "input" section of experiment.config for the given "experiment"
     # could be a sweep or workload or just some property
     for i in configInputKeys:
@@ -622,7 +630,7 @@ for experiment in experiments:
                 resv=deepcopy(config[experiment]["input"]["reservations-%s"%resvName])
                 resv=json.dumps(resv)
                 
-            
+        
             #here we create our platform and workload and get back the location
             #of both of the files and put them into ourInput config
             #here exp is iterating through the experiments of one input in our config, whereas the outer loop - experiments - is iterating over "input"s in our config
@@ -668,8 +676,8 @@ for experiment in experiments:
             #added for avg-makespan and pass-fail, and reservations-start. loops to create a folder for each Run
             for number in range(1,numberOfEach+1,1):
                 run="/Run_"+str(number)
-                os.makedirs(new_base + run + "/input")
-                os.makedirs(new_base + run + "/output")
+                os.makedirs(new_base + run + "/input",exist_ok=True)
+                os.makedirs(new_base + run + "/output",exist_ok=True)
                 path=pathlib.Path(__file__).parent.absolute()
 
                 #add in reservations-start

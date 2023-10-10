@@ -209,9 +209,9 @@ if [ $FORMAT = 'bare-metal' ];then
 
             *********************************************
 
-            You will want to add this to your basefiles/batsim_environment.sh file:
+            You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need
+            At a bare minimum set prefix=? to the correct prefix. This is probably going to be your simulator folder.
 EOF
-            printf "\n\n%s\n\n" "export prefix=$prefix"
         fi
 
 
@@ -317,6 +317,7 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $UNPACK = true ];then
 
 You may want to run some tests using .../basefiles/tests/charliecloud/tests.sh
 You will want to add anything relevant to .../basefiles/batsim_environment.sh  as well
+At a bare minimum set prefix=? to the correct prefix. This is probably going to be your simulator folder.
 EOF
 exit 0
 fi
@@ -376,6 +377,7 @@ mv ./charliecloud ../
 
 You may want to run some tests using .../basefiles/tests/charliecloud/tests.sh
 You will want to add anything relevant to .../basefiles/batsim_environment.sh  as well
+At a bare minimum set prefix=? to the correct prefix. This is probably going to be your 'simulator' folder.
 EOF
 exit 0
 fi
@@ -393,6 +395,8 @@ cat <<EOF
 *****************************************
 
 You may want to run some tests using /home/sim/simulator/basefiles/tests/docker/tests.sh
+You will want to add anything relevant to .../basefiles/batsim_environment.sh as well
+At a bare minimum set prefix=? to the correct prefix. This is probably going to be your /home/sim/simulator folder.
 EOF
 exit 0
 fi

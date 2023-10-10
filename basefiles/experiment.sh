@@ -1,4 +1,5 @@
 #!/bin/bash
+
 date
 echo "in experiment.sh"
 hostname
@@ -25,7 +26,8 @@ case $parallelMode in
                 for i in `seq 0 1 $(( $srunCount - 1 ))`;do
                     echo "real_start.py" && date
                     outputPath=`echo "${jobPathA[$i]}" | sed "s@:PATH:@@g"`
-                    srun --ntasks=1 -c 1 --output ${outputPath}/output/slurm-%j.out --job-name="${folder}_${experimentA[$i]}_${jobA[$i]}j_${idA[$i]}i_${runA[$i]}r" --export=USER=$USER,basefiles=$basefiles,jobPath=${jobPathA[$i]},socketCount=${socketCountA[$i]},mySimTime=$mySimTime experiment.sh "sbatch" "$method" &
+                    srun --ntasks=1 -c 1 --output ${outputPath}/output/slurm-%j.out --job-name="${folder}_${experimentA[$i]}_${jobA[$i]}j_${idA[$i]}i_${runA[$i]}r" \
+                    USER=$USER python3 $basefiles/real_start.py --path ${jobPathA[$i]} --method "sbatch" --socketCount ${socketCountA[$i]} --sim-time $mySimTime &
                 done
                 wait
                 ;;

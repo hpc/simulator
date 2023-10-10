@@ -449,7 +449,7 @@ What-Info Options:
 EOF
 exit
 fi
-echo "$options"
+echo "options: $options"
 black="48;5;16"
 gold="48;5;94"
 dark_grey="48;5;235"

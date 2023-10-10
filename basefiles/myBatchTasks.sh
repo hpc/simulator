@@ -6,7 +6,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -21,6 +21,7 @@ P_METHOD='tasks'
 FOLDER1_ABS=false
 FILE1_ABS=false
 PERMISSIONS=false
+START_FROM_CHECKPOINT=false
 
 eval set -- "$VALID_ARGS"
 while true; do
@@ -92,9 +93,13 @@ while true; do
         WALLCLOCK="--time $2"
         shift 2
         ;;
-    --permissions)
+    -P | --permissions)
         echo "perm: $2"
         PERMISSIONS="$2"
+        shift 2
+        ;;
+    -S | --start-from-checkpoint)
+        START_FROM_CHECKPOINT=$2
         shift 2
         ;;
     -h | --help)
@@ -122,63 +127,68 @@ if [ $FILE1 = false ] || [ $FOLDER1 = false ] ||  \
                             NOTE: make sure $prefix is set to the folder that houses basefiles, charliecloud, batsim_ch, python_env, experiments, and configs
 
 Usage:
-    myBatchTasks.sh -f <STR> -o <STR> (-p sbatch [-c <INT>] | -p tasks -t <INT> )[-m <STR>] [-s <INT>] [-w <STR>][--permissions <STR>]
+    myBatchTasks.sh -f <STR> -o <STR> (-p sbatch [-c <INT>] | -p tasks -t <INT> )[-m <STR>] [-s <INT>] [-w <STR>][--permissions <STR>][--start-from-checkpoint <INT>]
 
 Required Options:
 
-    -f, --file <STR>                The config file.  Just the file name, the folder of where that file is
-                                    is worked out from $PREFIX being set and default locations within
+    -f, --file <STR>                    The config file.  Just the file name, the folder of where that file is
+                                        is worked out from $PREFIX being set and default locations within
 
-    -o, --folder  <STR>             Where to output all the results of the simulations.  Just the folder name of where
-                                    to put stuff within the default locations ( $PREFIX/experiments/<folder_name>)
+    -o, --folder  <STR>                 Where to output all the results of the simulations.  Just the folder name of where
+                                        to put stuff within the default locations ( $PREFIX/experiments/<folder_name>)
 
-    -t, --tasks-per-node <INT>      How many tasks to put on each node
-                                    Only used with --parallel-method 'tasks' and 'background'
-                                    and mandatory with these parallel-methods
+    -t, --tasks-per-node <INT>          How many tasks to put on each node
+                                        Only used with --parallel-method 'tasks' and 'background'
+                                        and mandatory with these parallel-methods
 
 Optional Options:
-    -a, --add-to-sbatch <STR>       Commands to add to sbatch, in the form:
-                                    long:
-                                        -a "--option_s value --option_t value --option_u --option"
-                                    short/mixed:
-                                        --add-to-sbatch "-s value -t value -u --option"
+    -a, --add-to-sbatch <STR>           Commands to add to sbatch, in the form:
+                                        long:
+                                            -a "--option_s value --option_t value --option_u --option"
+                                        short/mixed:
+                                            --add-to-sbatch "-s value -t value -u --option"
 
-    -c, --cores-per-node <INT>      How many cores to use for each sbatch
-                                    Only used with --parallel-method 'sbatch'
-                                    Not mandatory
+    -c, --cores-per-node <INT>          How many cores to use for each sbatch
+                                        Only used with --parallel-method 'sbatch'
+                                        Not mandatory
 
-    -m, --method <STR>              What method to run batsim:
-                                    'bare-metal' | 'docker' | 'charliecloud'
-                                    [default: 'charliecloud']
+    -m, --method <STR>                  What method to run batsim:
+                                        'bare-metal' | 'docker' | 'charliecloud'
+                                        [default: 'charliecloud']
 
-    -p, --parallel-method <STR>     What method to spawn multiple batsims:
-                                    'sbatch' | 'tasks' | 'none' | 'background'
-                                    sbatch: individual sbatch commands for each sim
-                                    tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
-                                    none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
-                                    background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
-                                    [default: 'tasks']
+    -p, --parallel-method <STR>         What method to spawn multiple batsims:
+                                        'sbatch' | 'tasks' | 'none' | 'background'
+                                        sbatch: individual sbatch commands for each sim
+                                        tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
+                                        none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
+                                        background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
+                                        [default: 'tasks']
 
-    -s, --socket-start <INT>        What socket number to start at. You must do your own housekeeping of sockets.  If you already
-                                    have 100 sims going and you started at 10,000, then you will want to do your next set of sims at 10,100 for example
-                                    You can use higher numbers.  I've used numbers up to 300,000
-                                    [default: 10000]
+    -s, --socket-start <INT>            What socket number to start at. You must do your own housekeeping of sockets.  If you already
+                                        have 100 sims going and you started at 10,000, then you will want to do your next set of sims at 10,100 for example
+                                        You can use higher numbers.  I've used numbers up to 300,000
+                                        [default: 10000]
 
-    -w, --wallclock-limit <STR>     How long your jobs will take as reported to SLURM
-                                    Will leave it up to slurm if not chosen.  Sometimes SLURM will set it for UNLIMITED
-                                    STR is in format:
-                                    "minutes", "minutes:seconds", "hours:minutes:seconds", 
-                                    "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
-                                    ex: '48' , '48:30', '2:48:30'  ==   48 minutes, 48.5 minutes, 2hours 48.5 minutes
-                                        '3-0' , '3-12:0', '3-12:30:0' ==  3days, 3days 12 hours, 3 days 12.5 hours
+    -w, --wallclock-limit <STR>         How long your jobs will take as reported to SLURM
+                                        Will leave it up to slurm if not chosen.  Sometimes SLURM will set it for UNLIMITED
+                                        STR is in format:
+                                        "minutes", "minutes:seconds", "hours:minutes:seconds", 
+                                        "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
+                                        ex: '48' , '48:30', '2:48:30'  ==   48 minutes, 48.5 minutes, 2hours 48.5 minutes
+                                            '3-0' , '3-12:0', '3-12:30:0' ==  3days, 3days 12 hours, 3 days 12.5 hours
                                         
-    --permissions <STR>             permissions to give files/folders after generate_config.py is run but before run-experiments.py is run.
-                                    It is still suggested to use SLURM_UMASK in batsim_environment.sh for files made during the simulations.
-                                    STR = The octal numbers for the permissions
-                                    ex: '--permissions 777' = rwxrwxrwx
-                                        '--permissions 750' = rwxr-x---
-                                        '--permissions 755' = rwxr-xr-x
-    -h, --help                      Display this usage page
+    -P, --permissions <STR>             permissions to give files/folders after generate_config.py is run but before run-experiments.py is run.
+                                        It is still suggested to use SLURM_UMASK in batsim_environment.sh for files made during the simulations.
+                                        STR = The octal numbers for the permissions
+                                        ex: '--permissions 777' = rwxrwxrwx
+                                            '--permissions 750' = rwxr-x---
+                                            '--permissions 755' = rwxr-xr-
+
+    -S, --start-from-checkpoint <INT>   Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
+                                        Typically '1', the latest
+                                        [default: false]
+
+    -h, --help                          Display this usage page
 
 EOF
 exit 1
@@ -188,7 +198,8 @@ date
 
 #first check file
 echo -e "\n\n *********************  Checking JSON config file  *********************\n"
-cat $FILE1 | python3 -m json.tool 1>/dev/null
+
+python3 $MY_PATH/stripJsonComments.py --input $FILE1 --output STDOUT | python3 -m json.tool 1>/dev/null
 if [ $? -eq 1 ];then
     echo -e "\n!!!!!!!!!!!!!!!!!!!!!  ERROR with Json File.  See message above  !!!!!!!!!!!!!!!!!!!!!\n"
     exit
@@ -201,10 +212,18 @@ if [ $P_METHOD = 'tasks' ];then
     case $METHOD in
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
-            $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            if [ $START_FROM_CHECKPOINT != false ];then
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+            else
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            fi
             ;;
         'bare-metal')
-            python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            if [ $START_FROM_CHECKPOINT != false ];then
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+            else
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            fi
             ;;
         'docker')
             echo "parallel-method 'tasks' is not valid with method 'docker'"
@@ -222,10 +241,18 @@ elif [ $P_METHOD = 'sbatch' ];then
     case $METHOD in
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
-            $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            if [ $START_FROM_CHECKPOINT != false ];then
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+            else
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            fi
             ;;
         'bare-metal')
-            python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            if [ $START_FROM_CHECKPOINT != false ];then
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+            else    
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            fi
             ;;
         'docker')
             echo " parallel-method 'sbatch' is not valid with method 'docker' "
@@ -243,14 +270,26 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     case $METHOD in
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
-            $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            if [ $START_FROM_CHECKPOINT != false ];then
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+            else
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+            fi
             ;;
         'bare-metal')
-            python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            if [ $START_FROM_CHECKPOINT != false ];then
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+            else
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            fi
             ;;
         'docker')
             prefix=/home/sim/simulator
-            python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            if [ $START_FROM_CHECKPOINT != false ];then
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+            else
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+            fi
             ;;
     esac
     if [ $PERMISSIONS != false ];then

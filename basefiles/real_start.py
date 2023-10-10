@@ -97,6 +97,9 @@ submitTimeAfter=str(InConfig['submission-time-after']) if dictHasKey(InConfig,'s
 submitTimeBefore=str(InConfig['submission-time-before']) if dictHasKey(InConfig,'submission-time-before') else False
 copyWorkload = str(InConfig['copy']) if dictHasKey(InConfig,'copy') else False
 disableDynamic = bool(InConfig['disable-dynamic-jobs']) if dictHasKey(InConfig,'disable-dynamic-jobs') else False
+startFromCheckpoint = int(InConfig['start-from-checkpoint']) if dictHasKey(InConfig,'start-from-checkpoint') else False
+checkpointSignal = int(InConfig["checkpoint-batsim-signal"]) if dictHasKey(InConfig,"checkpoint-batsim-signal") else False
+checkpointKeep = int(InConfig["checkpoint-batsim-keep"]) if dictHasKey(InConfig,"checkpoint-batsim-keep") else False
 
 
 if batschedPolicy == "conservative_bf":
@@ -104,6 +107,16 @@ if batschedPolicy == "conservative_bf":
 workloadPath = ""
 profileType = ""
 speed = ""
+if not type(syntheticWorkload) == bool:
+    workloadPath = syntheticWorkload["workloadFile"] if dictHasKey(syntheticWorkload,'workloadFile') else False
+    profileType = syntheticWorkload["profileType"] if dictHasKey(syntheticWorkload,'profileType') else False
+    speed = syntheticWorkload["speed"] if dictHasKey(syntheticWorkload,'speed') else False
+    
+elif not type(grizzlyWorkload) == bool:
+    workloadPath = grizzlyWorkload["workloadFile"] if dictHasKey(grizzlyWorkload,'workloadFile') else False
+    profileType = grizzlyWorkload["profileType"] if dictHasKey(grizzlyWorkload,'profileType') else False
+    speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
+
 
 
    
@@ -126,28 +139,13 @@ if not batschedLog == "--verbosity quiet":
         batschedLog = "--verbosity debug"
     else:
         batschedLog = "--verbosity quiet"
-if not type(syntheticWorkload) == bool:
-    workloadPath = syntheticWorkload["workloadFile"] if dictHasKey(syntheticWorkload,'workloadFile') else False
-    profileType = syntheticWorkload["profileType"] if dictHasKey(syntheticWorkload,'profileType') else False
-    speed = syntheticWorkload["speed"] if dictHasKey(syntheticWorkload,'speed') else False
-    if type(workloadPath) == bool:
-        workloadPath = createSyntheticWorkload(syntheticWorkload,path,scriptPath,nodes)
-elif not type(grizzlyWorkload) == bool:
-    workloadPath = grizzlyWorkload["workloadFile"] if dictHasKey(grizzlyWorkload,'workloadFile') else False
-    profileType = grizzlyWorkload["profileType"] if dictHasKey(grizzlyWorkload,'profileType') else False
-    speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
-    if type(workloadPath) == bool:
-        workloadPath = createGrizzlyWorkload(grizzlyWorkload,path,scriptPath,nodes)
-if type(platformPath) == bool:
-    platformPath = createPlatform(path,nodes,cores,speeds)
 
-#source_nix="source /home/sim/.nix-profile/etc/profile.d/nix.sh"
 batsimCMD="-s tcp://localhost:{socketCount}".format(socketCount=socketCount)
 if method == "charliecloud":
     batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=chPath+"/output")
 else:
     batsimCMD+=" -p {platformPath} -w {workloadPath} -e {output}/expe-out/out".format(platformPath=platformPath, workloadPath=workloadPath,output=path+"/output")
-#if not (batschedPolicy == "conservative_bf"):
+
 batsimCMD+=" --disable-schedule-tracing --disable-machine-state-tracing {batsimLog}".format(batsimLog=batsimLog)
 if not disableDynamic:
     batsimCMD+=" --enable-dynamic-jobs --acknowledge-dynamic-jobs"
@@ -193,6 +191,12 @@ if (not type(MTTR) == bool) and (MTTR > 0) :
     batsimCMD+=" --MTTR {MTTR}".format(MTTR=MTTR)
 if checkpoint_batsim_interval:
     batsimCMD+=f" --checkpoint-batsim-interval {checkpoint_batsim_interval}"
+if startFromCheckpoint:
+    batsimCMD+=f" --start-from-checkpoint {startFromCheckpoint}"
+if checkpointSignal:
+    batsimCMD+=f" --checkpoint-batsim-signal {checkpointSignal}"
+if checkpointKeep:
+    batsimCMD+=f" --checkpoint-batsim-keep {checkpointKeep}"
 if copyWorkload:
     batsimCMD+=f" --copy {copyWorkload}"
 if submitTimeBefore:

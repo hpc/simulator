@@ -73,12 +73,17 @@ Requirements (bare-metal and charliecloud):
 - gcc >= 8.0 (bare-metal needs c++17, charliecloud method may allow for previous versions)
 - cmake >= 3.15.4  (maybe previous versions)
 - python >= 3.6
+- python3-venv
 - pip3
-- make
-- build
-- git
-- patch (bare-metal)
 - typical build system
+    - make
+    - build
+    - git
+    - patch (bare-metal)
+    - libtool
+    - pkg-config
+    - build-essential (ubuntu package. named other things on other distros)
+- bash terminal
 
 Requirements (docker method):
 - linux os
@@ -117,7 +122,7 @@ There are 4 methods of building and deploying our batsim applications.
 2. change directories
 3. deploy
 ```
-git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 cd simulator/basefiles
 ./deploy.sh -f bare-metal --prefix $(dirname `pwd`)
 ```
@@ -133,7 +138,7 @@ cd simulator/basefiles
 2. change directories
 3. deploy
 ```
-git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 cd simulator/basefiles
 ./deploy.sh -f docker
 ```
@@ -148,7 +153,7 @@ cd simulator/basefiles
 2. change directories
 3. deploy
 ```
-git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 cd simulator/basefiles
 ./deploy.sh -f charliecloud
 ```
@@ -169,7 +174,7 @@ cd simulator/basefiles
 7. change directories
 8. unpackage
 ```
-git clone https://github.com/HPCMASPA2023-GitHub/simulator.git
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
 cd simulator/basefiles
 ./deploy.sh -f charliecloud --no-internet --package
 cd ../../
