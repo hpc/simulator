@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Usage:
     traverse_and_post_process.py -i <path> [--basePath <path>] [--parallel-method <string>] [--tasks <int>] [--single] [--bins <string>]
@@ -70,7 +71,7 @@ if single:
     experiments = [os.path.basename(path)]
     path = os.path.dirname(path)
 else:
-    experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i) and i!="heatmaps"]
+    experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i) and ((i!="heatmaps") and (i[0]!="."))]
 total_jobs=0
 for exp in experiments:
     jobs = [i for i in os.listdir(path+"/"+exp+"/")]

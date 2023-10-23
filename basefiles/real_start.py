@@ -29,6 +29,7 @@ import os
 import sys
 import json
 import pathlib
+import start_from_checkpoint
 def dictHasKey(myDict,key):
     if key in myDict.keys():
         return True
@@ -100,6 +101,12 @@ disableDynamic = bool(InConfig['disable-dynamic-jobs']) if dictHasKey(InConfig,'
 startFromCheckpoint = int(InConfig['start-from-checkpoint']) if dictHasKey(InConfig,'start-from-checkpoint') else False
 checkpointSignal = int(InConfig["checkpoint-batsim-signal"]) if dictHasKey(InConfig,"checkpoint-batsim-signal") else False
 checkpointKeep = int(InConfig["checkpoint-batsim-keep"]) if dictHasKey(InConfig,"checkpoint-batsim-keep") else False
+outputSvg = InConfig["output-svg"] if dictHasKey(InConfig,'output-svg') else False
+outputSvgMethod = InConfig["output-svg-method"] if dictHasKey(InConfig,'output-svg-method') else False
+svgFrameStart = int(InConfig["svg-frame-start"]) if dictHasKey(InConfig,'svg-frame-start') else False
+svgFrameEnd = int(InConfig["svg-frame-end"]) if dictHasKey(InConfig,"svg-frame-end") else False
+svgOutputStart = int(InConfig["svg-output-start"]) if dictHasKey(InConfig,"svg-output-start") else False
+svgOutputEnd = int(InConfig["svg-output-end"]) if dictHasKey(InConfig,'svg-output-end') else False
 
 
 if batschedPolicy == "conservative_bf":
@@ -183,6 +190,18 @@ if not type(corePercent) == bool:
     batsimCMD+=" --core-percent {corePercent}".format(corePercent=corePercent)
 if submitProfiles:
     batsimCMD+=" --forward-profiles-on-submission "
+if outputSvg:
+    batsimCMD+=f" --output-svg {outputSvg}"
+if outputSvgMethod:
+    batsimCMD+=f" --output-svg-method {outputSvgMethod}"
+if svgFrameStart:
+    batsimCMD+=f" --svg-frame-start {svgFrameStart}"
+if svgFrameEnd:
+    batsimCMD+=f" --svg-frame-end {svgFrameEnd}"
+if svgOutputStart:
+    batsimCMD+=f" --svg-output-start {svgOutputStart}"
+if svgOutputEnd:
+    batsimCMD+=f" --svg-output-end {svgOutputEnd}"
 if queueDepth:
     batsimCMD+=" --queue-depth {queueDepth}".format(queueDepth=queueDepth)
 if reservationsStart:
@@ -193,6 +212,7 @@ if checkpoint_batsim_interval:
     batsimCMD+=f" --checkpoint-batsim-interval {checkpoint_batsim_interval}"
 if startFromCheckpoint:
     batsimCMD+=f" --start-from-checkpoint {startFromCheckpoint}"
+    
 if checkpointSignal:
     batsimCMD+=f" --checkpoint-batsim-signal {checkpointSignal}"
 if checkpointKeep:
@@ -207,6 +227,7 @@ if submitTimeAfter:
 print("finished making batsimCMD")
 print(batsimCMD)
 print("making genCommand",flush=True)
+wrapper=""
 if method == "charliecloud":
     wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
     genCommand="""{chPath}/experiment.yaml
@@ -217,6 +238,7 @@ if method == "charliecloud":
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
     --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,chPath=chPath+"/input",output=chPath+"/output",batsimCMD=batsimCMD).replace("\n","")
+    mvFolderPath = f"{chPath}/output"
     myGenCmd="""{wrapper} robin generate {genCommand}" """.format(wrapper=wrapper,genCommand=genCommand)
     mySimCmd=""" {wrapper} robin {yamlPath}" """.format(wrapper=wrapper,yamlPath=chPath+"/input/experiment.yaml")
     postCmd = """{wrapper} python3 {location}/post-processing.py
@@ -230,6 +252,7 @@ elif method == "docker":
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
     --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    mvFolderPath = f"{path}/output"
     myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
     mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
     postCmd = """python3 {location}/post-processing.py
@@ -243,13 +266,17 @@ elif method == "bare-metal":
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
     --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    mvFolderPath = f"{path}/output"
     myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
     mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
     postCmd = """python3 {location}/post-processing.py
     -i {path}""".format(location=scriptPath,path=path).replace("\n","")
+
 print("real_start.py, finished making genCommand and myGenCmd",flush=True)
 print(myGenCmd,flush=True)
 if not args["--only-output"]:
+    if startFromCheckpoint:
+        start_from_checkpoint.move_output_folder(startFromCheckpoint,mvFolderPath,wrapper)
     os.system(myGenCmd)
     myReturn = os.system(mySimCmd)
     if myReturn >1:

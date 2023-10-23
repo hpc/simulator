@@ -58,6 +58,7 @@ batschedLog=InConfig['batsched-log'] if dictHasKey(InConfig,'batsched-log') else
 repairTime = InConfig['repair-time'] if dictHasKey(InConfig,'repair-time') else False
 fixedFailures = InConfig['fixed-failures'] if dictHasKey(InConfig,'fixed-failures') else False
 checkpointError = InConfig['checkpointError'] if dictHasKey(InConfig,'checkpointError') else False
+startFromCheckpoint = InConfig['start-from-checkpoint'] if dictHasKey(InConfig,'start-from-checkpoint') else False
 
 reservations_as_jobs = True if args["--reservations-as-jobs"] else False
 submissionTime = False
@@ -95,6 +96,7 @@ path=runPath + "/output/expe-out/out_jobs.csv"
 
 #path to outfile
 outfile = args["--output"].rstrip('/') +"/post_out_jobs.csv"
+outfile_restarts = args["--output"].rstrip('/') + "/post_out_jobs_restarts.csv"
 raw_outfile = args["--output"].rstrip('/') +"/raw_post_out_jobs.csv"
 raw_outfile_debug = args["--output"].rstrip('/') +"/DEBUG_raw_post_out_jobs.csv"
 
@@ -120,8 +122,31 @@ df["execution_time"]=df["execution_time"].astype(np.double)
 df["finish_time"]=df["finish_time"].astype(np.double)
 df["waiting_time"]=df["waiting_time"].astype(np.double)
 df["turnaround_time"]=df["turnaround_time"].astype(np.double)
+df["original_start"]=df["original_start"].astype(np.double)
+df["workload_num_machines"]=df["workload_num_machines"].astype(np.int)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
+
+df_save = df.copy()
+#first deal with restart from checkpoint
+#save restarts for possible use
+restarts = df.loc[df.job_id.str.contains("$", regex = False)]
+df["restarts"]=[0] * len(df)
+restarts_ext = restarts.job_id.str.extract(r'\d+[#]?\d*[$](?P<restarts>\d+)')
+df.update(restarts_ext.restarts)
+df["submission_time"]=df["original_submit"]
+df["turnaround_time"]=df["finish_time"]-df["submission_time"]
+df["waiting_time"]=df["starting_time"]-df["submission_time"]
+# first change start to original_start
+original_starts = df.loc[df.original_start != -1.0].copy()
+original_starts["cpu"] = original_starts["progressTimeCpu"]
+original_starts["starting_time"]=original_starts["original_start"]
+original_starts["execution_time"]=original_starts.finish_time - original_starts.starting_time
+original_starts["waiting_time"]=original_starts.starting_time - original_starts.submission_time
+original_starts["stretch"]=original_starts.turnaround_time/original_starts.execution_time
+df.update(original_starts)
+job_ids=df.job_id.str.extract(r'(?P<job_id>\d+[#]?\d*)[$]?\d*')
+df.update(job_ids)
 
 
 
@@ -271,20 +296,42 @@ if raw==2 or raw==3:
     df2.to_csv(raw_outfile_debug)
 
 #df3 becomes everything df2 was without the resubmitted jobs
-df3=df2[df2.resubmit==0]
+df3=df2[df2.resubmit==0].copy()
+
+
+
 
 #reorder columns
 if checkpointing:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources',\
             'requested_time','success','real_final_state','starting_time','total_execution_time',\
             'purpose','num_resubmits','real_finish_time','checkpointed','total_waiting_time','total_turnaround_time','total_dumps','work_progress',\
-            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
+            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter','restarts']
 else:
     cols = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources'\
             ,'requested_time','success','real_final_state','starting_time','total_execution_time'\
             ,'purpose'\
-            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
+            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter','restarts']
+if checkpointing:
+    cols2 = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources',\
+            'requested_time','success','real_final_state','starting_time','total_execution_time',\
+            'purpose','num_resubmits','real_finish_time','checkpointed','total_waiting_time','total_turnaround_time','total_dumps','work_progress',\
+            'checkpoint_interval','dump_time','read_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
+else:
+    cols2 = ['job_id','workload_name','workload_num_machines','profile','submission_time','requested_number_of_resources'\
+            ,'requested_time','success','real_final_state','starting_time','total_execution_time'\
+            ,'purpose'\
+            ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
+
 df3=df3[cols]
+if checkpointing:
+    cols_to_int=['workload_num_machines','requested_number_of_resources','success','num_resubmits','total_dumps','restarts']
+else:
+    cols_to_int=['workload_num_machines','requested_number_of_resources','success','restarts']
+for myColumn in cols_to_int:
+    print(myColumn)
+    df3[myColumn]=df3[myColumn].astype(int)
+
 if checkpointing and profileType == "delay":
     df3.loc[~(df3['delay'] == df3['real_delay']),'checkpointing_on']=True
     df3.loc[df3['delay']==df3['real_delay'],'checkpointing_on']=False
@@ -293,24 +340,25 @@ elif checkpointing and profileType == "parallel_homogeneous":
     df3.loc[df3['cpu'] == df3['real_cpu'], 'checkpointing_on'] = False
 
 avgAE = 0
-if checkpointing and profileType == "delay":
+if profileType == "delay":
     df3['application_efficiency']=df3['real_delay']/df3['total_execution_time']
     avgAE = (df3['real_delay']*df3['requested_number_of_resources']).sum() \
         /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
-elif checkpointing and profileType == "parallel_homogeneous":
+elif profileType == "parallel_homogeneous":
     df3['real_cpu'] = df3['real_cpu'].astype(np.double)
     df3['application_efficiency']=df3['real_cpu']/oneSecond/df3['total_execution_time']
     avgAE = (df3['real_cpu']/oneSecond * df3['requested_number_of_resources']).sum() \
         /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
-elif profileType == "parallel_homogeneous":
-    df3['cpu'] = df3['cpu'].astype(np.double)
-    df3['application_efficiency']=df3['cpu']/oneSecond/df3['total_execution_time']
-    avgAE = (df3['cpu']/oneSecond * df3['requested_number_of_resources']).sum() \
-        /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
+# elif profileType == "parallel_homogeneous":
+#     df3['cpu'] = df3['cpu'].astype(np.double)
+#     df3['application_efficiency']=df3['cpu']/oneSecond/df3['total_execution_time']
+#     avgAE = (df3['cpu']/oneSecond * df3['requested_number_of_resources']).sum() \
+#         /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
 else:
     df3['application_efficiency']=df3['delay']/df3['total_execution_time']
     avgAE = (df3['delay']*df3['requested_number_of_resources']).sum() \
         /(df3['total_execution_time']*df3['requested_number_of_resources']).sum()
+
         
 print("Average App Efficiency: ",avgAE)
 df3['Average App Efficiency'] = avgAE
@@ -329,6 +377,7 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
     ourDf["util_work"]=ourDf["execution_time"]*ourDf["requested_number_of_resources"]
     utilization = ourDf["util_work"].sum()/(total_makespan*numNodes)
     makespan = ourDf3.real_finish_time.max() - ourDf3.starting_time.min()
+    print(f"rft_max={ourDf3.real_finish_time.max()} start_min={ourDf3.starting_time.min()}")
     avg_slowdown = 0
     if reservations_as_jobs:
         avg_waiting = ourDf3['total_waiting_time'].mean()
@@ -390,6 +439,7 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
 
 if makespan:
     total_makespan = df3.real_finish_time.max() - df3.starting_time.min()
+    print(f"totaltotal_makespan={total_makespan}")
     makespan_df = get_makespan_df(df,df3,total_makespan,checkpointing)
     makespan_df.to_csv(f"{runPath}/output/expe-out/makespan.csv",mode='w',header=True)
     if bins:
@@ -420,7 +470,10 @@ if makespan:
                 makespan_df = get_makespan_df(binDf,binDf3,total_makespan,checkpointing)
                 makespan_df.to_csv(f"{runPath}/output/expe-out/bins/makespan_{bins[i]}_{bins[i+1]}.csv",mode='w',header=True)
 
+df3.to_csv(outfile_restarts)
+df3 = df3[cols2]
 df3.to_csv(outfile)
+
 avgAE_path = runPath + "/output/expe-out/avgAE.csv"
 if (not(MTBF == -1)):
     AE_df=pd.DataFrame({'x':[error],
