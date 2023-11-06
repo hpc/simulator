@@ -262,7 +262,8 @@ def generate_reservations(reservations_json):
         column_names=[]
         purposes=["reservation"]*nb_reservations
         durations = [time_seconds]*nb_reservations
-        walltimes=durations
+        # add one second to each walltime for the case when call_me_later has a latency
+        walltimes = [dur+1 for dur in durations]
         if intervals:
             allocs=intervals[0]
             resources=intervals[1]

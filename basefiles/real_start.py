@@ -99,6 +99,9 @@ submitTimeBefore=str(InConfig['submission-time-before']) if dictHasKey(InConfig,
 copyWorkload = str(InConfig['copy']) if dictHasKey(InConfig,'copy') else False
 disableDynamic = bool(InConfig['disable-dynamic-jobs']) if dictHasKey(InConfig,'disable-dynamic-jobs') else False
 startFromCheckpoint = int(InConfig['start-from-checkpoint']) if dictHasKey(InConfig,'start-from-checkpoint') else False
+startFromCheckpointKeep = int(InConfig["start-from-checkpoint-keep"]) if dictHasKey(InConfig,"start-from-checkpoint-keep") else False
+startFromFrame = int(InConfig["start-from-frame"]) if dictHasKey(InConfig,"start-from-frame") else False
+discardLastFrame = bool(InConfig["discard-last-frame"]) if dictHasKey(InConfig,"discard-last-frame") else False
 checkpointSignal = int(InConfig["checkpoint-batsim-signal"]) if dictHasKey(InConfig,"checkpoint-batsim-signal") else False
 checkpointKeep = int(InConfig["checkpoint-batsim-keep"]) if dictHasKey(InConfig,"checkpoint-batsim-keep") else False
 outputSvg = InConfig["output-svg"] if dictHasKey(InConfig,'output-svg') else False
@@ -276,7 +279,7 @@ print("real_start.py, finished making genCommand and myGenCmd",flush=True)
 print(myGenCmd,flush=True)
 if not args["--only-output"]:
     if startFromCheckpoint:
-        start_from_checkpoint.move_output_folder(startFromCheckpoint,mvFolderPath,wrapper)
+        start_from_checkpoint.move_output_folder(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,mvFolderPath,wrapper)
     os.system(myGenCmd)
     myReturn = os.system(mySimCmd)
     if myReturn >1:

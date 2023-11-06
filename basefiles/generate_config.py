@@ -1,33 +1,58 @@
 """
 Usage:
-    generate_config_docker.py --config-info <type>
-    generate_config_docker.py -i FILE -o PATH [--basefiles PATH] [--output-config] [--increase-heldback-nodes] [--start-from-checkpoint <INT>]
+    generate_config.py --config-info <type>
+    generate_config.py -i FILE -o PATH [--basefiles PATH] [--output-config] [--increase-heldback-nodes] [options]
 
 Required Options 1:
-    --config-info <type>                Display how the json config is supposed to look like
-                                        as well as how each part of it can look like.
-                                        <type> can be:
+    --config-info <type>                    Display how the json config is supposed to look like
+                                            as well as how each part of it can look like.
+                                            <type> can be:
                                                 general | sweeps |
                                                 node-sweep | SMTBF-sweep | checkpoint-sweep | checkpointError-sweep | performance-sweep |
                                                 grizzly-workload | synthetic-workload |
                                                 input-options | output
 Required Options 2:
-    -i <FILE> --input <FILE>            Where our config lives
-    -o <PATH> --output <PATH>           Where to start outputting stuff
+    -i <FILE> --input <FILE>                Where our config lives
+    -o <PATH> --output <PATH>               Where to start outputting stuff
                                         
 Options:
-    --basefiles <PATH>                  Where base files go.  Make sure you have a 'workloads' and 'platforms' folder
-                                        in this path.
-                                        [default: False]
+    --basefiles <PATH>                      Where base files go.  Make sure you have a 'workloads' and 'platforms' folder
+                                            in this path.
+                                            [default: False]
 
-    --output-config                     If this flag is included, will output the input file to --output directory
-                                        as --input filename
+    --output-config                         If this flag is included, will output the input file to --output directory
+                                            as --input filename
 
-    --increase-heldback-nodes           If this flag is included, will treat heldback nodes as additional nodes
+    --increase-heldback-nodes               If this flag is included, will treat heldback nodes as additional nodes
 
-    --start-from-checkpoint <INT>       Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
-                                        Typically '1', the latest. -1 means to not to start from a checkpoint...the default.
-                                        [default: -1]
+Checkpoint Batsim Options:
+    --start-from-checkpoint <INT>           Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
+                                            Typically '1', the latest. -1 means to not to start from a checkpoint...the default.
+                                            [default: -1]
+    --discard-last-frame                    Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
+                                            Does not make sense to use with --start-from-checkpoint-keep
+                                            Will not change any of the kept expe-out_#'s and will not keep the current expe-out
+
+    --start-from-checkpoint-keep <INT>      Used in conjunction with --start-from-checkpoint
+                                            Will keep expe-out_1 through exp-out_<INT>.  Only use with --start-from-checkpoint
+                                            When starting from checkpoint, the current expe-out folder becomes expe-out_1.
+                                            Previous expe-out_1 will become expe-out_2 if keep is set to 2
+                                            If you have expe-out_1,expe-out_2,expe-out_3 and keep is 3:
+                                                will move expe-out_1 to expe-out_2
+                                                will move expe-out_2 to expe-out_3
+                                                will delete old expe-out_3
+                                            [default: 1]
+
+    --start-from-frame <INT>                Only used with --start-from-checkpoint and in conjunction with --start-from-checkpoint-keep
+                                            Will use the expe-out_<INT> folder to look for the checkpoint data
+                                                So if you were invoking --start-from-checkpoint-keep 2, you would have
+                                                expe-out_1 and expe-out_2,   once you started from a checkpoint twice
+                                                If you use --start-from-frame 2 you will be using the checkpoint_[--start-from-checkpoint]
+                                                folder located in the expe-out_2 folder ( the expe-out_[--start-from-frame] folder)
+                                            Here, '0' is the original expe-out folder that becomes expe-out_1
+                                            If --discard-last-frame is used, then default here is 1. 0 is not allowed and will become 1 if used.
+                                            [default: 0]
+    
 
 """
 
@@ -486,9 +511,12 @@ if args["--config-info"]:
 profile_type=""
 base = args["--output"].rstrip('/')
 startFromCheckpoint = int(args["--start-from-checkpoint"])
+startFromCheckpointKeep = int(args["--start-from-checkpoint-keep"])
+startFromFrame = int(args["--start-from-frame"])
+discardLastFrame = bool(args["--discard-last-frame"])
 if startFromCheckpoint != -1:
-    start_from_checkpoint.changeInputFiles(startFromCheckpoint,base)
-    exit
+    start_from_checkpoint.changeInputFiles(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base)
+    sys.exit()
     
 os.makedirs(base,exist_ok=True)
 basefiles= os.path.expanduser(str(os.path.dirname(os.path.abspath(__file__)))).rstrip("/") if args["--basefiles"] == "False" else os.path.expanduser(str(args["--basefiles"]).rstrip("/"))

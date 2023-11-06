@@ -148,10 +148,10 @@ def dictHasKey(myDict,key):
 def parseTimeString(aTimeStr,durations_times,newSize):
     times=[]
     # if it is an integer or float
-    if isinstance(aTimeStr,int) or isinstance(aTimeStr,float):
+    try:
         time = float(aTimeStr)
-        times = [time] * newSize
-    else:
+        times = [time]*newSize
+    except ValueError:
         # if there is a colon (:)
         times=[]
         if not aTimeStr.find(":") == -1:
@@ -401,6 +401,7 @@ def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number
         #first get all the columns of jobs into a list and then make a dataframe out of it
     data=list(zip(*cols))
     jobs=pd.DataFrame(data=data,columns=column_names)
+    
 
         #change the name of durations to make more sense of the json file
     delay=durations

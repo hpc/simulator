@@ -6,7 +6,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P: --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:D --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -22,6 +22,9 @@ FOLDER1_ABS=false
 FILE1_ABS=false
 PERMISSIONS=false
 START_FROM_CHECKPOINT=false
+FRAME=0
+KEEP=1
+DISCARD=""
 
 eval set -- "$VALID_ARGS"
 while true; do
@@ -102,6 +105,18 @@ while true; do
         START_FROM_CHECKPOINT=$2
         shift 2
         ;;
+    -D | --discard-last-frame)
+        DISCARD=" --discard-last-frame "
+        shift 1
+        ;;
+    -F | --start-from-frame)
+        FRAME=$2
+        shift 2
+        ;;
+    -K | --start-from-checkpoint-keep)
+        KEEP=$2
+        shift 2
+        ;;
     -h | --help)
         break
         ;;
@@ -131,64 +146,89 @@ Usage:
 
 Required Options:
 
-    -f, --file <STR>                    The config file.  Just the file name, the folder of where that file is
-                                        is worked out from $PREFIX being set and default locations within
+    -f, --file <STR>                        The config file.  Just the file name, the folder of where that file is
+                                            is worked out from $PREFIX being set and default locations within
 
-    -o, --folder  <STR>                 Where to output all the results of the simulations.  Just the folder name of where
-                                        to put stuff within the default locations ( $PREFIX/experiments/<folder_name>)
+    -o, --folder  <STR>                     Where to output all the results of the simulations.  Just the folder name of where
+                                            to put stuff within the default locations ( $PREFIX/experiments/<folder_name>)
 
-    -t, --tasks-per-node <INT>          How many tasks to put on each node
-                                        Only used with --parallel-method 'tasks' and 'background'
-                                        and mandatory with these parallel-methods
+    -t, --tasks-per-node <INT>              How many tasks to put on each node
+                                            Only used with --parallel-method 'tasks' and 'background'
+                                            and mandatory with these parallel-methods
 
 Optional Options:
-    -a, --add-to-sbatch <STR>           Commands to add to sbatch, in the form:
-                                        long:
-                                            -a "--option_s value --option_t value --option_u --option"
-                                        short/mixed:
-                                            --add-to-sbatch "-s value -t value -u --option"
+    -a, --add-to-sbatch <STR>               Commands to add to sbatch, in the form:
+                                            long:
+                                                -a "--option_s value --option_t value --option_u --option"
+                                            short/mixed:
+                                                --add-to-sbatch "-s value -t value -u --option"
 
-    -c, --cores-per-node <INT>          How many cores to use for each sbatch
-                                        Only used with --parallel-method 'sbatch'
-                                        Not mandatory
+    -c, --cores-per-node <INT>              How many cores to use for each sbatch
+                                            Only used with --parallel-method 'sbatch'
+                                            Not mandatory
 
-    -m, --method <STR>                  What method to run batsim:
-                                        'bare-metal' | 'docker' | 'charliecloud'
-                                        [default: 'charliecloud']
+    -m, --method <STR>                      What method to run batsim:
+                                            'bare-metal' | 'docker' | 'charliecloud'
+                                            [default: 'charliecloud']
 
-    -p, --parallel-method <STR>         What method to spawn multiple batsims:
-                                        'sbatch' | 'tasks' | 'none' | 'background'
-                                        sbatch: individual sbatch commands for each sim
-                                        tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
-                                        none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
-                                        background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
-                                        [default: 'tasks']
+    -p, --parallel-method <STR>             What method to spawn multiple batsims:
+                                            'sbatch' | 'tasks' | 'none' | 'background'
+                                            sbatch: individual sbatch commands for each sim
+                                            tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
+                                            none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
+                                            background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
+                                            [default: 'tasks']
 
-    -s, --socket-start <INT>            What socket number to start at. You must do your own housekeeping of sockets.  If you already
-                                        have 100 sims going and you started at 10,000, then you will want to do your next set of sims at 10,100 for example
-                                        You can use higher numbers.  I've used numbers up to 300,000
-                                        [default: 10000]
+    -s, --socket-start <INT>                What socket number to start at. You must do your own housekeeping of sockets.  If you already
+                                            have 100 sims going and you started at 10,000, then you will want to do your next set of sims at 10,100 for example
+                                            You can use higher numbers.  I've used numbers up to 300,000
+                                            [default: 10000]
 
-    -w, --wallclock-limit <STR>         How long your jobs will take as reported to SLURM
-                                        Will leave it up to slurm if not chosen.  Sometimes SLURM will set it for UNLIMITED
-                                        STR is in format:
-                                        "minutes", "minutes:seconds", "hours:minutes:seconds", 
-                                        "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
-                                        ex: '48' , '48:30', '2:48:30'  ==   48 minutes, 48.5 minutes, 2hours 48.5 minutes
-                                            '3-0' , '3-12:0', '3-12:30:0' ==  3days, 3days 12 hours, 3 days 12.5 hours
+    -w, --wallclock-limit <STR>             How long your jobs will take as reported to SLURM
+                                            Will leave it up to slurm if not chosen.  Sometimes SLURM will set it for UNLIMITED
+                                            STR is in format:
+                                            "minutes", "minutes:seconds", "hours:minutes:seconds", 
+                                            "days-hours", "days-hours:minutes" and "days-hours:minutes:seconds"
+                                            ex: '48' , '48:30', '2:48:30'  ==   48 minutes, 48.5 minutes, 2hours 48.5 minutes
+                                                '3-0' , '3-12:0', '3-12:30:0' ==  3days, 3days 12 hours, 3 days 12.5 hours
                                         
-    -P, --permissions <STR>             permissions to give files/folders after generate_config.py is run but before run-experiments.py is run.
-                                        It is still suggested to use SLURM_UMASK in batsim_environment.sh for files made during the simulations.
-                                        STR = The octal numbers for the permissions
-                                        ex: '--permissions 777' = rwxrwxrwx
-                                            '--permissions 750' = rwxr-x---
-                                            '--permissions 755' = rwxr-xr-
+    -P, --permissions <STR>                 permissions to give files/folders after generate_config.py is run but before run-experiments.py is run.
+                                            It is still suggested to use SLURM_UMASK in batsim_environment.sh for files made during the simulations.
+                                            STR = The octal numbers for the permissions
+                                            ex: '--permissions 777' = rwxrwxrwx
+                                                '--permissions 750' = rwxr-x---
+                                                '--permissions 755' = rwxr-xr-
+Checkpoint Batsim Options:
 
-    -S, --start-from-checkpoint <INT>   Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
-                                        Typically '1', the latest
-                                        [default: false]
+    -S, --start-from-checkpoint <INT>       Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
+                                            Typically '1', the latest
+                                            [default: false]
 
-    -h, --help                          Display this usage page
+    -D, --discard-last-frame                Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
+                                            Does not make sense to use with --start-from-checkpoint-keep
+                                            Will not change any of the kept expe-out_#'s and will not keep the current expe-out
+
+    -K, --start-from-checkpoint-keep <INT>  Used in conjunction with --start-from-checkpoint
+                                            Will keep expe-out_1 through exp-out_<INT>.  Only use with --start-from-checkpoint
+                                            When starting from checkpoint, the current expe-out folder becomes expe-out_1.
+                                            Previous expe-out_1 will become expe-out_2 if keep is set to 2
+                                            If you have expe-out_1,expe-out_2,expe-out_3 and keep is 3:
+                                                will move expe-out_1 to expe-out_2
+                                                will move expe-out_2 to expe-out_3
+                                                will delete old expe-out_3
+                                            [default: 1]
+
+    -F, --start-from-frame <INT>            Only used with --start-from-checkpoint and in conjunction with --start-from-checkpoint-keep
+                                            Will use the expe-out_<INT> folder to look for the checkpoint data
+                                                So if you were invoking --start-from-checkpoint-keep 2, you would have
+                                                expe-out_1 and expe-out_2,   once you started from a checkpoint twice
+                                                If you use --start-from-frame 2 you will be using the checkpoint_[--start-from-checkpoint]
+                                                folder located in the expe-out_2 folder ( the expe-out_[--start-from-frame] folder)
+                                            Here, '0' is the original expe-out folder that becomes expe-out_1
+                                            If --discard-last-frame is used, then default here is 1. 0 is not allowed and will become 1 if used.
+                                            [default: 0]
+
+    -h, --help                              Display this usage page
 
 EOF
 exit 1
@@ -213,14 +253,14 @@ if [ $P_METHOD = 'tasks' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
             else
                 $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
             else
                 python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
             fi
@@ -242,14 +282,14 @@ elif [ $P_METHOD = 'sbatch' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
             else
                 $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP
             else    
                 python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
             fi
@@ -271,14 +311,14 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
             else
                 $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
             else
                 python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
             fi
@@ -286,7 +326,7 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
         'docker')
             prefix=/home/sim/simulator
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
             else
                 python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
             fi

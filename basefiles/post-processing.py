@@ -123,7 +123,7 @@ df["finish_time"]=df["finish_time"].astype(np.double)
 df["waiting_time"]=df["waiting_time"].astype(np.double)
 df["turnaround_time"]=df["turnaround_time"].astype(np.double)
 df["original_start"]=df["original_start"].astype(np.double)
-df["workload_num_machines"]=df["workload_num_machines"].astype(np.int)
+df["workload_num_machines"]=df["workload_num_machines"].astype(np.int64)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
 
