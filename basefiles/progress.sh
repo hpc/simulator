@@ -33,6 +33,12 @@ print_number()
     number=$(echo "$entry" |awk -F, -v field=$field '{printf("%'"'"'d",$field)}')
     myOutput="$myOutput|\\033[${color}m$number\\033[0m"
 }
+print_percent()
+{
+    format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
+    number=$(echo "$entry" |awk -F, -v field=$field '{x=$field;printf("%'"'"'d",x*100)}')
+    myOutput="$myOutput|\\033[${color}m$number\\033[0m"
+}
 print_entry()
 {
     format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
@@ -72,8 +78,8 @@ schedule_info()
 }
 utilization()
 {
-    color=$color9; field=9; name="utilization"; print_number;
-    color=$color10; field=10; name="utilization_no_resv"; print_number;
+    color=$color9; field=9; name="utilization"; print_percent;
+    color=$color10; field=10; name="utilization_no_resv"; print_percent;
 }
 mem_avail()
 {
