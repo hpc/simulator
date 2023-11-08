@@ -425,7 +425,7 @@ What-Info Options:
 
     -b, --before <int>             The amount of entries, starting from the last one, to include
 
-    -H, --head                     Print the first entry in the out_extra_info.csv file first ( possilbe use is to check on how long the sim has been going )
+    -H, --head                     Print the first entry in the out_extra_info.csv file first ( possible use is to check on how long the sim has been going )
 
     -a, --all                      Print out all data in the entry.  Default if nothing else is chosen to print.
 
