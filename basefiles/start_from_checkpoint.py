@@ -26,9 +26,6 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     new_folder = f"{path}/expe-out_1"
     frame_folder = f"{path}/expe-out_{startFromFrame}"
     if discardLastFrame:
-        if startFromFrame == 0:
-            startFromFrame =1
-        os.system(f"{wrapper} rm -r {old_folder}")
         frames=[]
         # get the frames
         for i in os.listdir(path):
@@ -37,13 +34,19 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
             if os.path.isdir(path+"/"+i) and (filename.find("expe-out_")!=-1):
                 #ok we have a directory in path that is a frame, add it to our frames
                 frames.append(int(filename[9:]))
-        #undo frame-keep
-        frames.sort()
-        for i in frames:
-            if i == 1:
-                os.system(f"{wrapper} mv {path}/expe-out_{1} {path}/expe-out")
-            else:
-                os.system(f"{wrapper} mv {path}/expe-out_{i} {path}/expe-out_{i-1}")
+        #only continue to delete the last frame if there are other frames
+        if len(frames) > 0:
+            if startFromFrame == 0:
+                startFromFrame =1
+            os.system(f"{wrapper} rm -r {old_folder}")
+        
+            #undo frame-keep
+            frames.sort()
+            for i in frames:
+                if i == 1:
+                    os.system(f"{wrapper} mv {path}/expe-out_{1} {path}/expe-out")
+                else:
+                    os.system(f"{wrapper} mv {path}/expe-out_{i} {path}/expe-out_{i-1}")
     else:
         startFromFrame +=1
         

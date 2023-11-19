@@ -744,6 +744,7 @@ for experiment in experiments:
                 with open(new_base + run + "/input/config.ini","w") as OutConfig:
                     json.dump(ourInput[i][j],OutConfig,indent=4)
                 #if we set an SMTBF, it may be handy to know the NMTBF when it comes time to output the files.txt file
+
                 if dictHasKey(ourInput[i][j],"nodes") and dictHasKey(ourInput[i],"SMTBF"):
                     ourInput[i]["NMTBF"]=ourInput[i][j]["nodes"]*ourInput[i][j]["SMTBF"]
             #this file tells us with a quick glance what each job has for a config file

@@ -58,6 +58,22 @@ def subtractFromInterval(amount,interval):
     else:
         #we don't have a hyphen, so there is one resource
         return "",1,interval
+def getComponentValues(component):
+    components = component.split("-")
+    if len(components) > 1:
+        #ok we have a hyphen
+        ourList = list(range(int(components[0]),int(components[1])+1,1))
+        return ourList
+    else:
+        return [int(components[0])]
+def getIntervalValues(interval):
+    components = interval.split(" ")
+    myList = []
+    for component in components:
+        myList = myList + getComponentValues(str(component))
+    myList.sort()
+    return set(myList)
+
 def countTotalInterval(interval):
     components = interval.split(" ")
     total = 0
@@ -136,5 +152,50 @@ def get_seconds_absolute(mdhms):
     seconds+=mdhms[3] * SECS_PER_MINUTE
     seconds+=mdhms[4]
     return seconds
+
+def comparePostOutJobs(input1,input2):
+    import pandas as pd
+    with open(input1,"r") as InFile:
+        df1 = pd.read_csv(InFile,header=0)
+    with open(input2,"r") as InFile:
+        df2 = pd.read_csv(InFile,header=0)
+    if "cpu" in df1.columns:
+        drop_cols=["requested_time","cpu"]
+    elif "delay" in df1.columns:
+        drop_cols=["requested_time","delay"]
+    df1 = df1.drop(drop_cols,axis="columns")
+    df2 = df2.drop(drop_cols,axis="columns")
+    equal = True
+    for i in df1:
+        for j in range(0,len(df1[i].values),1):
+            if df1[i].values[0] == df2[i].values[0]:
+                continue
+            else:
+                equal = False
+                break
+        if not equal:
+            break
+    return equal
+
+
+def compareMakespan(input1,input2):
+    import pandas as pd
+    with open(input1,"r") as InFile:
+        df1 = pd.read_csv(InFile,header=0)
+    with open(input2,"r") as InFile:
+        df2 = pd.read_csv(InFile,header=0)
+    equal = True
+    for i in df1:
+        for j in range(0,len(df1[i].values),1):
+            if df1[i].values[0] == df2[i].values[0]:
+                continue
+            else:
+                equal = False
+                break
+        if not equal:
+            break
+    return equal
+
+
 
 

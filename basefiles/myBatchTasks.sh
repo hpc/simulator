@@ -246,7 +246,7 @@ if [ $? -eq 1 ];then
 else
     echo "*********************  JSON Check Appears To Be SUCCESSFUL *********************"
 fi
-
+#lets make a progress.lock file
 
 if [ $P_METHOD = 'tasks' ];then
     case $METHOD in
@@ -271,6 +271,12 @@ if [ $P_METHOD = 'tasks' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
+cat <<EOF > $FOLDER1_DIR/progress.log
+{
+ "progress":true    
+}
+EOF
+
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'sbatch' ];then
     if [ $CORES_PER_NODE ];then
@@ -337,4 +343,3 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node ${TASKS_PER_NODE}
 fi
-

@@ -470,9 +470,9 @@ if makespan:
                 makespan_df = get_makespan_df(binDf,binDf3,total_makespan,checkpointing)
                 makespan_df.to_csv(f"{runPath}/output/expe-out/bins/makespan_{bins[i]}_{bins[i+1]}.csv",mode='w',header=True)
 
-df3.to_csv(outfile_restarts)
+df3.to_csv(outfile_restarts,index=False)
 df3 = df3[cols2]
-df3.to_csv(outfile)
+df3.to_csv(outfile,index=False)
 
 avgAE_path = runPath + "/output/expe-out/avgAE.csv"
 if (not(MTBF == -1)):

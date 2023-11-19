@@ -30,6 +30,19 @@ import sys
 import json
 import pathlib
 import start_from_checkpoint
+import fcntl
+
+def acquireLock(locked_file):
+    ''' acquire exclusive lock file access '''
+    locked_file_descriptor = open(locked_file, 'w+')
+    fcntl.lockf(locked_file_descriptor, fcntl.LOCK_EX)
+    return locked_file_descriptor
+
+def releaseLock(locked_file_descriptor):
+    ''' release exclusive lock file access '''
+    locked_file_descriptor.close()
+
+
 def dictHasKey(myDict,key):
     if key in myDict.keys():
         return True
@@ -41,7 +54,7 @@ try:
 except DocoptExit:
     print(__doc__)
     sys.exit(1)
-
+USER=os.getenv("USER")
 path = args["--path"].rstrip("/")
 basename=""
 dirname=""
@@ -52,9 +65,9 @@ if not args["--only-output"]:
     rest_of_path=path.split(":PATH:")[1]
     path = path.replace(":PATH:","")
 chPath=f"/mnt/FOLDER1/{basename}{rest_of_path}"
+locked_file=f"{dirname}/progress.lock"
 
-
-
+print("after locked_file")
 method = args["--method"]
 
 
@@ -232,7 +245,7 @@ print(batsimCMD)
 print("making genCommand",flush=True)
 wrapper=""
 if method == "charliecloud":
-    wrapper="""{scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname)
+    wrapper="""USER={USER} {scriptPath}/../charliecloud/charliecloud/bin/ch-run {scriptPath}/../batsim_ch --bind {scriptPath}/../:/mnt/prefix --bind {dirname}:/mnt/FOLDER1 --write --set-env=TERM=xterm-256color --set-env=HOME=/home/sim -- /bin/bash -c "export USER=sim;source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; """.format(scriptPath=scriptPath,dirname=dirname,USER=USER)
     genCommand="""{chPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\'batsim {batsimCMD}\'
@@ -283,7 +296,24 @@ if not args["--only-output"]:
     os.system(myGenCmd)
     myReturn = os.system(mySimCmd)
     if myReturn >1:
+        locked_fd = acquireLock(locked_file)
+        with open(f"{dirname}/progress.log","r") as InOutFile:
+            progress=json.load(InOutFile)
+            progress[f"{dirname}/{basename}{rest_of_path}_sim"]=0
+        with open(f"{dirname}/progress.log","w") as InOutFile:
+            json.dump(progress,InOutFile,indent=4)
+        releaseLock(locked_fd)
         sys.exit(myReturn)
+    else:
+        locked_fd = acquireLock(locked_file)
+        #we have the lock
+        locked_fd = acquireLock(locked_file)
+        with open(f"{dirname}/progress.log","r") as InOutFile:
+            progress=json.load(InOutFile)
+            progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
+        with open(f"{dirname}/progress.log","w") as InOutFile:
+            json.dump(progress,InOutFile,indent=4)
+        releaseLock(locked_fd)
     
 
 
@@ -306,5 +336,25 @@ else:
 print("real_start.py, call to post-processing.py",flush=True)
 print(postCmd,flush=True)
 myReturn = os.system(postCmd)
+
 if myReturn>1:
+    locked_fd = acquireLock(locked_file)
+        #we have the lock
+    locked_fd = acquireLock(locked_file)
+    with open(f"{dirname}/progress.log","r") as InOutFile:
+        progress=json.load(InOutFile)
+        progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
+    with open(f"{dirname}/progress.log","w") as InOutFile:
+        json.dump(progress,InOutFile,indent=4)
+    releaseLock(locked_fd)
     sys.exit(myReturn)
+else:
+    locked_fd = acquireLock(locked_file)
+        #we have the lock
+    locked_fd = acquireLock(locked_file)
+    with open(f"{dirname}/progress.log","r") as InOutFile:
+        progress=json.load(InOutFile)
+        progress[f"{dirname}/{basename}{rest_of_path}_post"]=1
+    with open(f"{dirname}/progress.log","w") as InOutFile:
+        json.dump(progress,InOutFile,indent=4)
+    releaseLock(locked_fd)

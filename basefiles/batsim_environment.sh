@@ -105,11 +105,11 @@ EOF
         ls $@ "$prefix/configs" | nl
         files="`ls $@ "$prefix/configs" | nl`"
         IFS=$'\n' read -d '' -ra filesArray <<< "$files"
-        printf "\\033[48;5;23;38;5;16;1mEnter a choice:\\033[0m "
+        printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
         read choice
         choice=`echo $choice | awk '{num=$1-1;print num}'`
-        if [[ $choice == 0 ]];then
-            exit
+        if [[ $choice == -1 ]];then
+            return
         fi
         file1="${filesArray[$choice]}"
         file1="`echo "$file1" | awk '{print $NF}'`"
