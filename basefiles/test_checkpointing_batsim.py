@@ -1,6 +1,8 @@
 """
 Usage: 
-    test-checkpointing-batsim.py -i <path> -o <folder> [--prefix <path>] [--socket-start <INT>] [ --task-start <int>] [ --task-end <int>] [ --start-counter <int>]
+    test-checkpointing-batsim.py -i <path> -o <folder> [--prefix <path>] [--socket-start <INT>] 
+                                                       [ --task-start <int>] [ --task-end <int>] [ --start-counter <int>] 
+                                                       [--tasks-per-node <int>] [--method <STR>] [--parallel-method <STR>] [--wallclock-limit <STR>]
        
 Required Options:
     -i , --input <path>            where the config file is
@@ -19,7 +21,20 @@ Required Options:
                                    [default: 1]
     --end-counter <int>            the highest startCounter to do. -1 is all.
                                    [default: -1]
-  
+    -t, --tasks-per-node <int>     Amount of tasks per node
+                                   [default: 1]
+    -m, --method <STR>             What method to run batsim:
+                                   'bare-metal' | 'docker' | 'charliecloud'
+                                   [default: 'charliecloud']
+    -p, --parallel-method <STR>    What method to spawn multiple batsims:
+                                   'sbatch' | 'tasks' | 'none' | 'background'
+                                   sbatch: individual sbatch commands for each sim
+                                   tasks: --tasks-per-node sims per sbatch command, with enough sbatch's to complete config file generated sims
+                                   none: no parallelism,only serial. Will run one sim after another (may take a VERY long time)
+                                   background: will try to achieve parallelism by backgrounding each sim, backgrounding (--tasks-per-node - 1) sims before waiting
+                                   [default: 'tasks']
+    -w, --wallclock-limit <STR>    the wallclock-limit in SLURM format          
+                                   [default: 12:00:00]
 """
 
 
@@ -41,7 +56,6 @@ MINS=60*SECS
 HOURS=60*MINS
 DAYS=24*HOURS
 MAX_SOCKETS_PER_CONFIG = 1000
-TASKS_PER_NODE=20
 PREFIX=os.getenv("prefix")
 ourFolders={}
 highestStart=1
@@ -79,8 +93,8 @@ def task_1():
             config[exp]["input"]=myInput
         with open(f"{PREFIX}/configs/{file1}",'w') as OutFile:
             json.dump(config,OutFile,indent=4)
-
-        command = f"source {PREFIX}/basefiles/batsim_environment.sh && myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {TASKS_PER_NODE} -s {socketStart} -w '12:00:00'"
+        mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {wallClock}"
+        command = f"source {PREFIX}/basefiles/batsim_environment.sh && {mainCmd}"
         os.system(command)
         return folder1
     
@@ -143,7 +157,8 @@ def task_2():
         if startCounter in starts:
             #it is, lets run it
             for folder1 in ourFolders[file1]:
-                command = f"source {PREFIX}/basefiles/batsim_environment.sh && myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {TASKS_PER_NODE} -s {socketStart} -w '12:00:00' -D -S {startCounter}"
+                mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {wallClock} -D -S {startCounter}"
+                command = f"source {PREFIX}/basefiles/batsim_environment.sh && {mainCmd}"
                 os.system(command)
                 command = f"find {folder1} -type d \"Run_*\" | wc -l"
                 nb_sims += int(os.popen(command).read())
@@ -201,6 +216,10 @@ os.makedirs(outputFolder,exist_ok=True)
 socketStart=int(args["--socket-start"])
 startCounter = int(args["--start-counter"])
 endCounter = int(args["--end-counter"])
+wallClock=args["--wallclock-limit"]
+method=args["--method"]
+pMethod=args["--parallel-method"]
+tasksPN=args["--tasks-per-node"]
 
 
 
