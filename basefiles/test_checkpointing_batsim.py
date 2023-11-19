@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 """
 Usage: 
     test-checkpointing-batsim.py -i <path> -o <folder> [--prefix <path>] [--socket-start <INT>] 
-                                                       [ --task-start <int>] [ --task-end <int>] [ --start-counter <int>] 
+                                                       [--task-start <int>] [--task-end <int>] [--start-counter <int>] [--end-counter <int>]
                                                        [--tasks-per-node <int>] [--method <STR>] [--parallel-method <STR>] [--wallclock-limit <STR>]
        
 Required Options:
