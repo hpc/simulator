@@ -125,9 +125,14 @@ def task_1():
         type = regMatch[1]
         parts = [int(regMatch[i]) for i in [2,3,4,5]]
         seconds = (parts[0] * DAYS) + (parts[1] * HOURS) + (parts[2] * MINS) + (parts[3] * SECS)
+        duration = dt.datetime.utcfromtimestamp(seconds)
+        timeString = duration.strftime("%H:%M:%S")
+        #%e will give wrong number, so figure out days by ourselves
+        start=f"{int(seconds/DAYS)}-{timeString}"
         regMatch=regEx.match(stagger)
+        parts = [int(regMatch[i]) for i in [3,4,5]]
         #don't stagger in units greater than hours
-        secondsToAdd = (parts[1] * HOURS ) + (parts[2] * MINS) + (parts[3] * SECS)
+        secondsToAdd = (parts[0] * HOURS ) + (parts[1] * MINS) + (parts[2] * SECS)
         for i in range(0,count,1):
             run_base(file,start,type,keep,socketStart,i)
             seconds+=secondsToAdd
