@@ -66,13 +66,16 @@ def dictHasKey(myDict,key):
         return True
     else:
         return False
-def task_1():
-    def run_base(file1,start,type,keep,socketStart,count):
+def task_1(runSim=True):
+    def run_base(file1,start,type,keep,socketStart,count,runSim):
         global ourFolders
+        print("In task 1")
         folder1 = f"{outputFolder}/{os.path.splitext(file1)[0]}_test_chkpt_base_{start}"
         folders=ourFolders[file1] if dictHasKey(ourFolders,file1) else []
         folders = folders + [folder1]
         ourFolders[file1]=folders
+        if not runSim:
+            return
         with open(f"{PREFIX}/configs/{file1}","r") as InFile:
             config = json.load(InFile)
         for exp in config:
@@ -120,7 +123,7 @@ def task_1():
         keep = int(checkpoints["keep"])
         stagger = checkpoints["stagger"]
         count = checkpoints["count"]
-        regEx=re.compile("^(?:(real|simulated):(\d+)-)?(\d+):(\d+):(\d+)")
+        regEx=re.compile("^(?:(real|simulated):)?(\d+)-(\d+):(\d+):(\d+)")
         regMatch=regEx.match(start)
         type = regMatch[1]
         parts = [int(regMatch[i]) for i in [2,3,4,5]]
@@ -130,11 +133,10 @@ def task_1():
         #%e will give wrong number, so figure out days by ourselves
         start=f"{int(seconds/DAYS)}-{timeString}"
         regMatch=regEx.match(stagger)
-        parts = [int(regMatch[i]) for i in [3,4,5]]
-        #don't stagger in units greater than hours
-        secondsToAdd = (parts[0] * HOURS ) + (parts[1] * MINS) + (parts[2] * SECS)
+        parts = [int(regMatch[i]) for i in [2,3,4,5]]
+        secondsToAdd = (parts[0] * DAYS) + (parts[1] * HOURS ) + (parts[2] * MINS) + (parts[3] * SECS)
         for i in range(0,count,1):
-            run_base(file,start,type,keep,socketStart,i)
+            run_base(file,start,type,keep,socketStart,i,runSim)
             seconds+=secondsToAdd
             duration = dt.datetime.utcfromtimestamp(seconds)
             timeString = duration.strftime("%H:%M:%S")
@@ -143,14 +145,18 @@ def task_1():
             socketStart+=MAX_SOCKETS_PER_CONFIG
     #ok we started everything for the base
     #count how many Run_* folders there are for # of sims
-    command = "find -type d -name \"Run_*\" | wc -l"
+    command = f"find {outputFolder} -type d -name \"Run_*\" | wc -l"
     nb_sims = os.popen(command).read()
     nb_sims = int(nb_sims)
     return nb_sims
 def task_2():
+    print("task 2")
+    print(ourFolders.keys())
     global startCounter
     global InConfig
     nb_sims=0
+    with open(configPath,"r") as InFile:
+        InConfig = json.load(InFile)
     configs = InConfig["configs"]
     #next run the start-from-checkpoints and evaluate
     #first let's clear the progress.log
@@ -163,10 +169,11 @@ def task_2():
         if startCounter in starts:
             #it is, lets run it
             for folder1 in ourFolders[file1]:
+                print(f"folder1:{folder1}")
                 mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {wallClock} -D -S {startCounter}"
                 command = f"source {PREFIX}/basefiles/batsim_environment.sh && {mainCmd}"
                 os.system(command)
-                command = f"find {folder1} -type d \"Run_*\" | wc -l"
+                command = f"find {folder1} -type d -name \"Run_*\" | wc -l"
                 nb_sims += int(os.popen(command).read())
     return nb_sims
 def task_3():
@@ -228,10 +235,10 @@ pMethod=args["--parallel-method"]
 tasksPN=args["--tasks-per-node"]
 
 
-
 if nb_taskStart == 1: 
     nb_sims = task_1()
     if nb_sims > 0:
+        print(f"nb_sims: {nb_sims}")
         taskRet = coordinator.testCheckpointing(outputFolder,nb_sims)
     if taskRet == False:
         print("Error with task_1")
@@ -239,11 +246,13 @@ if nb_taskStart == 1:
     if (nb_taskEnd > nb_taskStart) or (nb_taskEnd == -1):
         nb_taskStart+=1
 if nb_taskStart == 2:
+    task_1(False)
     if endCounter != -1:
         highestStart = endCounter
     for i in range(startCounter,highestStart+1,1):
         startCounter = int(i)
         nb_sims = task_2()
+        print(f"nb_sims[{i}]: {nb_sims}")
         if nb_sims > 0:
             taskRet = coordinator.testCheckpointing(outputFolder,nb_sims)
             if taskRet:
@@ -251,9 +260,3 @@ if nb_taskStart == 2:
             else:
                 print(f"Error with task_2   startCounter={startCounter}")
                 sys.exit()
-
-
-    
-
-                
-    

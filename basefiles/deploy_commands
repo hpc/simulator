@@ -1,15 +1,32 @@
 cd $downloads_prefix
 wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
 tar -xf ./download
-line_number="boost"
+line_number=$i
 cd $downloads_prefix
 git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
-cd $downloads_prefix
 git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
+cd $basefiles_prefix
+git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
+cd $downloads_prefix
+git clone https://framagit.org/simgrid/simgrid.git
+git clone https://github.com/zeromq/libzmq.git
+git clone https://github.com/redis/hiredis.git
+git clone https://github.com/enki/libev.git
+git clone https://github.com/alisw/GMP.git
+git clone https://github.com/zeromq/cppzmq.git
+git clone https://github.com/mpoquet/redox.git
+git clone https://github.com/Tencent/rapidjson.git
+git clone https://github.com/zeux/pugixml.git
+git clone https://github.com/google/googletest.git
+git clone https://framagit.org/batsim/intervalset.git
+git clone https://github.com/docopt/docopt.cpp.git
+git clone https://github.com/emilk/loguru.git
 
+line_number="boost"
 echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
 cd $downloads_prefix
 cd ./boost_1_75_0/
+
 ./bootstrap.sh --prefix=$install_prefix --with-toolset=gcc
 #this command does not get a  after it.  It fails some targets (66) but successfully does 17,6XX targets.  It may just be that it's not configured for those targets
 #in any case it returns a non-zero number and will quit the chain of commands if expected to return zero(true) with an &&
@@ -24,8 +41,7 @@ cd ./boost_1_75_0/
 #gmake
 #gmake install
 line_number=$i
-cd $downloads_prefix
-git clone https://framagit.org/simgrid/simgrid.git
+
 cd $downloads_prefix/simgrid/
 git checkout tags/v3.29 -b our_v3.29
 cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" $downloads_prefix/simgrid/  \
@@ -50,8 +66,6 @@ cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" $d
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/zeromq/libzmq.git
 cd $downloads_prefix/libzmq
 git checkout tags/v4.3.3 -b our_v4.3.3d
 ./autogen.sh
@@ -59,9 +73,7 @@ git checkout tags/v4.3.3 -b our_v4.3.3d
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/redis/hiredis.git
-cd ./hiredis
+cd $downloads_prefix/hiredis
 git checkout tags/v0.14.0 -b our_v0.14.0d
 make PREFIX=$install_prefix
 #make install does not work here. tried it with DESTDIR and PREFIX.  Puts it in PREFIX/PKG_CONFIG_PATH
@@ -75,25 +87,19 @@ ${INSTALL} libhiredis.a $install_prefix/lib/
 mkdir -p $install_prefix/lib/pkgconfig
 source $myDir/genHiRedisPC
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/enki/libev.git
-cd ./libev
+cd $downloads_prefix/libev
 ./configure --prefix=$install_prefix
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/alisw/GMP.git
-cd ./GMP
+cd $downloads_prefix/GMP
 ./configure --prefix=$install_prefix
 make
 make install
 cd $install_prefix
 export gmp_dir=`find ./ -name libgmp.so | awk -F/ '{print $2}'`
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/zeromq/cppzmq.git
-cd ./cppzmq
+cd $downloads_prefix/cppzmq
 cmake -DCMAKE_PREFIX_PATH="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" ./
 make
 make install
@@ -119,8 +125,7 @@ export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."
 export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
 sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
 export PATH=$PATH:$install_prefix/bin
-cd $downloads_prefix
-git clone https://github.com/mpoquet/redox.git
+line_number=$i
 cd $downloads_prefix/redox/
 git checkout install-pkg-config-file
 mkdir build && cd build
@@ -129,15 +134,11 @@ make
 cd $downloads_prefix/redox/build/
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/Tencent/rapidjson.git
 mkdir $downloads_prefix/rapidjson/build && cd $downloads_prefix/rapidjson/build
 cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/zeux/pugixml.git
 cd $downloads_prefix/pugixml
 mkdir $downloads_prefix/pugixml/build
 cd $downloads_prefix/pugixml/build
@@ -145,15 +146,11 @@ cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/google/googletest.git
-cd ./googletest
+cd $downloads_prefix/googletest
 cmake -DCMAKE_INSTALL_PREFIX=$install_prefix
 make
 make install
 line_number=$i
-cd $downloads_prefix
-git clone https://framagit.org/batsim/intervalset.git
 cd $downloads_prefix/intervalset
 export BOOST_ROOT=$install_prefix
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$install_prefix/lib64/pkgconfig:$install_prefix/lib/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig
@@ -162,8 +159,6 @@ cd $downloads_prefix/intervalset/build/
 $python_prefix/bin/ninja
 $python_prefix/bin/ninja install
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/docopt/docopt.cpp.git
 cd $downloads_prefix/docopt.cpp/
 mkdir build
 cd build
@@ -175,32 +170,24 @@ source $myDir/genGmpPC
 source $myDir/genEvPC
 source $myDir/genLoguruPC
 line_number=$i
-cd $downloads_prefix
-git clone https://github.com/emilk/loguru.git
 cd $downloads_prefix/loguru
 g++ -std=c++11 -o libloguru.so -shared -pthread -fPIC loguru.cpp
 cp $downloads_prefix/loguru/libloguru.so $install_prefix/lib/
 cp $downloads_prefix/loguru/loguru.hpp $install_prefix/include/
 line_number=$i
-cd $downloads_prefix
-git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
 cd $downloads_prefix/batsim4
 git checkout main
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
 line_number=$i
-cd $downloads_prefix
-git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
 cd $downloads_prefix/batsched4
 git checkout main
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
 line_number=$i
-cd $basefiles_prefix
-git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
-cd simulator
+cd $basefiles_prefix/simulator
 git checkout main
 line_number=$i
 cd $downloads_prefix

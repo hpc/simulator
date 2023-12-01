@@ -254,7 +254,7 @@ if method == "charliecloud":
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
     --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,chPath=chPath+"/input",output=chPath+"/output",batsimCMD=batsimCMD).replace("\n","")
-    mvFolderPath = f"{chPath}/output"
+    mvFolderPath = f"{path}/output"
     myGenCmd="""{wrapper} robin generate {genCommand}" """.format(wrapper=wrapper,genCommand=genCommand)
     mySimCmd=""" {wrapper} robin {yamlPath}" """.format(wrapper=wrapper,yamlPath=chPath+"/input/experiment.yaml")
     postCmd = """{wrapper} python3 {location}/post-processing.py

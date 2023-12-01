@@ -271,11 +271,13 @@ if [ $P_METHOD = 'tasks' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
+if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
 cat <<EOF > $FOLDER1_DIR/progress.log
 {
  "progress":true    
 }
 EOF
+fi
 
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'sbatch' ];then
@@ -306,6 +308,13 @@ elif [ $P_METHOD = 'sbatch' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
+if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
+cat <<EOF > $FOLDER1_DIR/progress.log
+{
+ "progress":true    
+}
+EOF
+fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     if [ $P_METHOD = 'none' ];then
@@ -341,5 +350,12 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
+if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
+cat <<EOF > $FOLDER1_DIR/progress.log
+{
+ "progress":true    
+}
+EOF
+fi
     python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node ${TASKS_PER_NODE}
 fi

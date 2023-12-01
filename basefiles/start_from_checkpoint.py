@@ -24,8 +24,10 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     import os
     old_folder = f"{path}/expe-out"
     new_folder = f"{path}/expe-out_1"
-    frame_folder = f"{path}/expe-out_{startFromFrame}"
+    
     if discardLastFrame:
+        if startFromFrame == 0:
+                startFromFrame =1
         frames=[]
         # get the frames
         for i in os.listdir(path):
@@ -36,17 +38,15 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
                 frames.append(int(filename[9:]))
         #only continue to delete the last frame if there are other frames
         if len(frames) > 0:
-            if startFromFrame == 0:
-                startFromFrame =1
-            os.system(f"{wrapper} rm -r {old_folder}")
+            os.system(f"rm -r {old_folder}")
         
             #undo frame-keep
             frames.sort()
             for i in frames:
                 if i == 1:
-                    os.system(f"{wrapper} mv {path}/expe-out_{1} {path}/expe-out")
+                    os.system(f"mv {path}/expe-out_{1} {path}/expe-out")
                 else:
-                    os.system(f"{wrapper} mv {path}/expe-out_{i} {path}/expe-out_{i-1}")
+                    os.system(f"mv {path}/expe-out_{i} {path}/expe-out_{i-1}")
     else:
         startFromFrame +=1
         
@@ -62,21 +62,21 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     frames.sort(reverse=True)
     for i in frames:
         if i>=startFromCheckpointKeep:
-            os.system(f"{wrapper} rm -r {path}/expe-out_{i}")
+            os.system(f"rm -r {path}/expe-out_{i}")
             frames.remove(i)
     for i in frames:
-        os.system(f"{wrapper} mv {path}/expe-out_{i} {path}/expe-out{i+1}")
+        os.system(f"mv {path}/expe-out_{i} {path}/expe-out{i+1}")
     if startFromFrame > 1 :
         if (len(frames) == 0) or (startFromFrame > (max(frames)+1)):
             import sys
             print(f"ERROR!!! --start-from-frame {startFromFrame}  does not exist!")
             sys.exit()
     frame_folder = f"{path}/expe-out_{startFromFrame}"
-    os.system(f"{wrapper} mv {old_folder} {new_folder}")
-    os.system(f"{wrapper} mkdir {old_folder}")
-    os.system(f"{wrapper} cp -R {frame_folder}/checkpoint_{nb_startFromCheckpoint} {old_folder}/start_from_checkpoint")
-    os.system(f"{wrapper} cp -R {frame_folder}/cmd {old_folder}/cmd")
-    os.system(f"{wrapper} cp {old_folder}/start_from_checkpoint/out_jobs.csv {old_folder}/out_jobs.csv")
+    os.system(f"mv {old_folder} {new_folder}")
+    os.system(f"mkdir {old_folder}")
+    os.system(f"cp -R {frame_folder}/checkpoint_{nb_startFromCheckpoint} {old_folder}/start_from_checkpoint")
+    os.system(f"cp -R {frame_folder}/cmd {old_folder}/cmd")
+    os.system(f"cp {old_folder}/start_from_checkpoint/out_jobs.csv {old_folder}/out_jobs.csv")
 
 
    
