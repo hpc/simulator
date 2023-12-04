@@ -307,7 +307,6 @@ if not args["--only-output"]:
     else:
         locked_fd = acquireLock(locked_file)
         #we have the lock
-        locked_fd = acquireLock(locked_file)
         with open(f"{dirname}/progress.log","r") as InOutFile:
             progress=json.load(InOutFile)
             progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
@@ -340,7 +339,6 @@ myReturn = os.system(postCmd)
 if myReturn>1:
     locked_fd = acquireLock(locked_file)
         #we have the lock
-    locked_fd = acquireLock(locked_file)
     with open(f"{dirname}/progress.log","r") as InOutFile:
         progress=json.load(InOutFile)
         progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
@@ -351,7 +349,6 @@ if myReturn>1:
 else:
     locked_fd = acquireLock(locked_file)
         #we have the lock
-    locked_fd = acquireLock(locked_file)
     with open(f"{dirname}/progress.log","r") as InOutFile:
         progress=json.load(InOutFile)
         progress[f"{dirname}/{basename}{rest_of_path}_post"]=1

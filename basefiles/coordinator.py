@@ -19,12 +19,15 @@ def testCheckpointing(ourInput,nb_sims):
     simsSuccess = 0
     simsCount = 0
     while (notDone):
+        simsCount = 0
+        simsSuccess = 0
         with open(progressFile,"r") as InFile:
             progress = json.load(InFile)
         for key in progress:
             if key[-3:] == "sim":
                 simsCount += 1
                 simsSuccess += int(progress[key])
+        print(f"simsCount: {simsCount} simsSuccess: {simsSuccess}",flush=True)
         if simsCount == nb_sims:
             notDone = False
         else:

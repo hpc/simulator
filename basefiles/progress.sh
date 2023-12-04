@@ -83,10 +83,10 @@ utilization()
 }
 mem_avail()
 {
-        
+
     color=$color11; field=11; name="node_mem_total"; print_mem;
     color=$color12; field=12; name="node_mem_avail"; print_mem;
-        
+
 }
 mem_batsim()
 {
@@ -138,7 +138,7 @@ function print_output()
         echo -e "$myOutput"
     else
 
-        
+
         if [ $completed = true ];then
             completed_jobs
         fi
@@ -162,7 +162,7 @@ function print_output()
             utilization
         fi
         if [ $memory != false ];then
-            
+
 
             case "$memory" in
             "both")
@@ -170,7 +170,7 @@ function print_output()
                 mem_batsched
                 ;;
             "batsim")
-                mem_batsim                
+                mem_batsim
                 ;;
             "batsched")
                 mem_batsched
@@ -185,9 +185,23 @@ function print_output()
                 ;;
             esac
         fi
-        
+
         echo -e "$myOutput"
     fi
+}
+get_input_variable()
+{
+        myString="$1"
+        grep "/" <<<"$myString" > /dev/null
+        if [ $? -eq 0 ];then
+           input="$1"
+           input_dir=$(dirname "$1")
+           input_base=$(basename "$1")
+        else
+           input_dir="$prefix/experiments"
+           input_base="$1"
+           input="$input_dir/$input_base"
+        fi
 }
 
 
@@ -198,7 +212,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSuUFT:h --long input:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
+VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSuUFT:hP:123456789 --long input:,prompt:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -225,24 +239,58 @@ memSize="KiB"
 divideBy=1
 print=false
 options=""
+prompt="None"
 
 
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
+    -1)
+        get_input_variable $folder1
+        shift 1
+        ;;
+    -2)
+        get_input_variable $folder2
+        echo "folder2: $folder2"
+        echo "input: $input"
+        shift 1
+        ;;
+    -3)
+        get_input_variable $folder3
+        shift 1
+        ;;
+    -4)
+        get_input_variable $folder4
+        shift 1
+        ;;
+    -5)
+        get_input_variable $folder5
+        shift 1
+        ;;
+    -6)
+        get_input_variable $folder6
+        shift 1
+        ;;
+    -7)
+        get_input_variable $folder7
+        shift 1
+        ;;
+    -8)
+        get_input_variable $folder8
+        shift 1
+        ;;
+    -9)
+        get_input_variable $folder9
+        shift 1
+        ;;
     -i | --input)
         options="$options, i $2"
-        myString="$2"
-        grep "/" <<<"$myString" > /dev/null
-        if [ $? -eq 0 ];then
-            input="$2"
-            input_dir=$(dirname "$2")
-            input_base=$(basename "$2")
-        else
-            input_dir="$prefix/experiments"
-            input_base="$2"
-            input="$input_dir/$input_base"
-        fi
+        get_input_variable $2
+        shift 2
+        ;;
+    -P | --prompt)
+        options="$options, P $2"
+        prompt="$2"
         shift 2
         ;;
      -e | --experiment)
@@ -373,26 +421,40 @@ while true; do
     -h | --help)
         break
         ;;
-    --) shift; 
-        break 
+    --) shift;
+        break
         ;;
   esac
 done
-if [ $input = false ];then
+if [ $input = false ] && [[ $prompt == "None" ]];then
 cat <<"EOF"
 
 progress.sh: used to show the progress of all simulations in a folder, or just certain ones, with options for what to show.
 
 Usage:
-    progress.sh -i <folder> [-e <folder>] [-j <array string>] [-d <array string>] [-r <array string>] 
-                            [-b <int>] [-H] [-p] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [-M K|M|G|T|H] 
+    progress.sh [-# | -i <folder>] [-P <options>] [-e <folder>] [-j <array string>] [-d <array string>] [-r <array string>]
+                            [-b <int>] [-H] [-p] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [-M K|M|G|T|H]
 
-Required Options:
+Mostly Required Options:
+    -#                             Will use the environment variable folder# for input.  It will act as if you used -i ${folder#}
+                                   This is best used in conjunction with batFolder
+                                   
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh
                                    If it has a forward slash '/' in the name it will assume it is an absolute path.
                                    If it does not have a forward slash '/' in the name it will assume it is located in "$prefix/experiments/<input>"
+                                   If --prompt is used, this folder is interpreted as where to look for experiment directories.
+                                   If --prompt is used and this option is omitted, the default will be used '${prefix}/experiments'
+
 Optional Options:
 
+Folder Options:
+    -P, --prompt <options>         Another option instead of setting input directly
+                                   Will go into folder '--input <folder>' and list the directories for you.  Select the folder you are after with a number
+                                   If --input is omitted, will use '${prefix}/experiments'
+                                   The options you want to send ls comes after prompt, but use quotes around the whole list of options as to not confuse this script
+                                   Make sure you use empty quotes if not setting any options
+                                   Also look into using batFolder for repeated uses of progress.sh
+                                   example:    progress.sh -P '-ltr'    or      progress.sh -i "/some/other/path" -P ''
 Which-Simulation Options:
 
     -e, --experiment <folder>      If you want to focus on just one experiment (in the sense of config files where there was an input and output json for each experiment)
@@ -401,7 +463,7 @@ Which-Simulation Options:
                                         progress.sh -i ${folder1} -e "*shuffled*"
                                         if you were going to shuffle some experiments and named those experiments with 'shuffled' in the name,
                                         then this would get you all the experiments with the word 'shuffled' in it.
-    
+
     -j, --job <array string>       If you want to focus on just one job (in the sense of folders named experiment_#) then use this to enter the folder number.
                                    If used with --experiment then it will retrieve paths ".../<input>/<experiment>/experiment_<job>/*
                                    If not used with --experiment, then it will retrieve paths ".../<input>/*/experiment_<job>/*
@@ -434,7 +496,7 @@ What-Info Options:
     -c, --completed                Include the amount of ACTUALLY completed jobs and TOTAL jobs
 
     -t, --time                     Include the real-time and sim-time
-    
+
     -S, --schedule-info            Include queue-size,schedule-size,nb-jobs-running
 
     -q, --queue-size               Include the queue-size in output
@@ -484,6 +546,25 @@ pink="48;5;165"
 light_pink="48;5;132"
 endingFormat="false"
 
+if [[ $prompt != "None" ]];then
+    if [ $input = false ];then
+        input="$prefix/experiments"
+    fi
+    ls $prompt -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl
+    files="`ls $prompt -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl`"
+    IFS=$'\n' read -d '' -ra filesArray <<< "$files"
+    printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
+    read choice
+    choice=`echo $choice | awk '{num=$1-1;print num}'`
+    if [[ $choice == -1 ]];then
+        exit
+    fi
+
+    input_dir="${input}"
+    input_base="${filesArray[$choice]}"
+    input_base="`echo "$input_base" | awk '{print $NF}'`"
+    input="$input_dir/$input_base"
+fi
 
 
 if [ "$experiment" = false ];then
@@ -500,7 +581,7 @@ for exp in "${experiments[@]}";do
    printf "\e[2K  searching: ...$exp{$count/${#experiments[@]}}\r"
    jobs=()
     if [ "$job" = false ];then
-        
+
         folders="$(find "$exp"/* -maxdepth 0 -type d)"
         IFS=$'\n' read -d '' -ra jobs <<< "$folders"
     else
@@ -556,7 +637,7 @@ for exp in "${experiments[@]}";do
                 lines="`tail -n $before "$r/output/expe-out/out_extra_info.csv" 2>/dev/null`"
                 runOutput=`echo $r | sed "s@$input_dir/$input_base@@g"`
                 line_count=$(wc -l "$r/output/expe-out/out_extra_info.csv" 2>/dev/null | awk '{print $1}')
-                
+
                 if ! test -f "$r/output/expe-out/out_extra_info.csv" ;then
                     echo -e "...${runOutput}:   \\033[${grey}m************************************************* Error No File *************************************************\\033[0m"
                     continue
@@ -568,7 +649,7 @@ for exp in "${experiments[@]}";do
                 fi
                 IFS=$'\n' read -d '' -ra entries <<< "$lines"
 
-                
+
                 myOutput="...$runOutput:   "
                 if [ $head = true ];then
                     myHead="`head -n 2 "$r/output/expe-out/out_extra_info.csv" | tail -n 1 `"
@@ -586,13 +667,13 @@ for exp in "${experiments[@]}";do
                     fi
                 fi
                 if [ $finished = true ];then
-                    lastEntry=$(( ${#entries[@]} - 1 )) 
+                    lastEntry=$(( ${#entries[@]} - 1 ))
                     result=$(echo "${entries[$lastEntry]}" | awk -F, '{print ($3==100.00) ? 0 : 1}')
                     if [ $result -eq 1 ];then
                         continue
                     fi
                 elif [ $unfinished = true ];then
-                    lastEntry=$(( ${#entries[@]} - 1 )) 
+                    lastEntry=$(( ${#entries[@]} - 1 ))
                     result=$(echo "${entries[$lastEntry]}" | awk -F, '{print ($3<100.00) ? 0 : 1}')
                     if [ $result -eq 1 ];then
                         continue
@@ -602,7 +683,7 @@ for exp in "${experiments[@]}";do
                 if [ ${#entries[@]} -gt 1 ];then
                         echo "$myOutput"
                 fi
-                
+
                 for entry in "${entries[@]}";do
 
                     if [ ${#entries[@]} -gt 1 ];then
@@ -614,7 +695,7 @@ for exp in "${experiments[@]}";do
                         endingFormat="$format"
                     fi
 
-                        
+
                 done
             done
         done

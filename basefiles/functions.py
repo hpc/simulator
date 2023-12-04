@@ -153,6 +153,7 @@ def get_seconds_absolute(mdhms):
     seconds+=mdhms[4]
     return seconds
 
+
 def comparePostOutJobs(input1,input2):
     import pandas as pd
     with open(input1,"r") as InFile:
@@ -184,6 +185,9 @@ def compareMakespan(input1,input2):
         df1 = pd.read_csv(InFile,header=0)
     with open(input2,"r") as InFile:
         df2 = pd.read_csv(InFile,header=0)
+    drop_cols=["avg_pp_slowdown","avg-pp-slowdown","avg-pp-slowdown_dhms"]
+    df1 = df1.drop(drop_cols,axis="columns")
+    df2 = df2.drop(drop_cols,axis="columns")
     equal = True
     for i in df1:
         for j in range(0,len(df1[i].values),1):

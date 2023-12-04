@@ -210,7 +210,7 @@ if [ $FORMAT = 'bare-metal' ];then
             *********************************************
 
             You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need
-            At a bare minimum set prefix=? to the correct prefix. This is probably going to be your simulator folder.
+            At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.
 EOF
         fi
 

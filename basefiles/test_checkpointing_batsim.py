@@ -67,9 +67,9 @@ def dictHasKey(myDict,key):
     else:
         return False
 def task_1(runSim=True):
-    def run_base(file1,start,type,keep,socketStart,count,runSim):
+    def run_base(file1,start,type,keep,socketStart,count,runSim,specificWallClock):
         global ourFolders
-        print("In task 1")
+        print("In task 1",flush=True)
         folder1 = f"{outputFolder}/{os.path.splitext(file1)[0]}_test_chkpt_base_{start}"
         folders=ourFolders[file1] if dictHasKey(ourFolders,file1) else []
         folders = folders + [folder1]
@@ -97,7 +97,7 @@ def task_1(runSim=True):
             config[exp]["input"]=myInput
         with open(f"{PREFIX}/configs/{file1}",'w') as OutFile:
             json.dump(config,OutFile,indent=4)
-        mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {wallClock}"
+        mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {specificWallClock}"
         command = f"source {PREFIX}/basefiles/batsim_environment.sh && {mainCmd}"
         os.system(command)
         return folder1
@@ -135,8 +135,9 @@ def task_1(runSim=True):
         regMatch=regEx.match(stagger)
         parts = [int(regMatch[i]) for i in [2,3,4,5]]
         secondsToAdd = (parts[0] * DAYS) + (parts[1] * HOURS ) + (parts[2] * MINS) + (parts[3] * SECS)
+        specificWallClock = config["wallclock"] if dictHasKey(config,"wallclock") else wallClock
         for i in range(0,count,1):
-            run_base(file,start,type,keep,socketStart,i,runSim)
+            run_base(file,start,type,keep,socketStart,i,runSim,specificWallClock)
             seconds+=secondsToAdd
             duration = dt.datetime.utcfromtimestamp(seconds)
             timeString = duration.strftime("%H:%M:%S")
@@ -150,8 +151,8 @@ def task_1(runSim=True):
     nb_sims = int(nb_sims)
     return nb_sims
 def task_2():
-    print("task 2")
-    print(ourFolders.keys())
+    print("task 2",flush=True)
+    print(ourFolders.keys(),flush=True)
     global startCounter
     global InConfig
     nb_sims=0
@@ -163,14 +164,15 @@ def task_2():
     command = f"rm {outputFolder}/progress.log"
     os.system(command)
     for config in configs:
+        specificWallClock = config["wallclock"] if dictHasKey(config,"wallclock") else wallClock
         #check if this config includes this start-from-checkpoint
         starts = functions.getIntervalValues(config["starts"])
         file1 = config["file"]
         if startCounter in starts:
             #it is, lets run it
             for folder1 in ourFolders[file1]:
-                print(f"folder1:{folder1}")
-                mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {wallClock} -D -S {startCounter}"
+                print(f"folder1:{folder1}",flush=True)
+                mainCmd=f"myBatchTasks.sh -f {file1} -o {folder1} -m charliecloud -t {tasksPN} -m {method} -p {pMethod} -s {socketStart} -w {specificWallClock} -D -S {startCounter}"
                 command = f"source {PREFIX}/basefiles/batsim_environment.sh && {mainCmd}"
                 os.system(command)
                 command = f"find {folder1} -type d -name \"Run_*\" | wc -l"
@@ -189,6 +191,8 @@ def task_3():
         if startCounter in starts:
             with open(f"{outputFolder}/failedComparisons.log","a+") as OutFile:
                 OutFile.write(f"{startCounter}:\n")
+            with open(f"{outputFolder}/failedComparisonsExistence.log","a+") as OutFile:
+                OutFile.write(f"{startCounter}:\n")
             #this config includes the start, lets compare files in these folders
             for folder1 in ourFolders[file1]:
                 base=folder1
@@ -200,18 +204,40 @@ def task_3():
                         for theId in ids:
                             runs = [i for i in os.listdir(base+"/"+exp+"/"+job+"/"+theId) if os.path.isdir(base+"/"+exp+"/"+job + "/" + theId +"/"+ i)]
                             for run in runs:
+                                fileExists=True
                                 if whatToCompare == "post_out_jobs.csv":
                                     input1 = f"{base}/{exp}/{job}/{theId}/{run}/output/expe-out/post_out_jobs.csv"
                                     input2 = f"{base}/{exp}/{job}/{theId}/{run}/output/expe-out_1/post_out_jobs.csv"
-                                    compareRet = functions.comparePostOutJobs(input1,input2)
+                                    if os.path.exists(input1) and os.path.exists(input2):
+                                        compareRet = functions.comparePostOutJobs(input1,input2)
+                                    else:
+                                        compareRet = False
+                                        fileExists = False
                                 elif whatToCompare == "makespan.csv":
                                     input1 = f"{base}/{exp}/{job}/{theId}/{run}/output/expe-out/makespan.csv"
                                     input2 = f"{base}/{exp}/{job}/{theId}/{run}/output/expe-out_1/makespan.csv"
-                                    compareRet = functions.compareMakespan(input1,input2)
+                                    if os.path.exists(input1) and os.path.exists(input2):
+                                        compareRet = functions.compareMakespan(input1,input2)
+                                    else:
+                                        compareRet=False
+                                        fileExists = False
                                 if compareRet == False:
-                                    with open(f"{outputFolder}/failedComparisons.log","a+") as OutFile:
-                                        OutFile.write(f"{input1}\n{input2}")
-                
+                                    if fileExists:
+                                        with open(f"{outputFolder}/failedComparisons.log","a+") as OutFile: 
+                                            OutFile.write(f"{input1}\n{input2}\n")
+                                            folderCpTo = f"{base}/{exp}/{job}/{theId}/{run}/output/start_{startCounter}"
+                                            folderCpFrom = f"{base}/{exp}/{job}/{theId}/{run}/output"
+                                            command = f"rm -r {folderCpTo}; mkdir -p {folderCpTo}"
+                                            os.system(command)
+                                            command = f"cp {folderCpFrom}/expe-out/makespan.csv {folderCpTo}/makespan_0.csv; cp {folderCpFrom}/expe-out/post_out_jobs.csv {folderCpTo}/post_out_jobs_0.csv"
+                                            os.system(command)
+                                            command = f"cp {folderCpFrom}/expe-out_1/makespan.csv {folderCpTo}/makespan_1.csv; cp {folderCpFrom}/expe-out_1/post_out_jobs.csv {folderCpTo}/post_out_jobs_1.csv"
+                                            os.system(command)
+                                            command = f"cp {folderCpFrom}/expe-out/out_jobs.csv {folderCpTo}/out_jobs_0.csv; cp {folderCpFrom}/expe-out_1/out_jobs.csv {folderCpTo}/out_jobs_1.csv"
+                                            os.system(command)
+                                    else:
+                                        with open(f"{outputFolder}/failedComparisonsExistence.log","a+") as OutFile:
+                                            OutFile.write(f"{input1}\n{input2}\n")
 
 args=docopt(__doc__,help=True,options_first=False)
 OutConfig={}
@@ -238,25 +264,25 @@ tasksPN=args["--tasks-per-node"]
 if nb_taskStart == 1: 
     nb_sims = task_1()
     if nb_sims > 0:
-        print(f"nb_sims: {nb_sims}")
+        print(f"nb_sims: {nb_sims}",flush=True)
         taskRet = coordinator.testCheckpointing(outputFolder,nb_sims)
     if taskRet == False:
-        print("Error with task_1")
+        print("Error with task_1",flush=True)
         sys.exit()
     if (nb_taskEnd > nb_taskStart) or (nb_taskEnd == -1):
         nb_taskStart+=1
 if nb_taskStart == 2:
-    task_1(False)
     if endCounter != -1:
         highestStart = endCounter
     for i in range(startCounter,highestStart+1,1):
         startCounter = int(i)
         nb_sims = task_2()
-        print(f"nb_sims[{i}]: {nb_sims}")
+        print(f"nb_sims[{i}]: {nb_sims}",flush=True)
         if nb_sims > 0:
             taskRet = coordinator.testCheckpointing(outputFolder,nb_sims)
-            if taskRet:
-                task_3()
-            else:
-                print(f"Error with task_2   startCounter={startCounter}")
-                sys.exit()
+            task_3()
+            #if taskRet:
+            #    task_3()
+            #else:
+            #    print(f"Error with task_2   startCounter={startCounter}",flush=True)
+            #    sys.exit()

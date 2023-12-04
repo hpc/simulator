@@ -124,17 +124,18 @@ if parallelMode == "sbatch":
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
         jobs.sort(key=natural_keys)
         ids = [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+i)]
-        runs =len( [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/" + i)])
+        runs =[i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/" + i)]
+        runs.sort(key=natural_keys)
         if startRun:
-            start=startRun
+            start=f"Run_{startRun}"
         else:
-            start=1
+            start=runs[0]
         if endRun:
-            end=endRun
+            end=f"Run_{endRun}"
         else:
-            end=runs
-        for number in range(start,end+1,1):
-            run = "Run_" + str(number)
+            end=runs[len(runs)-1]
+        runs=runs[runs.index(start):runs.index(end)+1]
+        for run in runs:
             for job in jobs:
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)
@@ -184,16 +185,17 @@ elif parallelMode == "tasks":
     for exp in experiments:
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
         jobs.sort(key=natural_keys)
+        runs.sort(key=natural_keys)
         if startRun:
-            start=startRun
+            start=f"Run_{startRun}"
         else:
-            start=1
+            start=runs[0]
         if endRun:
-            end=endRun
+            end=f"Run_{endRun}"
         else:
-            end=len(runs)
-        for number in range(start,end+1,1):
-            run = "Run_" + str(number)
+            end=runs[len(runs)-1]
+        runs=runs[runs.index(start):runs.index(end)+1]
+        for run in runs:
             for job in jobs:
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)
@@ -254,17 +256,18 @@ elif parallelMode == "background":
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
         jobs.sort(key=natural_keys)
         #ids = [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+i)]
-        runs =len( [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/id_1/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/id_1/"+ i)])
+        runs =[i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/id_1/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/id_1/"+ i)]
+        runs.sort(key=natural_keys)
         if startRun:
-            start=startRun
+            start=f"Run_{startRun}"
         else:
-            start=1
+            start=runs[0]
         if endRun:
-            end=endRun
+            end=f"Run_{endRun}"
         else:
-            end=runs
-        for number in range(start,end+1,1):
-            run = "Run_" + str(number)
+            end=runs[len(runs)-1]
+        runs=runs[runs.index(start):runs.index(end)+1]
+        for run in runs:
             for job in jobs:
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)

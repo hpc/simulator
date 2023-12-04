@@ -1,6 +1,6 @@
 """
 Usage: 
-    post-processing.py -i <path> [-o <path>] [ --reservations-as-jobs]
+    post-processing.py -i <path> [--abs] [-o <path>] [ --reservations-as-jobs]
        
 Required Options:
     -i , --input <path>            where the Run path is
@@ -8,7 +8,8 @@ Required Options:
 Options:
     -o , --output <path>           where output lives
                                    [default: input_path/output/expe-out/]
-
+    --abs                          if flag is set, will interpret -i as folder where all info can be found:
+                                   config.ini, out_jobs.csv                                    
     --reservations-as-jobs         whether to include reservation time in
                                    things like avg_tat and avg_waiting
 
@@ -34,9 +35,14 @@ def dictHasKey(myDict,key):
 args=docopt(__doc__,help=True,options_first=False)
 OutConfig={}
 InConfig = {}
+absolutePath=True if args["--abs"] else False
 runPath=args["--input"]
-with open(runPath+"/input/config.ini","r") as InFile:
-    InConfig = json.load(InFile)
+if absolutePath:
+    with open(runPath+"/iconfig.ini","r") as InFile:
+        InConfig = json.load(InFile)
+else:
+    with open(runPath+"/input/config.ini","r") as InFile:
+        InConfig = json.load(InFile)
 
 syntheticWorkload = InConfig['synthetic-workload'] if dictHasKey(InConfig,'synthetic-workload') else False
 grizzlyWorkload = InConfig['grizzly-workload'] if dictHasKey(InConfig,'grizzly-workload') else False
@@ -76,9 +82,12 @@ elif not type(grizzlyWorkload) == bool:
     speed = grizzlyWorkload["speed"] if dictHasKey(grizzlyWorkload,"speed") else False
     submissionTime = grizzlyWorkload["submissionTime"] if dictHasKey(grizzlyWorkload,'submissionTime') else False
 
-
-with open(runPath+"/output/config.ini","r") as InFile:
-    OutConfig = json.load(InFile)
+if absolutePath:
+    with open(runPath+"/oconfig.ini","r") as InFile:
+        OutConfig = json.load(InFile)
+else:
+    with open(runPath+"/output/config.ini","r") as InFile:
+        OutConfig = json.load(InFile)
 AAE = OutConfig['AAE'] if dictHasKey(OutConfig,'AAE') else False
 makespan = OutConfig['makespan'] if dictHasKey(OutConfig,'makespan') else False
 pp_slowdown = OutConfig['pp-slowdown'] if dictHasKey(OutConfig,'pp-slowdown') else False
@@ -92,7 +101,10 @@ print("makespan {}".format(makespan))
 
 args["--output"] = args["--output"] if not (args["--output"]=="input_path/output/expe-out/") else args["--input"].rstrip("/") + "/output/expe-out/"
 #path to results of the simulation
-path=runPath + "/output/expe-out/out_jobs.csv"
+if absolutePath:
+    path = runPath+"/out_jobs.csv"
+else:
+    path=runPath + "/output/expe-out/out_jobs.csv"
 
 #path to outfile
 outfile = args["--output"].rstrip('/') +"/post_out_jobs.csv"
@@ -147,6 +159,7 @@ original_starts["stretch"]=original_starts.turnaround_time/original_starts.execu
 df.update(original_starts)
 job_ids=df.job_id.str.extract(r'(?P<job_id>\d+[#]?\d*)[$]?\d*')
 df.update(job_ids)
+df.to_csv("testing_post_out.csv")
 
 
 
@@ -210,6 +223,7 @@ df['resubmit']=resubmits_ext['resubmit']
 # finish time is the max finish time in the group. num_resubmits is the count - 1
 # in the group. real_final_state is the last resubmit's final state.
 df2=df.copy()
+df2.to_csv("before_sum.csv")
 
 df2['total_execution_time'] = df.groupby('parent')['execution_time'].transform('sum')
 df2['total_waiting_time'] = df.groupby('parent')['waiting_time'].transform('sum')
@@ -294,11 +308,12 @@ df2 = pd.concat([df2Resubmits,df2Parents,df2NonResubmits],axis=0,sort=False)
 df2=df2.sort_values(by=['parent','job_id'],axis=0)
 if raw==2 or raw==3:
     df2.to_csv(raw_outfile_debug)
+df2.to_csv("raw_debug.csv")
 
 #df3 becomes everything df2 was without the resubmitted jobs
 df3=df2[df2.resubmit==0].copy()
 
-
+df3.to_csv("df3.csv")
 
 
 #reorder columns
@@ -441,7 +456,10 @@ if makespan:
     total_makespan = df3.real_finish_time.max() - df3.starting_time.min()
     print(f"totaltotal_makespan={total_makespan}")
     makespan_df = get_makespan_df(df,df3,total_makespan,checkpointing)
-    makespan_df.to_csv(f"{runPath}/output/expe-out/makespan.csv",mode='w',header=True)
+    if absolutePath:
+        makespan_df.to_csv(f"{runPath}/makespan_abs.csv")
+    else:
+        makespan_df.to_csv(f"{runPath}/output/expe-out/makespan.csv",mode='w',header=True)
     if bins:
         os.makedirs(f"{runPath}/output/expe-out/bins",exist_ok=True)
         bins=bins.strip("[]").split(",")
@@ -473,8 +491,10 @@ if makespan:
 df3.to_csv(outfile_restarts,index=False)
 df3 = df3[cols2]
 df3.to_csv(outfile,index=False)
-
-avgAE_path = runPath + "/output/expe-out/avgAE.csv"
+if absolutePath:
+    avgAE_path = f"{runPath}/avgAE_abs.csv"
+else:
+    avgAE_path = runPath + "/output/expe-out/avgAE.csv"
 if (not(MTBF == -1)):
     AE_df=pd.DataFrame({'x':[error],
                   'y':[avgAE],

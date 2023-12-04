@@ -38,6 +38,7 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
                 frames.append(int(filename[9:]))
         #only continue to delete the last frame if there are other frames
         if len(frames) > 0:
+            
             os.system(f"rm -r {old_folder}")
         
             #undo frame-keep
@@ -77,6 +78,3 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     os.system(f"cp -R {frame_folder}/checkpoint_{nb_startFromCheckpoint} {old_folder}/start_from_checkpoint")
     os.system(f"cp -R {frame_folder}/cmd {old_folder}/cmd")
     os.system(f"cp {old_folder}/start_from_checkpoint/out_jobs.csv {old_folder}/out_jobs.csv")
-
-
-   
