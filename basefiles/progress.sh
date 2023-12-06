@@ -1,5 +1,7 @@
 #!/bin/bash
-
+if [ -f ~/.dirB.sh ];then
+    source ~/.dirB.sh
+fi
 function get_interval()
 {
     read -ra ourInterval <<<"$1"
@@ -189,7 +191,7 @@ function print_output()
         echo -e "$myOutput"
     fi
 }
-get_input_variable()
+function get_input_variable
 {
         myString="$1"
         grep "/" <<<"$myString" > /dev/null
@@ -212,7 +214,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o i:apcm:qsd:r:e:j:b:HM:tSuUFT:hP:123456789 --long input:,prompt:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
+VALID_ARGS=$(getopt -o i:apcm:qsD:r:e:j:b:HM:tSuUFT:hP:123456789d: --long input:,prompt:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -245,44 +247,16 @@ prompt="None"
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
-    -1)
-        get_input_variable $folder1
+    -[1-9])
+        folder="folder${1:1}"
+        get_input_variable ${!folder}
         shift 1
         ;;
-    -2)
-        get_input_variable $folder2
-        echo "folder2: $folder2"
-        echo "input: $input"
-        shift 1
-        ;;
-    -3)
-        get_input_variable $folder3
-        shift 1
-        ;;
-    -4)
-        get_input_variable $folder4
-        shift 1
-        ;;
-    -5)
-        get_input_variable $folder5
-        shift 1
-        ;;
-    -6)
-        get_input_variable $folder6
-        shift 1
-        ;;
-    -7)
-        get_input_variable $folder7
-        shift 1
-        ;;
-    -8)
-        get_input_variable $folder8
-        shift 1
-        ;;
-    -9)
-        get_input_variable $folder9
-        shift 1
-        ;;
+    -d)
+       get_input_variable $(d $2)
+       echo "$(d $2)"
+       shift 2
+       ;;
     -i | --input)
         options="$options, i $2"
         get_input_variable $2
@@ -303,7 +277,7 @@ while true; do
         job="$2"
         shift 2
         ;;
-    -d | --id)
+    -D | --id)
         options="$options, id $2"
         id="$2"
         shift 2
@@ -432,12 +406,13 @@ cat <<"EOF"
 progress.sh: used to show the progress of all simulations in a folder, or just certain ones, with options for what to show.
 
 Usage:
-    progress.sh [-# | -i <folder>] [-P <options>] [-e <folder>] [-j <array string>] [-d <array string>] [-r <array string>]
+    progress.sh [-# | -i <folder> | -d <bookmark> ] [-P <options>] [-e <folder>] [-j <array string>] [-D <array string>] [-r <array string>]
                             [-b <int>] [-H] [-p] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [-M K|M|G|T|H]
 
 Mostly Required Options:
     -#                             Will use the environment variable folder# for input.  It will act as if you used -i ${folder#}
                                    This is best used in conjunction with batFolder
+    -d <bookmark>                  Will use the dibB.sh bookmark
                                    
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh
                                    If it has a forward slash '/' in the name it will assume it is an absolute path.
@@ -470,7 +445,7 @@ Which-Simulation Options:
                                    If multiple jobs are wanted then put the job numbers into a string, for example:
                                    '-j "1 2-5 10"'  will gather experiment_1,experiment_2,experiment_3,experiment_4,experiment_5, and experiment_10
 
-    -d, --id <array string>        If you want to focus on just one id (in the sense of folders named id_#) then use this to enter the folder number.
+    -D, --id <array string>        If you want to focus on just one id (in the sense of folders named id_#) then use this to enter the folder number.
                                    Basically the same as --job as far as how it works, except we focus on the id(s)
 
     -r, --run <array string>       If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
@@ -546,24 +521,45 @@ pink="48;5;165"
 light_pink="48;5;132"
 endingFormat="false"
 
-if [[ $prompt != "None" ]];then
-    if [ $input = false ];then
-        input="$prefix/experiments"
-    fi
-    ls $prompt -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl
-    files="`ls $prompt -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl`"
-    IFS=$'\n' read -d '' -ra filesArray <<< "$files"
+expandPath() {
+  echo $(cd $1;pwd)
+}
+function progressBatFolder
+{
+    path=`expandPath $1`
+    enter=false
+    /usr/bin/ls $2 -d "$path"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl
+    folders="`/usr/bin/ls $2 -d "$path"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl`"
+    IFS=$'\n' read -d '' -ra foldersArray <<< "$folders"
+    printf " \\033[48;5;23;38;5;16;1mPrepend selection with a '.' (period) to enter directory\\033[0m\n "
     printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
     read choice
+    if [[ ${choice:0:1} == "." ]];then
+        enter=true
+        choice=${choice:1}
+    fi
     choice=`echo $choice | awk '{num=$1-1;print num}'`
     if [[ $choice == -1 ]];then
         exit
     fi
-
+    
     input_dir="${input}"
-    input_base="${filesArray[$choice]}"
+    input_base="${foldersArray[$choice]}"
     input_base="`echo "$input_base" | awk '{print $NF}'`"
     input="$input_dir/$input_base"
+    #printf -v "folder${num}" '%s' "$input_dir/$input_base"
+    if [ $enter = true ];then
+        
+        progressBatFolder "$input_dir/$input_base" $2
+        
+    fi
+}
+
+if [[ $prompt != "None" ]];then
+    if [ $input = false ];then
+        input="$prefix/experiments"
+    fi
+    progressBatFolder $input $prompt
 fi
 
 

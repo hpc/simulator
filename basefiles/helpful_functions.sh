@@ -1,4 +1,4 @@
-
+BATVERSION="1.0.2"
 #when sourced you will see a '(batsim_env)' in your command prompt
 #you will still have your python_env but it won't show '(python_env)'
 if [[ $BATSIM_ENV_ACTIVATED == "" ]];then
@@ -9,7 +9,7 @@ fi
 #to deactivate batsim_env 
 #( which is just getting rid of the '(batsim_env)'# and deactivating the python_env)
 #use batExit
-batExit()
+function batExit
 {
     BATSIM_ENV_ACTIVATED=""
     deactivate
@@ -19,14 +19,18 @@ batExit()
     tmp=`echo "$LD_LIBRARY_PATH" | sed "s@:$install_prefix/lib:$install_prefix/lib64@@g"`
     export LD_LIBRARY_PATH="$tmp"
 }
-batEnv()
+function batEnv
 {
     echo $prefix
+}
+function batVersion
+{
+    echo $BATVERSION
 }
 
 #helpful bindings I find useful
 #just run "bind_all"
-bind_all()
+function bind_all
 {
 bind '"\eu":previous-history'
 bind '"\em":next-history'
@@ -43,7 +47,7 @@ bind '"\eg":kill-line'
 # batFile can be invoked after sourcing this file
 # it will help you choose a config file in your $prefix/configs and set it to file1
 # as well as help with setting folder1
-batFile()
+function batFile
 {   
     if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
         cat <<"EOF"
@@ -68,8 +72,8 @@ EOF
     
     else
 
-        ls $@ "$prefix/configs" | nl
-        files="`ls $@ "$prefix/configs" | nl`"
+        /usr/bin/ls $@ "$prefix/configs" | nl
+        files="`/usr/bin/ls $@ "$prefix/configs" | nl`"
         IFS=$'\n' read -d '' -ra filesArray <<< "$files"
         printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
         read choice
@@ -92,7 +96,7 @@ EOF
     fi
 
 }
-function batFolder_complete()
+function batFolder_complete
 {
   if [[ ${COMP_WORDS[${#COMP_WORDS[@]}-2]} == "-d" ]] || [[ ${COMP_WORDS[${#COMP_WORDS[@]}-1]} ]];then
     tmp_dirs=()
@@ -109,7 +113,7 @@ function batFolder_complete()
   fi
 
 }
-batFolder()
+function batFolder
 {
     if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
         cat <<"EOF"
@@ -167,12 +171,17 @@ EOF
         if [ $num -eq 0 ]; then
             num=1
         fi
-
-        ls ${options} -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl
-        folders="`ls ${options} -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl`"
+        enter=false
+        /usr/bin/ls ${options} -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl
+        folders="`/usr/bin/ls ${options} -d "$input"/*/ | sed "s#[/].*[/]\(.*\)/#\1#g" | nl`"
         IFS=$'\n' read -d '' -ra foldersArray <<< "$folders"
+        printf " \\033[48;5;23;38;5;16;1mPrepend selection with a '.' (period) to enter directory\\033[0m\n "
         printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
         read choice
+        if [[ ${choice:0:1} == "." ]];then
+            enter=true
+            choice=${choice:1}
+        fi
         choice=`echo $choice | awk '{num=$1-1;print num}'`
         if [[ $choice == -1 ]];then
             return
@@ -183,7 +192,12 @@ EOF
         input_base="`echo "$input_base" | awk '{print $NF}'`"
         #printf -v "folder${num}" '%s' "$input_dir/$input_base"
         eval export "folder${num}"="$input_dir/$input_base"
+        if [ $enter = true ];then
+            batFolder -$num -i "$input_dir/$input_base"
+            
+        fi
     fi
 }
 
 complete -F batFolder_complete batFolder
+complete -F batFolder_complete progress.sh 
