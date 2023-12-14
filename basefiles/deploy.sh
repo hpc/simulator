@@ -90,8 +90,7 @@ if [ $HELP = true ] || [ $FORMAT = false ] || \
     ([ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] && [ $FORMAT != 'docker' ]) || \
     ([ $FORMAT != 'charliecloud' ] && ( [ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ]) ) || \
     ([ $FORMAT == 'charliecloud' ] && ( [ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) ) || \
-    ([ $FORMAT == 'charliecloud' ] && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ]))) || \
-    ([ $gui = true] && [ $count -ne 1 ]);then
+    ([ $FORMAT == 'charliecloud' ] && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ])));then
 
     cat <<"EOF"
 
@@ -193,7 +192,6 @@ function deployGui
                 python_prefix=/home/sim/simulator/python_env
                 install_prefix=/home/sim/simulator/Install
                 $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c 'source /home/sim/.environ; source $basefiles_prefix/deploy_gui;gui_build'
-            fi
             elif [ $NO = true ] && [ $PACK = true ];then
                 mkdir $prefix/gui_package && cd $prefix/gui_package
                 source $prefix/basefiles/deploy_gui
