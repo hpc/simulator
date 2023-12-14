@@ -2,7 +2,7 @@ function gui_download
 {
     cd $downloads_prefix
     git clone https://github.com/mirror/ncurses.git
-    git clone https://github.com/ggerganov/imtui.git
+    git clone https://github.com/ggerganov/imtui.git --recursive
     git clone git://git.openssl.org/openssl.git
     git clone https://github.com/curl/curl.git
 }
@@ -34,7 +34,6 @@ function gui_compile_imtui
 {
     cd $downloads_prefix/imtui
     git checkout tags/v1.0.5
-    git submodule update --init --recursive
     mkdir $downloads_prefix/imtui/build && cd $downloads_prefix/imtui/build
     cmake ../ -DCMAKE_FIND_LIBRARY_PREFIXES=$install_prefix -DCMAKE_INSTALL_PREFIX=$install_prefix
     make

@@ -193,9 +193,11 @@ function deployGui
                 install_prefix=/home/sim/simulator/Install
                 $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c 'source /home/sim/.environ; source $basefiles_prefix/deploy_gui;gui_build'
             elif [ $NO = true ] && [ $PACK = true ];then
-                mkdir $prefix/gui_package && cd $prefix/gui_package
+                mkdir -p $prefix/gui_package/downloads && cd $prefix/gui_package/downloads
                 source $prefix/basefiles/deploy_gui
+                downloads_prefix=$prefix/gui_package/downloads
                 gui_download
+                tar -czf $prefix/gui_package/downloads.tar.gz $prefix/gui_package/downloads
                 echo "1. Move 'prefix'/gui_package to remote computer"
                 echo "2. On remote computer move gui_package to the 'prefix' there(your simulator folder)"
                 echo "3. Run deploy.sh --gui -f charlieclod --no-internet -u"
@@ -204,14 +206,20 @@ function deployGui
                 ch_loc=$prefix/batsim_ch
                 python_prefix=/home/sim/simulator/python_env
                 install_prefix=/home/sim/simulator/Install
-                $ch_bin/ch-run $ch_loc --write --bind ${$prefix/gui_package}:/mnt/FOLDER1 -- /bin/bash -c 'source /home/sim/.environ; mv /mnt/FOLDER1/* $downloads_prefix/;source $basefiles_prefix/deploy_gui;gui_compile_all'
+                cd $prefix/gui_package
+                if [ $? -eq 1 ];then
+                    echo "$prefix/gui_package not found.  Did you move the gui_package to your simulator folder?"
+                    exit 1
+                fi
+                tar -xf $prefix/gui_package/downloads.tar.gz
+                $ch_bin/ch-run $ch_loc --write --bind ${$prefix/gui_package/downloads}:/mnt/FOLDER1 -- /bin/bash -c 'source /home/sim/.environ; mv /mnt/FOLDER1/* $downloads_prefix/;source $basefiles_prefix/deploy_gui;gui_compile_all'
                 echo "You are all set.  You can delete 'prefix'/gui_package now if you want"
             fi
 
                 
         ;;
     esac
-
+ exit 0
 }
 if [ $CLEAN = true ];then
     basefiles=$MY_PATH
@@ -220,6 +228,9 @@ if [ $CLEAN = true ];then
     rm -rf $basefiles/Docker_compile/download $basefiles/Docker_compile/boost_1_75_0
     rm -f $basefiles/deploy.config
     exit 0
+fi
+if [ $gui = true ];then
+    deployGui
 fi
 
 if [ $FORMAT = 'bare-metal' ];then
@@ -327,7 +338,6 @@ EOF
     done
 if [ $withGui = true ];then
     deployGui 
-exit 0
 fi
 if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     basefiles=$MY_PATH
