@@ -24,7 +24,7 @@ def testCheckpointing(ourInput,nb_sims):
         with open(progressFile,"r") as InFile:
             progress = json.load(InFile)
         for key in progress:
-            if key[-3:] == "sim":
+            if key[-4:] == "post":
                 simsCount += 1
                 simsSuccess += int(progress[key])
         print(f"simsCount: {simsCount} simsSuccess: {simsSuccess}",flush=True)
@@ -39,6 +39,3 @@ def testCheckpointing(ourInput,nb_sims):
     else:
         print(f"Error: We had {nb_sims} sims to complete, but only {simsSuccess} sims finished successfully")
         return False
-   
-
-

@@ -246,7 +246,7 @@ if [ $? -eq 1 ];then
 else
     echo "*********************  JSON Check Appears To Be SUCCESSFUL *********************"
 fi
-#lets make a progress.lock file
+
 
 if [ $P_METHOD = 'tasks' ];then
     case $METHOD in

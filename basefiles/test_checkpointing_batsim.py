@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Usage: 
     test-checkpointing-batsim.py -i <path> -o <folder> [--prefix <path>] [--socket-start <INT>] 
@@ -146,6 +145,8 @@ def task_1(runSim=True):
             socketStart+=MAX_SOCKETS_PER_CONFIG
     #ok we started everything for the base
     #count how many Run_* folders there are for # of sims
+    if not runSim:
+        return
     command = f"find {outputFolder} -type d -name \"Run_*\" | wc -l"
     nb_sims = os.popen(command).read()
     nb_sims = int(nb_sims)
@@ -272,6 +273,8 @@ if nb_taskStart == 1:
     if (nb_taskEnd > nb_taskStart) or (nb_taskEnd == -1):
         nb_taskStart+=1
 if nb_taskStart == 2:
+    if len(ourFolders) == 0:
+        task_1(False)
     if endCounter != -1:
         highestStart = endCounter
     for i in range(startCounter,highestStart+1,1):
@@ -286,3 +289,6 @@ if nb_taskStart == 2:
             #else:
             #    print(f"Error with task_2   startCounter={startCounter}",flush=True)
             #    sys.exit()
+if nb_taskStart == 3:
+    task_1(False)
+    task_3()

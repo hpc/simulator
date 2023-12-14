@@ -1,10 +1,14 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o f:npux:l:hc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,help -- "$@")
+VALID_ARGS=$(getopt -o f:npux:l:hc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,with-gui,gui,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
 MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
 MY_PATH="$(cd -- "$MY_PATH" && pwd)"
+default_prefix="$(cd -- "$MY_PATH/.." && pwd)"
+if [[ $prefix == "" ]];then
+    prefix=false
+fi
 
 
 FORMAT=false
@@ -15,6 +19,9 @@ PREFIX=false
 LINE=false
 HELP=false
 CLEAN=false
+gui=false
+withGui=false
+count=0
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
@@ -24,26 +31,42 @@ while true; do
         ;;
     -f | --format)
         FORMAT="$2"
+        count=$(( $count + 1 ))
         shift 2
+        ;;
+    --with-gui)
+        withGui=true
+        count=$(( $count + 1 ))
+        shift 1
+        ;;
+    --gui)
+        gui=true
+        count=$(( $count + 1 ))
+        shift 1
         ;;
     -x | --prefix)
         PREFIX="$2"
+        count=$(( $count + 1 ))
         shift 2
         ;;
     -l | --line-number)
         LINE="$2"
+        count=$(( $count + 1 ))
         shift 2
         ;;
     -n | --no-internet)
         NO=true
+        count=$(( $count + 1 ))
         shift 1
         ;;
     -p | --package)
         PACK=true
+        count=$(( $count + 1 ))
         shift 1
         ;;
     -u | --un-package)
         UNPACK=true
+        count=$(( $count + 1 ))
         shift 1
         ;;
     -h | --help)
@@ -67,7 +90,8 @@ if [ $HELP = true ] || [ $FORMAT = false ] || \
     ([ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] && [ $FORMAT != 'docker' ]) || \
     ([ $FORMAT != 'charliecloud' ] && ( [ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ]) ) || \
     ([ $FORMAT == 'charliecloud' ] && ( [ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) ) || \
-    ([ $FORMAT == 'charliecloud' ] && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ]))) ;then
+    ([ $FORMAT == 'charliecloud' ] && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ]))) || \
+    ([ $gui = true] && [ $count -ne 1 ]);then
 
     cat <<"EOF"
 
@@ -76,7 +100,8 @@ if [ $HELP = true ] || [ $FORMAT = false ] || \
                             NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
 
 Usage:
-    deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] )]
+    deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] )] [--with-gui]
+    deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
     deploy.sh --clean
 
 Required Options 1:
@@ -84,12 +109,26 @@ Required Options 1:
     -f, --format <STR>              The format to build things for:
                                     bare-metal | charliecloud | docker
 Required Options 2:
+    --gui                           only deploy the gui.  
+                                    Meant to be run after normal deployment if you later decide you want the gui.
+                                    Uses install_prefix environment variable from sourcing .../basefiles/batsim_environment.sh
+
+    -f, --format <STR>              The format to build things for:
+                                    bare-metal | charliecloud | docker
+
+    -n, --no-internet               Only used with --format=charliecloud
+                                    If set, will package a folder up that you can then move to
+                                    the computer with no internet.
+                                    Must use -p or -u options with this.
+
+Required Options 3:
 
     -c, --clean                     Will clean up the basefiles folder from a previous deploy
 
 Optional Options 1:
     -x, --prefix  <STR>             Only used with --format=bare-metal.
                                     The full path to the folder that everything is going to install to
+                                    Typically the /path/to/simulator folder.
 
     -l, --line-number <INT>         Only used with --format=bare-metal.
                                     The line number into deploy_commands to start at.
@@ -106,12 +145,76 @@ Optional Options 1:
     -u, --un-package                Only used with --no-internet.
                                     Will initiate the un-packaging of batsim.
 
+    --with-gui                      When this flag is given, gui components will be installed as well.
+                                    Gui components are text/terminal based
+
     -h, --help                      Display this usage page
 
 EOF
     exit 1
 fi
 fi
+function deployGui
+{
+    if [[ $FORMAT == "docker" ]];then
+        prefix="/home/sim/simulator"
+        FORMAT="bare-metal"
+    fi
+    if [ $prefix = false ];then
+        if [ $PREFIX = false ];then
+            echo "default: $default_prefix"
+            echo "Environment variable 'prefix' is not set and you did not add -x option."
+            echo "Enter your desired prefix (0 for default):"
+            read prefix
+        else
+            prefix=$PREFIX
+        fi
+        if [[ $prefix == "0" ]];then
+            prefix=$default_prefix
+        fi
+    fi
+    case $FORMAT in
+        "bare-metal")
+            
+            export basefiles_prefix=$prefix/basefiles
+            export install_prefix=$prefix/Install
+            export downloads_prefix=$prefix/Downloads
+            export python_prefix=$prefix/python_env
+
+            export PATH=$PATH:$basefiles_prefix:$install_prefix/bin:/usr/bin:/usr/sbin
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
+            source $basefiles_prefix/deploy_gui
+            gui_build
+        ;;
+        "charliecloud")
+            if [ $NO = false ];then
+                ch_bin=$prefix/charliecloud/charliecloud/bin
+                ch_loc=$prefix/batsim_ch
+                python_prefix=/home/sim/simulator/python_env
+                install_prefix=/home/sim/simulator/Install
+                $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c 'source /home/sim/.environ; source $basefiles_prefix/deploy_gui;gui_build'
+            fi
+            elif [ $NO = true ] && [ $PACK = true ];then
+                mkdir $prefix/gui_package && cd $prefix/gui_package
+                source $prefix/basefiles/deploy_gui
+                gui_download
+                echo "1. Move 'prefix'/gui_package to remote computer"
+                echo "2. On remote computer move gui_package to the 'prefix' there(your simulator folder)"
+                echo "3. Run deploy.sh --gui -f charlieclod --no-internet -u"
+            elif [ $NO = true ] && [ $UNPACK = true ];then
+                ch_bin=$prefix/charliecloud/charliecloud/bin
+                ch_loc=$prefix/batsim_ch
+                python_prefix=/home/sim/simulator/python_env
+                install_prefix=/home/sim/simulator/Install
+                $ch_bin/ch-run $ch_loc --write --bind ${$prefix/gui_package}:/mnt/FOLDER1 -- /bin/bash -c 'source /home/sim/.environ; mv /mnt/FOLDER1/* $downloads_prefix/;source $basefiles_prefix/deploy_gui;gui_compile_all'
+                echo "You are all set.  You can delete 'prefix'/gui_package now if you want"
+            fi
+
+                
+        ;;
+    esac
+
+}
 if [ $CLEAN = true ];then
     basefiles=$MY_PATH
     rm -rf $basefiles/CharlieCloud_compile/download $basefiles/CharlieCloud_compile/boost_1_75_0
@@ -132,10 +235,14 @@ if [ $FORMAT = 'bare-metal' ];then
     then
         if [ $PREFIX = false ]
         then
-        echo "Enter the absolute folder you want to download and install things to:"
+        echo "default: $default_prefix"
+        echo "Enter the absolute folder you want to download and install things to (0 for default):"
         read prefix
         else
         prefix=$PREFIX
+        fi
+        if [[ $prefix == "0" ]];then
+            prefix="$default_prefix"
         fi
         mkdir -p $prefix
         line_number=1
@@ -147,10 +254,14 @@ if [ $FORMAT = 'bare-metal' ];then
     line_number=$LINE
         if [ $PREFIX = false ]
             then
-            echo "Enter the absolute folder you want to download and install things to:"
+            echo "default: $default_prefix"
+            echo "Enter the absolute folder you want to download and install things to (0 for default):"
             read prefix
             else
             prefix=$PREFIX
+        fi
+        if [[ $prefix == "0" ]];then
+            prefix="$default_prefix"
         fi
         mkdir -p $prefix
         echo $line_number > $myDir/deploy.config
@@ -216,6 +327,8 @@ EOF
 
 
     done
+if [ $withGui = true ];then
+    deployGui 
 exit 0
 fi
 if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
@@ -323,7 +436,6 @@ exit 0
 fi
 
 if [ $FORMAT = 'charliecloud' ] && [ $NO = false ]; then
-#!/bin/bash
 basefiles=$MY_PATH
 deactivate
 cd ../
@@ -363,6 +475,9 @@ chmod -R 777 ./boost_1_75_0
 export CH_IMAGE_STORAGE=`pwd`/$USER.ch
 rm -rf $CH_IMAGE_STORAGE
 ch-image delete batsim
+if [ $withGUI = true ];then
+    ch-image build --force --no-cache -t batsim -f DockerFile ./DockerfileGUI
+fi
 ch-image build --force --no-cache -t batsim -f Dockerfile ./
 ch-convert batsim ${basefiles%/basefiles}/batsim_ch
 cd ${basefiles%/basefiles}

@@ -1,0 +1,54 @@
+function gui_download
+{
+    cd $downloads_prefix
+    git clone https://github.com/mirror/ncurses.git
+    git clone https://github.com/ggerganov/imtui.git
+    git clone git://git.openssl.org/openssl.git
+    git clone https://github.com/curl/curl.git
+}
+function gui_compile_openssl
+{
+
+    cd $downloads_prefix/openssl
+    git checkout tags/OpenSSL-engine-0_9_6
+    ./Configure --prefix=$install_prefix
+    make
+    make install
+}
+function gui_compile_curl
+{
+    cd $downloads_prefix/curl
+    git checkout tags/curl-8_5_0
+    autoreconf -fi
+    ./configure --prefix=$install_prefix --with-ssl=$install_prefix
+}
+function gui_compile_ncurses
+{
+    cd $downloads_prefix/ncurses
+    git checkout tags/v6.4
+    git ./configure --prefix $install_prefix --without-debug
+    make
+    make install
+}
+function gui_compile_imtui
+{
+    cd $downloads_prefix/imtui
+    git checkout tags/v1.0.5
+    git submodule update --init --recursive
+    mkdir $downloads_prefix/imtui/build && cd $downloads_prefix/imtui/build
+    cmake ../ -DCMAKE_FIND_LIBRARY_PREFIXES=$install_prefix -DCMAKE_INSTALL_PREFIX=$install_prefix
+    make
+    make install
+}
+function gui_compile_all
+{
+    gui_compile_openssl
+    gui_compile_curl
+    gui_compile_ncurses
+    gui_compile_imtui
+}
+function gui_build
+{
+    gui_download
+    gui_compile_all
+}

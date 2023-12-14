@@ -300,6 +300,7 @@ if not args["--only-output"]:
         with open(f"{dirname}/progress.log","r") as InOutFile:
             progress=json.load(InOutFile)
             progress[f"{dirname}/{basename}{rest_of_path}_sim"]=0
+            progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
         with open(f"{dirname}/progress.log","w") as InOutFile:
             json.dump(progress,InOutFile,indent=4)
         releaseLock(locked_fd)

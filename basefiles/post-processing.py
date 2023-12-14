@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Usage: 
     post-processing.py -i <path> [--abs] [-o <path>] [ --reservations-as-jobs]
