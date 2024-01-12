@@ -202,3 +202,175 @@ def compareMakespan(input1,input2):
         if not equal:
             break
     return equal
+def sortJsonKeys(keys,keyOrder,default):
+    ourKeys=[key for key in keys]
+    
+    ourNewKeys=[]
+    for key in keyOrder:
+        if ourKeys.count(key) == 1:
+            ourKeys.remove(key)
+            ourNewKeys.append(key)
+   
+    if default == "alphabetic":
+        ourKeys.sort()
+    elif default == "reverse_alphabetic":
+        ourKeys.sort(reverse=True)
+    ourNewKeys.extend(ourKeys)
+    return ourNewKeys
+
+#recursive function to count max levels of json
+def countJsonLevels(ourJson):
+    count=0
+    if type(ourJson) == dict:
+        for key in ourJson.keys():
+            count=max(countJsonLevels(ourJson[key]),count)
+        return count+1
+    else:
+        return 0
+def sortJsonLevel(ourJson,levels,level,keyOrder,levelKeyOrders,default):
+    import json
+    #is this a leaf level?
+    if type(ourJson) == dict:
+        #no it is not a leaf level
+        newJson=json.loads("{}")
+        #do we sort this level?
+        if level in levels:
+            #yes we do
+            #get our keyOrder ready
+            keyOrderSort=keyOrder.copy()
+          
+            if dictHasKey(levelKeyOrders,str(level)):
+                keyOrderSort=levelKeyOrders[str(level)]
+            if dictHasKey(levelKeyOrders,f"+{level}"):
+                keyOrderSort.extend(levelKeyOrders[f"+{level}"])
+
+            ourKeys=sortJsonKeys(ourJson.keys(),keyOrderSort,default)
+                
+        else:
+            ourKeys=ourJson.keys()
+        #now the keys are in the right order for this level
+        #set a new dict with appropriate values for each key
+        for key in ourKeys:
+            newJson[key]=sortJsonLevel(ourJson[key],levels,level+1,keyOrder,levelKeyOrders,default)
+        return newJson
+    else:
+        return ourJson
+
+
+
+        
+# levels: The levels into the json you want to apply things to
+#   IntervalSet ex: "1-3 6 9-11"
+# keyOrder: The keys you want in a specific order for every level
+#   List ex: ["age","name"]
+# levelKeyOrders: The keys you want in a specific order for each level, clears keyOrder for that level
+#                 If you want to add on to the keyOrder instead of clear it, add a plus to the level
+#   Dict ex: {"1":["age","name"],"2":[]}
+#        ex: {"+1":["age","name"],"2":[],"3":["length","width"]}        
+# default: How to sort the rest of the keys
+#   String.  Right now just "alphabetic" and "reverse_alphabetic"
+        
+def sortJson(ourJson,levelInterval="all",keyOrder=[],levelKeyOrders={},default="alphabetic"):
+    import sys
+    maxLevels=countJsonLevels(ourJson)
+    if levelInterval == "all":
+        levels=list(range(1,maxLevels+1,1))
+    else:
+        levels = getIntervalValues(levelInterval)
+    if max(levels) > maxLevels:
+        print(f"Error, sortJson: you included level {max(levels)} but the highest level is {maxLevels}")
+        sys.exit(1)
+    return sortJsonLevel(ourJson,levels,1,keyOrder,levelKeyOrders,default)
+
+def applyKeyJsonSchema(value,schema,passedKeys):
+    import sys
+    import re
+    global real_start
+    global batsimOptions
+    global batsimValues
+    switchTypes={"bool":bool,"int":int,"string":str,"float":float,"object":dict,"none":None}
+    iterateKeysToSkip=["type","required"]
+    #lets get some info on the value for this key
+    ourType=type(value)
+
+    #Now lets figure out what this schema is all about
+    #is it an array?  If so we need to find the correct schema
+    if type(schema) == list:
+        #it is.  iterate through and find the one that applies
+        found=False
+        for it_Schema in schema:
+            if not dictHasKey(it_Schema,"type"):
+                print(f"Error, applyKeyJsonSchema: no 'type' key in key: {'->'.join(f'{i}' for i in passedKeys)}")
+                sys.exit(1)
+            if switchTypes[it_Schema["type"]] == ourType:
+                #do we need to regex check it?
+                if (it_Schema["type"] == "string") and dictHasKey(it_Schema,"regex"):
+                    #yes we do, let's check it
+                    regEx=re.compile(it_Schema["regex"])
+                    if not regEx.match(value):
+                        #ok we didn't match
+                        continue
+                found = True
+                applyKeyJsonSchema(value,it_Schema,passedKeys)
+        if not found:
+            print(f"Error, applyJsonSchema: no schema type matches. Key:{'->'.join(f'{i}' for i in passedKeys)} Type:{ourType}")
+            sys.exit(1)
+    #ok schema should be a schema we can work with
+    #check if this represents a collection of keys or a value
+    elif schema["type"] == "object":
+        #ok it is a collection of keys, iterate over them
+        for key in schema.keys():
+            #only get the actual schema keys
+            if key in iterateKeysToSkip:
+                continue
+            #ok this is a real schema key
+            required = False
+            #is this schema required?
+            if dictHasKey(schema[key],"required"):
+                required = schema[key]["required"]
+            #ok if this key is required, make sure it is in config file
+            if required and not dictHasKey(value,key):
+                print(f"Error, applyKeyJsonSchema: schema says key:{'->'.join(f'{i}' for i in passedKeys+[key])} is required, but config file is missing it")
+                sys.exit(1)
+            applyKeyJsonSchema(value[key],schema[key],passedKeys+[key])
+    else:
+        #ok this schema is an actual value, let's check if we need to regex
+        if (schema["type"] == "string") and dictHasKey(schema,"regex"):
+            #yes we do, let's check it
+            regEx=re.compile(schema["regex"])
+            if not regEx.match(value):
+                #ok we didn't match, put up an error
+                print(f"Error, applyKeyJsonSchema: key: {'->'.join(f'{i}' for i in passedKeys)} did not match the regex of the schema")
+                sys.exit(1)
+        #ok get real_start,batsim,batsched values
+        if dictHasKey(schema,"real_start"):
+            print("real_start")
+        if dictHasKey(schema,"batsim"):
+            values=schema["batsim"]["values"]
+            [v if v!="{}" else value for v in values]
+            
+        if dictHasKey(schema,"batsched"):
+            print("batsched")
+        
+
+                
+
+        
+#keys "type","required","regex",real_start,batsim,batsched,xreal_start,xbatsim,xbatsched
+#types "int","float","bool","string","none"
+
+def applyJsonSchema(InConfig,InSchema):
+    import sys
+    
+    #first go through all the keys of what we have
+    for key in InConfig.keys():
+        if not dictHasKey(InSchema,key):
+            print(f"Error, applyJsonSchema: no key in schema. Key:{key}")
+            sys.exit(1)
+        applyKeyJsonSchema(InConfig[key],InSchema[key],[key])
+        
+
+
+
+
+

@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o f:npux:l:hc --long clean,format:,no-internet,package,un-package,prefix:,line-number:,with-gui,gui,help -- "$@")
+VALID_ARGS=$(getopt -o f:npux:l:hco:m: --long clean,format:,no-internet,package,un-package,prefix:,line-number:,with-gui,gui,convert-charliecloud:,modules:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -10,7 +10,8 @@ if [[ $prefix == "" ]];then
     prefix=false
 fi
 
-
+OUTPUT=false
+CONVERT=false
 FORMAT=false
 NO=false
 PACK=false
@@ -19,6 +20,7 @@ PREFIX=false
 LINE=false
 HELP=false
 CLEAN=false
+modules=false
 gui=false
 withGui=false
 count=0
@@ -31,6 +33,21 @@ while true; do
         ;;
     -f | --format)
         FORMAT="$2"
+        count=$(( $count + 1 ))
+        shift 2
+        ;;
+    -o | --output)
+        OUTPUT="$2"
+        count=$(( $count + 1 ))
+        shift 2
+        ;;
+    --convert-charliecloud)
+        CONVERT="$2"
+        count=$(( $count + 1 ))
+        shift 2
+        ;;
+    -m | --modules)
+        modules="$2"
         count=$(( $count + 1 ))
         shift 2
         ;;
@@ -85,12 +102,13 @@ done
 # if format is charliecloud but -n is not used and -up are used
 # if format is charliecloud and -n is used but both -up are used or -n is used but neither -up are used
 if [ $CLEAN = false ]; then
+if [ $CONVERT = false ]; then
 if [ $HELP = true ] || [ $FORMAT = false ] || \
     ([ $FORMAT != 'bare-metal' ] && ( [ $PREFIX != false ] || [ $LINE != false ] )) || \
     ([ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] && [ $FORMAT != 'docker' ]) || \
-    ([ $FORMAT != 'charliecloud' ] && ( [ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ]) ) || \
-    ([ $FORMAT == 'charliecloud' ] && ( [ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) ) || \
-    ([ $FORMAT == 'charliecloud' ] && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ])));then
+    ( ([ $FORMAT != 'charliecloud' ] || [ $FORMAT != 'bare-metal' ]) && ([ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ]) ) || \
+    ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && ([ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) ) || \
+    ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ])));then
 
     cat <<"EOF"
 
@@ -99,16 +117,47 @@ if [ $HELP = true ] || [ $FORMAT = false ] || \
                             NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
 
 Usage:
-    deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] )] [--with-gui]
-    deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
-    deploy.sh --clean
+  [1]  deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] )] [--with-gui]
+  [2]  deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
+  [3]  deploy.sh --convert-charliecloud <PATH> -o <PATH> [-m <STR>] [-l <INT>]
+  [4]  deploy.sh --clean
 
 Required Options 1:
 
     -f, --format <STR>              The format to build things for:
                                     bare-metal | charliecloud | docker
+
+Optional Options 1:
+    -x, --prefix  <STR>             Only used with --format=bare-metal.
+                                    The full path to the folder that everything is going to install to
+                                    Typically the /path/to/simulator folder.
+
+    -l, --line-number <INT>         Only used with --format=bare-metal.
+                                    The line number into deploy_commands to start at.
+
+    -n, --no-internet               Only used with --format=charliecloud || bare-metal
+                                    '   When using bare-metal, will require gcc/cmake and build-tools on remote computer.
+                                    '   Will also require time on the remote computer, as everything will need to compile.  About an hour.
+                                    If set, will package a folder up that you can then move to
+                                    the computer with no internet.  The folder is about a 3.5GB
+                                    folder with tar.gz files inside.
+                                    Must use -p or -u options with this.
+
+    -m, --modules <STR>             Load modules in comma seperated STR.  Used only with --format bare-metal
+                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
+
+    -p, --package                   Only used with --no-internet.
+                                    Will initiate the packaging of batsim
+
+    -u, --un-package                Only used with --no-internet.
+                                    Will initiate the un-packaging of batsim.
+                                    ' when --format=bare-metal, will initiate the compiling of all necessary code as well
+
+    --with-gui                      TODO When this flag is given, gui components will be installed as well.
+                                    Gui components are text/terminal based
+
 Required Options 2:
-    --gui                           only deploy the gui.  
+    --gui                           TODO only deploy the gui.  
                                     Meant to be run after normal deployment if you later decide you want the gui.
                                     Uses install_prefix environment variable from sourcing .../basefiles/batsim_environment.sh
 
@@ -119,39 +168,38 @@ Required Options 2:
                                     If set, will package a folder up that you can then move to
                                     the computer with no internet.
                                     Must use -p or -u options with this.
-
 Required Options 3:
+    --convert-charliecloud          Convert charliecloud deployment to bare-metal
+                                    Provide the full path to the charliecloud (batsim_ch folder)
+                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch
+
+    -o, --output                    Where to put Install folder
+                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch -o /path/to/simulator
+                                    ' creates /path/to/simulator/Install with all your needed programs compiled in 
+                                    ' /path/to/simulator/Install/bin 
+Optional Options 3:
+    -m, --modules <STR>             Load modules in comma seperated STR
+                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
+                                    
+    -l, --line-number <INT>         The line number into deploy_commands_no_internet to start at
+
+Required Options 4:
 
     -c, --clean                     Will clean up the basefiles folder from a previous deploy
 
-Optional Options 1:
-    -x, --prefix  <STR>             Only used with --format=bare-metal.
-                                    The full path to the folder that everything is going to install to
-                                    Typically the /path/to/simulator folder.
 
-    -l, --line-number <INT>         Only used with --format=bare-metal.
-                                    The line number into deploy_commands to start at.
-
-    -n, --no-internet               Only used with --format=charliecloud
-                                    If set, will package a folder up that you can then move to
-                                    the computer with no internet.  The folder is about a 3.5GB
-                                    folder with tar.gz files inside.
-                                    Must use -p or -u options with this.
-
-    -p, --package                   Only used with --no-internet.
-                                    Will initiate the packaging of batsim
-
-    -u, --un-package                Only used with --no-internet.
-                                    Will initiate the un-packaging of batsim.
-
-    --with-gui                      When this flag is given, gui components will be installed as well.
-                                    Gui components are text/terminal based
 
     -h, --help                      Display this usage page
 
 EOF
     exit 1
 fi
+fi
+fi
+if [ $modules != false ];then
+    for i in $(echo $modules | tr "," "\n");do
+        module load "$i"
+    done
 fi
 function deployGui
 {
@@ -197,7 +245,9 @@ function deployGui
                 source $prefix/basefiles/deploy_gui
                 downloads_prefix=$prefix/gui_package/downloads
                 gui_download
-                tar -czf $prefix/gui_package/downloads.tar.gz $prefix/gui_package/downloads
+                cd $prefix/gui_package
+                tar -czf $prefix/gui_package/downloads.tar.gz ./downloads
+                rm -rf $prefix/gui_package/downloads
                 echo "1. Move 'prefix'/gui_package to remote computer"
                 echo "2. On remote computer move gui_package to the 'prefix' there(your simulator folder)"
                 echo "3. Run deploy.sh --gui -f charlieclod --no-internet -u"
@@ -212,7 +262,9 @@ function deployGui
                     exit 1
                 fi
                 tar -xf $prefix/gui_package/downloads.tar.gz
-                $ch_bin/ch-run $ch_loc --write --bind ${$prefix/gui_package/downloads}:/mnt/FOLDER1 -- /bin/bash -c 'source /home/sim/.environ; mv /mnt/FOLDER1/* $downloads_prefix/;source $basefiles_prefix/deploy_gui;gui_compile_all'
+                downloads_prefix=/home/sim/simulator/Downloads
+                basefiles_prefix=/home/sim/simulator/basefiles
+                $ch_bin/ch-run $ch_loc --write --bind "${prefix}/gui_package/downloads":/mnt/FOLDER1 -- /bin/bash -c "source /home/sim/.environ; source $basefiles_prefix/deploy_gui;gui_move;gui_compile_all"
                 echo "You are all set.  You can delete 'prefix'/gui_package now if you want"
             fi
 
@@ -229,11 +281,257 @@ if [ $CLEAN = true ];then
     rm -f $basefiles/deploy.config
     exit 0
 fi
-if [ $gui = true ];then
-    deployGui
+if [ $CONVERT != false ] && [ $OUTPUT != false ];then
+    myDir=$MY_PATH
+    export prefix=$OUTPUT
+    export basefiles_prefix=$prefix/basefiles
+    export python_prefix=$prefix/python_env
+    export downloads_prefix=$CONVERT/home/sim/simulator/Downloads
+    export old_install_prefix=$CONVERT/home/sim/simulator/Install
+    export install_prefix=$OUTPUT/Install
+    export PATH=$PATH:$install_prefix/bin
+    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
+    export BOOST_ROOT=$install_prefix
+    source $python_prefix/bin/activate
+    mkdir -p $install_prefix
+    end_line=`cat $myDir/deploy_commands_no_internet | wc -l`
+    oneliner=1
+    line_number=1
+    if [ $LINE != false ];then
+        line_number=$LINE
+    fi
+    for i in `seq $line_number 1 $end_line`
+    do
+        if [[ $oneliner -eq 0 ]]
+        then
+            line=`tr -d '\\' <<< $line`
+            current=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            line="$line $current"
+        else
+            line=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+        fi
+        echo "line: $line_number  cmd:$line"
+        oneliner=0
+        process_line=`grep -E '.*[\]$' <<<$line`
+        if [[ $process_line -eq "" ]]
+        then
+            oneliner=1
+        else
+            continue
+        fi
+        OLD_LINE=$line_number
+        eval "CFLAGS='-Wno-error' CXXFLAGS='-Wno-error' $line"
+        return_value=$?
+        if [[ $line_number != $OLD_LINE ]];then
+            sleep 5
+        fi
+        if [[ $line_number != "boost" ]]
+        then
+
+            if [[ $return_value -eq 1 ]]
+            then
+
+                echo "Error after line_number: $line_number"
+                echo "Try to fix error and start this script again. Exiting..."
+                echo "$line_number" > $myDir/deploy.config
+                echo "$prefix" >> $myDir/deploy.config
+                exit 1
+            fi
+        fi
+
+            if [[ $line_number == "end" ]]
+        then
+            cp $old_install_prefix/bin/robin $install_prefix/bin/
+
+            cat <<EOF
+            *********************************************
+
+            Successfully Installed Batsim and Batsched!!!
+
+            *********************************************
+
+            You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need
+            At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.
+EOF
+        fi
+
+
+    done
+    if [ $gui = true ];then
+        deployGui
+    fi
+    exit 0
+fi
+if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
+    basefiles=$MY_PATH
+    deactivate
+    cd ../
+    prefix=${MY_PATH%/basefiles}
+    export basefiles_prefix=$prefix/basefiles
+    export python_prefix=$prefix/python_env
+    export downloads_prefix=$prefix/Downloads
+    export install_prefix=$prefix/Install
+    mkdir -p $downloads_prefix && \
+    mkdir -p $install_prefix/bin/ && \
+    mkdir -p $python_prefix && \
+    mkdir python_env && cd python_env
+    python3 -m venv ./
+    source ./bin/activate
+    python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
+    python3 -m pip install meson
+    python3 -m pip install ninja
+    python3 -m pip install pandas
+    python3 -m pip install numpy
+    python3 -m pip install seaborn
+    python3 -m pip install shapely
+    python3 -m pip install requests
+    python3 -m pip install venv-pack
+    export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
+    export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
+    sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
+    venv-pack -o $prefix/python_env.tar.gz
+    cd $downloads_prefix
+    wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
+    tar -xf ./download
+    cd $downloads_prefix
+    git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
+    git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
+    cd $basefiles_prefix
+    git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
+    cd $downloads_prefix
+    git clone https://framagit.org/simgrid/simgrid.git
+    git clone https://github.com/zeromq/libzmq.git
+    git clone https://github.com/redis/hiredis.git
+    git clone https://github.com/enki/libev.git
+    git clone https://github.com/alisw/GMP.git
+    git clone https://github.com/zeromq/cppzmq.git
+    git clone https://github.com/mpoquet/redox.git
+    git clone https://github.com/Tencent/rapidjson.git
+    git clone https://github.com/zeux/pugixml.git
+    git clone https://github.com/google/googletest.git
+    git clone https://framagit.org/batsim/intervalset.git
+    git clone https://github.com/docopt/docopt.cpp.git
+    git clone https://github.com/emilk/loguru.git
+    
+    echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
+    cd $downloads_prefix
+    wget --no-check-certificate https://go.dev/dl/go1.19.2.linux-amd64.tar.gz
+    tar -xf go1.19.2.linux-amd64.tar.gz
+    mv ./go/bin/go $install_prefix/bin/
+    $install_prefix/bin/go install -v framagit.org/batsim/batexpe/cmd/robin@latest
+    $install_prefix/bin/go install -v framagit.org/batsim/batexpe/cmd/robintest@latest
+    
+    cd $prefix
+    mkdir experiments
+    mkdir configs
+    rm -rf $prefix/python_env
+    cd $prefix/..
+    cp $basefiles/deploy.sh ./
+    tar -czf batsim.tar.gz ./$(basename $prefix)
+    mkdir -p batsim_packaged
+    mv batsim.tar.gz ./batsim_packaged/
+    mv deploy.sh ./batsim_packaged/
+    echo $(basename $prefix) > ./batsim_packaged/prefixName.txt
+    echo "Finished making your packaged directory"
+    echo "copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet"
+    echo "then run this same script with un-package argument"
+    exit 0
+fi
+if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
+    pack_prefix=$MY_PATH
+    prefixName=`cat $pack_prefix/prefixName.txt`
+    tar -xf batsim.tar.gz
+    prefix=$pack_prefix/$prefixName
+    cd $prefix
+    mkdir python_env
+    mv python_env.tar.gz $prefix/python_env
+    cd $prefix/python_env
+    tar -xf python_env.tar.gz
+    cd $prefix
+    myDir=$MY_PATH
+    export basefiles_prefix=$prefix/basefiles
+    export python_prefix=$prefix/python_env
+    export downloads_prefix=$prefix/Downloads
+    export install_prefix=$prefix/Install
+    export PATH=$PATH:$install_prefix/bin
+    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
+    export BOOST_ROOT=$install_prefix
+    cat <<EOF
+            *********************************************
+
+            Successfully Unpacked Batsim !!!
+            Getting Ready To Compile Dependencies of Batsim and Batsim itself......
+
+            *********************************************
+EOF
+    sleep 15
+
+    source $python_prefix/bin/activate
+    end_line=`cat $myDir/deploy_commands_no_internet | wc -l`
+    oneliner=1
+    line_number=1
+    if [ $LINE != false ];then
+        line_number=$LINE
+    fi
+    for i in `seq $line_number 1 $end_line`
+    do
+        if [[ $oneliner -eq 0 ]]
+        then
+            line=`tr -d '\\' <<< $line`
+            current=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            line="$line $current"
+        else
+            line=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+        fi
+        echo "line: $line_number  cmd:$line"
+        oneliner=0
+        process_line=`grep -E '.*[\]$' <<<$line`
+        if [[ $process_line -eq "" ]]
+        then
+            oneliner=1
+        else
+            continue
+        fi
+        OLD_LINE=$line_number
+        eval "CFLAGS='-Wno-error' CXXFLAGS='-Wno-error' $line"
+        return_value=$?
+        if [[ $line_number != $OLD_LINE ]];then
+            sleep 5
+        fi
+        if [[ $line_number != "boost" ]]
+        then
+
+            if [[ $return_value -eq 1 ]]
+            then
+
+                echo "Error after line_number: $line_number"
+                echo "Try to fix error and start this script again. Exiting..."
+                echo "$line_number" > $myDir/deploy.config
+                echo "$prefix" >> $myDir/deploy.config
+                exit 1
+            fi
+        fi
+
+            if [[ $line_number == "end" ]]
+        then
+
+            cat <<EOF
+            *********************************************
+
+            Successfully Compiled and Installed Batsim and Batsched!!!
+
+            *********************************************
+
+            You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need
+            At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.
+EOF
+        fi
+
+
+exit 0
 fi
 
-if [ $FORMAT = 'bare-metal' ];then
+if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
 
     myDir=$MY_PATH
     echo "myDir=$myDir"
@@ -336,8 +634,10 @@ EOF
 
 
     done
-if [ $withGui = true ];then
-    deployGui 
+    if [ $withGui = true ];then
+        deployGui 
+    fi
+    exit 0
 fi
 if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     basefiles=$MY_PATH

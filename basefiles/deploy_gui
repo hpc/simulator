@@ -1,39 +1,47 @@
+function gui_move
+{
+    cp -R /mnt/FOLDER1/* $downloads_prefix/
+}
 function gui_download
 {
     cd $downloads_prefix
     git clone https://github.com/mirror/ncurses.git
     git clone https://github.com/ggerganov/imtui.git --recursive
     git clone git://git.openssl.org/openssl.git
-    git clone https://github.com/curl/curl.git
+    wget https://github.com/curl/curl/releases/download/curl-8_5_0/curl-8.5.0.tar.gz
+    tar -xf curl-8.5.0.tar.gz
+    rm curl-8.5.0.tar.gz
 }
 function gui_compile_openssl
 {
 
     cd $downloads_prefix/openssl
     git checkout tags/OpenSSL-engine-0_9_6
-    ./Configure --prefix=$install_prefix
-    make
-    make install
+    ./Configure --prefix=$install_prefix gcc
+    make build_sw
+    make install_sw
 }
 function gui_compile_curl
 {
-    cd $downloads_prefix/curl
-    git checkout tags/curl-8_5_0
-    autoreconf -fi
+    cd $downloads_prefix/curl-8.5.0
     ./configure --prefix=$install_prefix --with-ssl=$install_prefix
+    make
+    make install
 }
 function gui_compile_ncurses
 {
     cd $downloads_prefix/ncurses
     git checkout tags/v6.4
-    git ./configure --prefix $install_prefix --without-debug
+    ./configure --prefix $install_prefix --without-debug
     make
     make install
+    cp $install_prefix/include/ncurses/* $install_prefix/include/
 }
 function gui_compile_imtui
 {
     cd $downloads_prefix/imtui
     git checkout tags/v1.0.5
+    rm -rf $downloads_prefix/imtui/build
     mkdir $downloads_prefix/imtui/build && cd $downloads_prefix/imtui/build
     cmake ../ -DCMAKE_FIND_LIBRARY_PREFIXES=$install_prefix -DCMAKE_INSTALL_PREFIX=$install_prefix
     make
@@ -41,9 +49,14 @@ function gui_compile_imtui
 }
 function gui_compile_all
 {
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
+    echo "**************   installing openssl **************"
     gui_compile_openssl
+    echo "**************   installing curl *****************"
     gui_compile_curl
+    echo "**************   installing ncurses **************"
     gui_compile_ncurses
+    echo "**************   installing imtui ****************"
     gui_compile_imtui
 }
 function gui_build

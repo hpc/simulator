@@ -1,0 +1,156 @@
+line_number="boost"
+echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
+cd $downloads_prefix
+cd ./boost_1_75_0/
+
+./bootstrap.sh --prefix=$install_prefix --with-toolset=gcc
+#this command does not get a  after it.  It fails some targets (66) but successfully does 17,6XX targets.  It may just be that it's not configured for those targets
+#in any case it returns a non-zero number and will quit the chain of commands if expected to return zero(true) with an &&
+./b2 install
+
+#### don't need to compile Cmake since we are loading cmake above
+#cd /home/$USER/Downloads/
+#git clone https://github.com/Kitware/CMake.git &&
+#cd ./CMake
+#git checkout tags/v3.18.4 -b our_v3.18.4d
+#./bootstrap --prefix=/home/$USER/Install -- -DCMAKE_USE_OPENSSL:BOOL=OFF
+#gmake
+#gmake install
+line_number=$i
+
+cd $downloads_prefix/simgrid/
+git clean -d -f -x
+cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ $downloads_prefix/simgrid/  \
+    -Denable_documentation=off \
+    -Denable_java=off \
+    -Denable_msg=on \
+    -Denable_fortran=off \
+    -Denable_model-checking=off \
+    -Denable_ns3=off \
+    -Denable_lua=off \
+    -Denable_lib_in_jar=off \
+    -Denable_maintainer_mode=off \
+    -Denable_mallocators=on \
+    -Denable_debug=off \
+    -Denable_smpi=on \
+    -Dminimal-bindings=on \
+    -Denable_smpi_ISP_testsuite=off \
+    -Denable_smpi_MPICH3_testsuite=off \
+    -Denable_compile_warnings=off \
+    -Denable_compile_optimizations=on \
+    -Denable_lto=on
+make
+make install
+line_number=$i
+cd $downloads_prefix/libzmq
+git clean -d -f -x
+./autogen.sh
+./configure --prefix=$install_prefix
+make
+make install
+line_number=$i
+cd $downloads_prefix/hiredis
+git clean -d -f -x
+
+CC=gcc make PREFIX=$install_prefix
+#make install does not work here. tried it with DESTDIR and PREFIX.  Puts it in PREFIX/PKG_CONFIG_PATH
+INSTALL="cp -pPR"
+mkdir -p $install_prefix/include/hiredis/adapters
+${INSTALL} hiredis.h async.h read.h sds.h $install_prefix/include/hiredis/
+${INSTALL} adapters/*.h $install_prefix/include/hiredis/adapters
+${INSTALL} libhiredis.so $install_prefix/lib/libhiredis.so.0.14
+ln -sf $install_prefix/lib/libhiredis.so.0.14 $install_prefix/lib/libhiredis.so
+${INSTALL} libhiredis.a $install_prefix/lib/
+mkdir -p $install_prefix/lib/pkgconfig
+source $myDir/genHiRedisPC
+line_number=$i
+cd $downloads_prefix/libev
+git clean -d -f -x
+./configure --prefix=$install_prefix
+make
+make install
+line_number=$i
+cd $downloads_prefix/GMP
+git clean -d -f -x
+./configure --prefix=$install_prefix
+make
+make install
+cd $install_prefix
+export gmp_dir=`find ./ -name libgmp.so | awk -F/ '{print $2}'`
+line_number=$i
+cd $downloads_prefix/cppzmq
+git clean -d -f -x
+cmake -DCMAKE_PREFIX_PATH="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" -DCPPZMQ_BUILD_TESTS=off -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ./
+make
+make install
+
+export PATH=$PATH:$install_prefix/bin
+line_number=$i
+cd $downloads_prefix/redox/
+git clean -d -f -x
+mkdir -p build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ $downloads_prefix/redox/
+make
+cd $downloads_prefix/redox/build/
+make install
+line_number=$i
+cd $downloads_prefix/rapidjson
+git clean -d -f -x
+mkdir $downloads_prefix/rapidjson/build && cd $downloads_prefix/rapidjson/build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ..
+make
+make install
+line_number=$i
+cd $downloads_prefix/pugixml
+git clean -d -f -x
+mkdir $downloads_prefix/pugixml/build
+cd $downloads_prefix/pugixml/build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ..
+make
+make install
+line_number=$i
+cd $downloads_prefix/googletest
+git clean -d -f -x
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++
+make
+make install
+line_number=$i
+cd $downloads_prefix/intervalset
+git clean -d -f -x
+export BOOST_ROOT=$install_prefix
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$install_prefix/lib64/pkgconfig:$install_prefix/lib/pkgconfig:$install_prefix/lib/x86_64-linux-gnu/pkgconfig
+$python_prefix/bin/meson build --buildtype release --prefix $install_prefix
+cd $downloads_prefix/intervalset/build/
+$python_prefix/bin/ninja
+$python_prefix/bin/ninja install
+line_number=$i
+cd $downloads_prefix/docopt.cpp/
+git clean -d -f -x
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ ..
+make
+make install
+line_number=$i
+source $myDir/genGmpPC
+source $myDir/genEvPC
+source $myDir/genLoguruPC
+line_number=$i
+cd $downloads_prefix/loguru
+git clean -d -f -x
+g++ -std=c++11 -o libloguru.so -shared -pthread -fPIC loguru.cpp
+cp $downloads_prefix/loguru/libloguru.so $install_prefix/lib/
+cp $downloads_prefix/loguru/loguru.hpp $install_prefix/include/
+line_number=$i
+cd $downloads_prefix/batsim4
+git clean -d -f -x
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number=$i
+cd $downloads_prefix/batsched4
+git clean -d -f -x
+$python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
+$python_prefix/bin/ninja -C build
+$python_prefix/bin/meson install -C build
+line_number="end"
