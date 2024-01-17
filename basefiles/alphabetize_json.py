@@ -48,7 +48,11 @@ if output[0] != "/":
     output = scriptPath +"/" + output
 with open(path,"r") as InFile:
     myJson = json.load(InFile)
-myJson = functions.sortJson(myJson,"all",keyOrder=["type","required","regex","real_start","batsim","batsched"],default="alphabetic")
+myKeyOrder=["type","required","regex",\
+            "real_start","true_real_start","false_real_start",\
+            "batsim","true_batsim","false_batsim",\
+            "batsched","true_batsched","false_batsched"]
+myJson = functions.sortJson(myJson,"all",keyOrder=myKeyOrder,default="alphabetic")
 
 
 with open(output,"w") as OutFile:

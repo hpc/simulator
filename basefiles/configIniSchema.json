@@ -2,83 +2,83 @@
     "synthetic-workload":{
         "type":"object",
         "required":false,
-        "workloadFile":{"type":"string","required":true,"batsim":{"options":["-w"],"values":["{}"]}},
+        "workloadFile":{"type":"string","required":true,"batsim":[{"-w":"{}"}]},
         "profileType":{"type":"string","required":true,"regex":"^(delay|parallel_homogeneous)$"},
         "speed":{"type":"float","required":false}
     },
     "grizzly-workload":{
         "type":"object",
         "required":false,
-        "workloadFile":{"type":"string","required":true,"batsim":{"options":["-w"],"values":["{}"]}},
+        "workloadFile":{"type":"string","required":true,"batsim":[{"-w":"{}"}]},
         "profileType":{"type":"string","required":true,"regex":"^(delay|parallel_homogeneous)$"},
         "speed":{"type":"float","required":false}
     },
     "nodes":{"type":"int","required":true},
     "cores":{"type":"int"},
     "speeds":{"type":"string"},
-    "share-packing":{"type":"bool","batsim":{"options":["--share-packing"],"values":[]}},
-    "share-packing-holdback":{"type":"int","batsim":{"options":["--share-packing-holdback"],"values":["{}"]}},
-    "core-percent":{"type":"float","batsim":{"options":["--core-percent"],"values":["{}"]}},
-    "checkpointing-on":{"type":"bool","batsim":{"options":["--checkpointing-on"],"values":[]}},
-    "SMTBF":{"type":"float","batsim":{"options":["--SMTBF"],"values":["{}"]}},
+    "share-packing":{"type":"bool","batsim":[{"--share-packing":""}]},
+    "share-packing-holdback":{"type":"int","batsim":[{"--share-packing-holdback":"{}"}]},
+    "core-percent":{"type":"float","batsim":[{"--core-percent":"{}"}]},
+    "checkpointing-on":{"type":"bool","batsim":[{"--checkpointing-on":""}]},
+    "SMTBF":{"type":"float","batsim":[{"--SMTBF":"{}"}]},
     "checkpoint-interval":[
-        {"type":"string","regex":"^[0-9]+$","batsim":{"options":["--checkpointing-interval"],"values":["{}"]}},
-        {"type":"string","regex":"^optimal$","batsim":{"options":["--compute-checkpointing"],"values":[]}}
+        {"type":"string","regex":"^[0-9]+$","batsim":[{"--checkpointing-interval":"{}"}]},
+        {"type":"string","regex":"^optimal$","batsim":[{"--compute-checkpointing":""}]}
     ],  
-    "performance-factor":{"type":"float","batsim":{"options":["--performance-factor"],"values":["{}"]}},
-    "calculate-checkpointing":{"type":"bool","batsim":{"options":["--compute-checkpointing"],"values":[]}},
-    "platformFile":{"type":"string","required":true,"batsim":{"options":["-p"],"values":["{}"]}},
-    "seed-failures":{"type":"bool","batsim":{"options":["--seed-failures"],"values":[]}},
+    "performance-factor":{"type":"float","batsim":[{"--performance-factor":"{}"}]},
+    "calculate-checkpointing":{"type":"bool","batsim":[{"--compute-checkpointing":""}]},
+    "platformFile":{"type":"string","required":true,"batsim":[{"-p":"{}"}]},
+    "seed-failures":{"type":"bool","batsim":[{"--seed-failures":""}]},
     "batsim-log":[
-        {"type":"string","regex":"^(info|information)$","batsim":{"options":["-v"],"values":["information"]}},
-        {"type":"string","regex":"^(network-only|debug|quiet)$","batsim":{"options":["-v"],"values":["{}"]}},
-        {"type":"string","regex":"^[-]q$","batsim":{"options":["-q"],"values":[]}},
-        {"type":"none","batsim":{"options":["-q"],"values":[]}}
+        {"type":"string","regex":"^(info|information)$","batsim":[{"-v":"information"}]},
+        {"type":"string","regex":"^(network-only|debug|quiet)$","batsim":[{"-v":"{}"}]},
+        {"type":"string","regex":"^[-]q$","batsim":[{"-q":""}]},
+        {"type":"none","batsim":[{"-q":""}]}
     ],
     "batsched-log":[
-        {"type":"string","regex":"^(info|information)$","batsched":"--verbosity info"},
-        {"type":"string","regex":"^(silent|debug|quiet)$","batsched":"--verbosity {}"},
-        {"type":"none","batsched":"--verbosity quiet"}
+        {"type":"string","regex":"^(info|information)$","batsched":[{"--verbosity":"info"}]},
+        {"type":"string","regex":"^(silent|debug|quiet)$","batsched":[{"--verbosity":"{}"}]},
+        {"type":"none","batsched":[{"--verbosity":"quiet"}]}
     ],
-    "repair-time":{"type":"float","batsim":{"options":["--repair-time"],"values":["{}"]}},
-    "fixed-failures":{"type":"float","batsim":{"options":["--fixed-failures"],"values":["{}"]}},
-    "checkpointError":{"type":"float","batsim":{"options":["--compute_checkpointing_error"],"values":["{}"]}},
+    "repair-time":{"type":"float","batsim":[{"--repair-time":"{}"}]},
+    "fixed-failures":{"type":"float","batsim":[{"--fixed-failures":"{}"}]},
+    "checkpointError":{"type":"float","batsim":[{"--compute_checkpointing_error":"{}"}]},
     "batsched-policy":[
-        {"type":"string","regex":"^conservative_bf$","batsim":{"options":["--forward-profiles-on-submission"],"values":[]}},
-        {"type":"string","batsched":"-v {}"}
+        {"type":"string","regex":"^conservative_bf$","batsim":[{"--forward-profiles-on-submission":""}]},
+        {"type":"string","batsched":[{"-v":"{}"}]}
     ],
-    "forward-profiles-on-submission":{"type":"bool","batsim":{"options":["--forward-profiles-on-submission"],"values":[]}},
-    "queue-depth":{"type":"int","batsim":{"options":["--queue-depth"],"values":["{}"]}},
-    "reservations-start":{"type":"string","batsim":{"options":["--reservations-start"],"values":["{}"]}},
-    "MTTR":{"type":"float","batsim":{"options":["--MTTR"],"values":["{}"]}},
-    "seed-repair-times":{"type":"bool","batsim":{"options":["--seed-repair-times"],"values":[]}},
-    "checkpoint-batsim-interval":{"type":"string","batsim":{"options":["--checkpoint-batsim-interval"],"values":["{}"]}},
-    "submission-time-after":{"type":"string","batsim":{"options":["--submission-time-after"],"values":["{}"]}},
-    "submission-time-before":{"type":"string","batsim":{"options":["--submission-time-before"],"values":["{}"]}},
-    "copy":{"type":"string","batsim":{"options":["--copy"],"values":["{}"]}},
+    "forward-profiles-on-submission":{"type":"bool","batsim":[{"--forward-profiles-on-submission":""}]},
+    "queue-depth":{"type":"int","batsim":[{"--queue-depth":"{}"}]},
+    "reservations-start":{"type":"string","batsim":[{"--reservations-start":"{}"}]},
+    "MTTR":{"type":"float","batsim":[{"--MTTR":"{}"}]},
+    "seed-repair-times":{"type":"bool","batsim":[{"--seed-repair-times":""}]},
+    "checkpoint-batsim-interval":{"type":"string","batsim":[{"--checkpoint-batsim-interval":"{}"}]},
+    "submission-time-after":{"type":"string","batsim":[{"--submission-time-after":"{}"}]},
+    "submission-time-before":{"type":"string","batsim":[{"--submission-time-before":"{}"}]},
+    "copy":{"type":"string","batsim":[{"--copy":"{}"}]},
     "disable-dynamic-jobs":[
-        {"type":"bool","false_batsim":{"options":["--enable-dynamic-jobs","--acknowledge-dynamic-jobs"],"values":[]}},
-        {"type":"none","batsim":{"options":["--enable-dynamic-jobs","--acknowledge-dynamic-jobs"],"values":[]}}
+        {"type":"bool","false_batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]},
+        {"type":"none","batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]}
     ],
-    "start-from-checkpoint":{"type":"int","batsim":{"options":["--start-from-checkpoint"],"values":["{}"]}},
+    "start-from-checkpoint":{"type":"int","batsim":[{"--start-from-checkpoint":"{}"}]},
     "start-from-checkpoint-keep":[
-        {"type":"int","real_start":{"variables":["startFromCheckpointKeep"],"values":["{}"]}},
-        {"type":"none","real_start":{"variables":["startFromCheckpointKeep"],"values":[false]}}
+        {"type":"int","real_start":[{"startFromCheckpointKeep":"{}"}]},
+        {"type":"none","real_start":[{"startFromCheckpointKeep":false}]}
     ],
     "start-from-frame":[
-        {"type":"int","real_start":{"startFromFrame":"{}"}},
-        {"type":"none","real_start":{"startFromFrame":false}}
+        {"type":"int","real_start":[{"startFromFrame":"{}"}]},
+        {"type":"none","real_start":[{"startFromFrame":false}]}
     ],
     "discard-last-frame":[
-        {"type":"bool","real_start":{"discardLastFrame":"{}"}},
-        {"type":"none","real_start":{"discardLastFrame":false}}
+        {"type":"bool","real_start":[{"discardLastFrame":"{}"}]},
+        {"type":"none","real_start":[{"discardLastFrame":false}]}
     ],
-    "checkpoint-batsim-signal":{"type":"int","batsim":{"options":["--checkpoint-batsim-signal"],"values":["{}"]}},
-    "checkpoint-batsim-keep":{"type":"int","batsim":{"options":["--checkpoint-batsim-keep"],"values":["{}"]}},
-    "output-svg":{"type":"string","regex":"^(none|all|short)$","batsim":{"options":["--output-svg"],"values":["{}"]}},
-    "output-svg-method":{"type":"string","regex":"^(svg|text|both)$","batsim":{"options":["--output-svg-method"],"values":["{}"]}},
-    "svg-frame-start":{"type":"int","batsim":{"options":["--svg-frame-start"],"values":["{}"]}},
-    "svg-frame-end":{"type":"int","batsim":{"options":["--svg-frame-end"],"values":["{}"]}},
-    "svg-output-start":{"type":"int","batsim":{"options":["--svg-output-start"],"values":["{}"]}},
-    "svg-output-end":{"type":"int","batsim":{"options":["--svg-output-end"],"values":["{}"]}}       
+    "checkpoint-batsim-signal":{"type":"int","batsim":[{"--checkpoint-batsim-signal":"{}"}]},
+    "checkpoint-batsim-keep":{"type":"int","batsim":[{"--checkpoint-batsim-keep":"{}"}]},
+    "output-svg":{"type":"string","regex":"^(none|all|short)$","batsim":[{"--output-svg":"{}"}]},
+    "output-svg-method":{"type":"string","regex":"^(svg|text|both)$","batsim":[{"--output-svg-method":"{}"}]},
+    "svg-frame-start":{"type":"int","batsim":[{"--svg-frame-start":"{}"}]},
+    "svg-frame-end":{"type":"int","batsim":[{"--svg-frame-end":"{}"}]},
+    "svg-output-start":{"type":"int","batsim":[{"--svg-output-start":"{}"}]},
+    "svg-output-end":{"type":"int","batsim":[{"--svg-output-end":"{}"}]}       
 }

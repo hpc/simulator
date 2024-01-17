@@ -281,13 +281,44 @@ def sortJson(ourJson,levelInterval="all",keyOrder=[],levelKeyOrders={},default="
         print(f"Error, sortJson: you included level {max(levels)} but the highest level is {maxLevels}")
         sys.exit(1)
     return sortJsonLevel(ourJson,levels,1,keyOrder,levelKeyOrders,default)
-
+def getRealStartOptions(CMD,schema,value):
+    #get all key/value pairs in real_start list
+    for kv in schema[CMD]:
+        key,schema_value=kv.popitem()
+        #add the appropriate key/value to globals
+        if schema_value=="{}":
+            schema_value=value
+        globals()[key]=schema_value
+def getCMDOptions(CMD,Options,schema,value):
+    #get all key/value optional_multi_key/value in batsim list
+    for kvo in schema[CMD]:
+        multiple=False
+        if dictHasKey(kvo,"multiple"):
+            multiple=kvo.pop("multiple")
+        key,schema_value=kvo.popitem()
+        if schema_value == "{}":
+            schema_value = value
+        tmp=None
+        if dictHasKey(Options,key):
+            #ok we already have this key, can we have multiple?
+            if multiple:
+                #yes we can, add it as a list
+                tmp=Options[key]
+                tmp.append(schema_value)
+            else:
+                #ok we can't have multiple, ignore it
+                continue
+        else:
+            #ok we do not already have this key
+            tmp=[schema_value]
+        #so now tmp is what this key should have as a value, set it
+        Options[key]=tmp.copy()
+    return Options
 def applyKeyJsonSchema(value,schema,passedKeys):
     import sys
     import re
-    global real_start
     global batsimOptions
-    global batsimValues
+    global batschedOptions
     switchTypes={"bool":bool,"int":int,"string":str,"float":float,"object":dict,"none":None}
     iterateKeysToSkip=["type","required"]
     #lets get some info on the value for this key
@@ -324,36 +355,138 @@ def applyKeyJsonSchema(value,schema,passedKeys):
             if key in iterateKeysToSkip:
                 continue
             #ok this is a real schema key
-            required = False
             #is this schema required?
-            if dictHasKey(schema[key],"required"):
-                required = schema[key]["required"]
+            required = schema[key]["required"] if dictHasKey(schema[key],"required") else False
             #ok if this key is required, make sure it is in config file
             if required and not dictHasKey(value,key):
                 print(f"Error, applyKeyJsonSchema: schema says key:{'->'.join(f'{i}' for i in passedKeys+[key])} is required, but config file is missing it")
                 sys.exit(1)
             applyKeyJsonSchema(value[key],schema[key],passedKeys+[key])
     else:
-        #ok this schema is an actual value, let's check if we need to regex
-        if (schema["type"] == "string") and dictHasKey(schema,"regex"):
-            #yes we do, let's check it
-            regEx=re.compile(schema["regex"])
-            if not regEx.match(value):
-                #ok we didn't match, put up an error
-                print(f"Error, applyKeyJsonSchema: key: {'->'.join(f'{i}' for i in passedKeys)} did not match the regex of the schema")
+        #ok this schema is an actual value, let's check the config value type against the schema type
+        if switchTypes[schema["type"]] == ourType:
+            #ok let's see if we need to regex it
+            if (schema["type"] == "string") and dictHasKey(schema,"regex"):
+                #yes we do, let's check it
+                regEx=re.compile(schema["regex"])
+                if not regEx.match(value):
+                    #ok we didn't match, put up an error
+                    print(f"Error, applyKeyJsonSchema: key: {'->'.join(f'{i}' for i in passedKeys)} did not match the regex of the schema")
+                    sys.exit(1)
+            #ok get real_start,batsim,batsched values
+            if dictHasKey(schema,"real_start"):
+                getRealStartOptions("real_start",schema,value)
+            if dictHasKey(schema,"true_real_start"):
+                if value == True:
+                    getRealStartOptions("true_real_start",schema,value)
+            if dictHasKey(schema,"false_real_start"):
+                if value == False:
+                    getRealStartOptions("false_real_start",schema,value)
+            if dictHasKey(schema,"batsim"):
+                batsimOptions=getCMDOptions("batsim",batsimOptions,schema,value)
+            if dictHasKey(schema,"true_batsim"):
+                if value == True:
+                    batsimOptions=getCMDOptions("true_batsim",batsimOptions,schema,value)    
+            if dictHasKey(schema,"false_batsim"):
+                if value == False:
+                    batsimOptions=getCMDOptions("false_batsim",batsimOptions,schema,value)
+            if dictHasKey(schema,"batsched"):
+                batschedOptions=getCMDOptions("batsched",batschedOptions,schema,value)
+            if dictHasKey(schema,"true_batsched"):
+                if value == True:
+                    batschedOptions=getCMDOptions("true_batsched",batschedOptions,schema,value)
+            if dictHasKey(schema,"false_batsched"):
+                if value == False:
+                    batschedOptions=getCMDOptions("false_batsched",batschedOptions,schema,value)
+#apply items that did not show up in config that have a none type in schema
+def applyNone(schema,InConfig,passedKeys):
+    import sys
+    global batsimOptions
+    global batschedOptions
+    iterateKeysToSkip=["type","required"]
+    #we are only concerned with lists in the schema
+    #if it is a list check for none
+    if type(schema) == list:
+        for tmp_schema in schema:
+            if dictHasKey(tmp_schema,"type"):
+                if tmp_schema["type"] == "none":
+                    #ok we have a type == none, lets check if InConfig has this key
+                    config=InConfig
+                    for key in passedKeys:
+                        if dictHasKey(config,key):
+                            config=config[key]
+                            continue
+                        else:
+                            #the key was not found, apply the none
+                            #first check if it was required
+                            if dictHasKey(tmp_schema,"required"):
+                                if tmp_schema["required"] == True:
+                                    print(f"Error, applyNone: schema says key:{'->'.join(f'{i}' for i in passedKeys)} is required, but config file is missing it")
+                                    sys.exit(1)
+                            #ok it was not required, we can apply the none
+                            if dictHasKey(tmp_schema,"real_start"):
+                                getRealStartOptions("real_start",tmp_schema,"")
+                            if dictHasKey(tmp_schema,"batsim"):
+                                batsimOptions = getCMDOptions("batsim",batsimOptions,tmp_schema,"")
+                            if dictHasKey(tmp_schema,"batsched"):
+                                batschedOptions = getCMDOptions("batsched",batschedOptions,tmp_schema,"")
+                            break
+                    #if we found our none we can now break
+                    break
+            else:
+                print(f"Error, applyNone: no 'type' key in key: {'->'.join(f'{i}' for i in passedKeys)}")
                 sys.exit(1)
-        #ok get real_start,batsim,batsched values
-        if dictHasKey(schema,"real_start"):
-            print("real_start")
-        if dictHasKey(schema,"batsim"):
-            values=schema["batsim"]["values"]
-            [v if v!="{}" else value for v in values]
-            
-        if dictHasKey(schema,"batsched"):
-            print("batsched")
-        
-
-                
+    else:
+        #it is not a list, but if it is an object, it may contain a list
+        if dictHasKey(schema,"type"):
+            if schema["type"] == "object":
+                #it is an object, however it only makes sense to check the none's in this object if the config has this outer key
+                config=InConfig
+                for key in passedKeys:
+                    if dictHasKey(config,key):
+                        config=config[key]
+                        continue
+                    else:
+                        #ok, we don't have this object in our config so we don't have to process any none's inside this object
+                        return
+                #so we DO have this object in our config.  Iterate the keys of the object and applyNone to each legitimate key
+                for key in schema.keys():
+                    #only get the actual schema keys
+                    if key in iterateKeysToSkip:
+                        continue
+                    applyNone(schema[key],InConfig,passedKeys+[key])
+            else:
+                #ok, it is not a list and not an object.  It is impossible for this key to have any "none"s
+                return
+        else:
+            print(f"Error, applyNone: no 'type' key in key: {'->'.join(f'{i}' for i in passedKeys)}")
+            sys.exit(1)
+def populateCMDs():
+    global batsimCMD
+    global batschedCMD
+    global batsimOptions
+    global batschedOptions
+    #lets start with our base case
+    batsimCMD = f" -s {batsimOptions.pop('-s')} -p {batsimOptions.pop('-p')} -w {batsimOptions.pop('-w')} -e {batsimOptions.pop('-e')}"
+    batsimCMD += " --disable-schedule-tracing --disable-machine-state-tracing"
+    #ok let's add to it
+    while len(batsimOptions) > 0:
+        key,v_list=batsimOptions.popitem()
+        for value in v_list:
+            if value != "":
+                batsimCMD += f" {key} {value}"
+            else:
+                batsimCMD += f" {key}"
+    #lets start with our base case
+    batschedCMD = f" -v {batschedOptions.pop('-v')} -s {batschedOptions.pop('-s')} --verbosity {batschedOptions.pop('--verbosity')}"
+    #ok let's add to it
+    while len(batschedOptions) > 0:
+        key,v_list=batschedOptions.popitem()
+        for value in v_list:
+            if value != "":
+                batschedCMD += f" {key} {value}"
+            else:
+                batschedCMD += f" {key}"
 
         
 #keys "type","required","regex",real_start,batsim,batsched,xreal_start,xbatsim,xbatsched
@@ -368,6 +501,24 @@ def applyJsonSchema(InConfig,InSchema):
             print(f"Error, applyJsonSchema: no key in schema. Key:{key}")
             sys.exit(1)
         applyKeyJsonSchema(InConfig[key],InSchema[key],[key])
+    for key in InSchema.keys():
+        applyNone(InSchema[key],InConfig,[key])
+    #We've taken care of objects that have required keys, lists that have type none but required
+    #all that is left are required keys in the main keys
+    for key in InSchema.keys():
+        required=False
+        if dictHasKey(InSchema[key],"required"):
+            required = InSchema[key]["required"]
+        #only need to check config if required is True
+        if required:
+            #ok, we do need to check
+            if not dictHasKey(InConfig,key):
+                #uh-oh, we don't have that key, yet it is required
+                print(f"Error, applyJsonSchema: schema says key:{key} is required, but config file is missing it")
+                sys.exit(1)
+    #ok lets populate our commands
+    populateCMDs()
+    return
         
 
 

@@ -374,7 +374,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mkdir -p $downloads_prefix && \
     mkdir -p $install_prefix/bin/ && \
     mkdir -p $python_prefix && \
-    mkdir python_env && cd python_env
+    cd $python_prefix
     python3 -m venv ./
     source ./bin/activate
     python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
