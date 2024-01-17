@@ -70,27 +70,32 @@ locked_file=f"{dirname}/progress.lock"
 
 print("after locked_file")
 method = args["--method"]
-scriptPath = pathlib.Path(__file__).parent.absolute()
+scriptPath = str(pathlib.Path(__file__).parent.absolute())
 
 location = str(os.path.dirname(os.path.abspath(__file__)))
 print(path,flush=True)
 socketCount=int(args["--socketCount"])
 mySimTime=int(args["--sim-time"])
-batsimOptions={"-s":f"tcp://localhost:{socketCount}"}
-batschedOptions={}
+functions.batsimOptions={"-s":f"tcp://localhost:{socketCount}"}
+functions.batschedOptions={"-s":f"tcp://*:{socketCount}"}
+functions.batsimCMD=""
+functions.batschedCMD=""
+
 if method == "charliecloud":
-    batsimOptions["-e"]=f"{chPath}/output/expe-out/out"
+    functions.batsimOptions["-e"]=f"{chPath}/output/expe-out/out"
 else:
-    batsimOptions["-e"]=f"{path}/output/expe-out/out"
+    functions.batsimOptions["-e"]=f"{path}/output/expe-out/out"
 
 with open(path+"/input/config.ini","r") as InFile:
     InConfig = json.load(InFile)
 with open(scriptPath+"/configIniSchema.json","r") as InFile:
     InSchema = json.load(InFile)
 functions.applyJsonSchema(InConfig,InSchema)
+globals().update(functions.realStartOptions)
 
-print("finished making batsimCMD")
-print(batsimCMD)
+print("finished making batsimCMD and batschedCMD")
+print(functions.batsimCMD)
+print(functions.batschedCMD)
 print("making genCommand",flush=True)
 wrapper=""
 if method == "charliecloud":
@@ -98,11 +103,11 @@ if method == "charliecloud":
     genCommand="""{chPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\'batsim {batsimCMD}\'
-    --schedcmd=\'batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\'
+    --schedcmd=\'batsched {batschedCMD}\'
     --failure-timeout=120
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
-    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,chPath=chPath+"/input",output=chPath+"/output",batsimCMD=batsimCMD).replace("\n","")
+    --success-timeout=300""".format(mySimTime=str(mySimTime),chPath=chPath+"/input",output=chPath+"/output",batsimCMD=functions.batsimCMD,batschedCMD=functions.batschedCMD).replace("\n","")
     mvFolderPath = f"{path}/output"
     myGenCmd="""{wrapper} robin generate {genCommand}" """.format(wrapper=wrapper,genCommand=genCommand)
     mySimCmd=""" {wrapper} robin {yamlPath}" """.format(wrapper=wrapper,yamlPath=chPath+"/input/experiment.yaml")
@@ -112,11 +117,11 @@ elif method == "docker":
     genCommand="""{outPutPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\"batsim {batsimCMD}\"
-    --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
+    --schedcmd=\"batsched {batschedCMD}\"
     --failure-timeout=120
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
-    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    --success-timeout=300""".format(mySimTime=str(mySimTime),outPutPath=path+"/input",output=path+"/output",batsimCMD=functions.batsimCMD,batschedCMD=functions.batschedCMD).replace("\n","")
     mvFolderPath = f"{path}/output"
     myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
     mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
@@ -126,11 +131,11 @@ elif method == "bare-metal":
     genCommand="""{outPutPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\"batsim {batsimCMD}\"
-    --schedcmd=\"batsched -v {policy} -s tcp://*:{socketCount} {batschedLog}\"
+    --schedcmd=\"batsched {batschedCMD}\"
     --failure-timeout=120
     --ready-timeout=31536000
     --simulation-timeout={mySimTime}
-    --success-timeout=300""".format(policy=batschedPolicy,batsimLog=batsimLog,batschedLog=batschedLog,mySimTime=str(mySimTime),socketCount=socketCount,outPutPath=path+"/input",output=path+"/output",batsimCMD=batsimCMD).replace("\n","")
+    --success-timeout=300""".format(mySimTime=str(mySimTime),outPutPath=path+"/input",output=path+"/output",batsimCMD=functions.batsimCMD,batschedCMD=functions.batschedCMD).replace("\n","")
     mvFolderPath = f"{path}/output"
     myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
     mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
@@ -140,6 +145,7 @@ elif method == "bare-metal":
 print("real_start.py, finished making genCommand and myGenCmd",flush=True)
 print(myGenCmd,flush=True)
 if not args["--only-output"]:
+    #startFromXXX and discardLastFrame variables are made available from functions.applyJsonSchema
     if startFromCheckpoint:
         start_from_checkpoint.move_output_folder(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,mvFolderPath,wrapper)
     os.system(myGenCmd)

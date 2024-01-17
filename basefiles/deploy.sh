@@ -412,8 +412,9 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     git clone https://framagit.org/batsim/intervalset.git
     git clone https://github.com/docopt/docopt.cpp.git
     git clone https://github.com/emilk/loguru.git
-    
-    echo "gobin=$GOBIN     gopath=$GOPATH     goroot=$GOROOT    go111module=$GO111MODULE"
+    export GO111MODULE=on
+    export GOBIN=$install_prefix/bin
+    export GOROOT=$downloads_prefix/go
     cd $downloads_prefix
     wget --no-check-certificate https://go.dev/dl/go1.19.2.linux-amd64.tar.gz
     tar -xf go1.19.2.linux-amd64.tar.gz
@@ -467,7 +468,7 @@ EOF
     sleep 15
 
     source $python_prefix/bin/activate
-    end_line=`cat $myDir/deploy_commands_no_internet | wc -l`
+    end_line=`cat $myDir/deploy_commands_no_internet_checkout | wc -l`
     oneliner=1
     line_number=1
     if [ $LINE != false ];then
@@ -478,10 +479,10 @@ EOF
         if [[ $oneliner -eq 0 ]]
         then
             line=`tr -d '\\' <<< $line`
-            current=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            current=`sed -n ${i}p $myDir/deploy_commands_no_internet_checkout`
             line="$line $current"
         else
-            line=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            line=`sed -n ${i}p $myDir/deploy_commands_no_internet_checkout`
         fi
         echo "line: $line_number  cmd:$line"
         oneliner=0

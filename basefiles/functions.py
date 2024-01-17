@@ -281,14 +281,21 @@ def sortJson(ourJson,levelInterval="all",keyOrder=[],levelKeyOrders={},default="
         print(f"Error, sortJson: you included level {max(levels)} but the highest level is {maxLevels}")
         sys.exit(1)
     return sortJsonLevel(ourJson,levels,1,keyOrder,levelKeyOrders,default)
+
+batsimOptions={}
+batschedOptions={}
+realStartOptions={}
+batsimCMD=""
+batschedCMD=""
 def getRealStartOptions(CMD,schema,value):
+    global realStartOptions
     #get all key/value pairs in real_start list
     for kv in schema[CMD]:
         key,schema_value=kv.popitem()
         #add the appropriate key/value to globals
         if schema_value=="{}":
             schema_value=value
-        globals()[key]=schema_value
+        realStartOptions[key]=schema_value
 def getCMDOptions(CMD,Options,schema,value):
     #get all key/value optional_multi_key/value in batsim list
     for kvo in schema[CMD]:
@@ -507,6 +514,9 @@ def applyJsonSchema(InConfig,InSchema):
     #all that is left are required keys in the main keys
     for key in InSchema.keys():
         required=False
+        #first make sure we aren't dealing with a list
+        if type(InSchema[key]) == list:
+            continue
         if dictHasKey(InSchema[key],"required"):
             required = InSchema[key]["required"]
         #only need to check config if required is True

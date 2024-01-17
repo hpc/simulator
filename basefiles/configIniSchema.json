@@ -13,22 +13,22 @@
         "profileType":{"type":"string","required":true,"regex":"^(delay|parallel_homogeneous)$"},
         "speed":{"type":"float","required":false}
     },
-    "nodes":{"type":"int","required":true},
+    "nodes":{"type":"int","required":true,"real_start":[{"nodes":"{}"}]},
     "cores":{"type":"int"},
     "speeds":{"type":"string"},
-    "share-packing":{"type":"bool","batsim":[{"--share-packing":""}]},
+    "share-packing":{"type":"bool","true_batsim":[{"--share-packing":""}]},
     "share-packing-holdback":{"type":"int","batsim":[{"--share-packing-holdback":"{}"}]},
     "core-percent":{"type":"float","batsim":[{"--core-percent":"{}"}]},
-    "checkpointing-on":{"type":"bool","batsim":[{"--checkpointing-on":""}]},
+    "checkpointing-on":{"type":"bool","true_batsim":[{"--checkpointing-on":""}]},
     "SMTBF":{"type":"float","batsim":[{"--SMTBF":"{}"}]},
     "checkpoint-interval":[
         {"type":"string","regex":"^[0-9]+$","batsim":[{"--checkpointing-interval":"{}"}]},
         {"type":"string","regex":"^optimal$","batsim":[{"--compute-checkpointing":""}]}
     ],  
     "performance-factor":{"type":"float","batsim":[{"--performance-factor":"{}"}]},
-    "calculate-checkpointing":{"type":"bool","batsim":[{"--compute-checkpointing":""}]},
+    "calculate-checkpointing":{"type":"bool","true_batsim":[{"--compute-checkpointing":""}]},
     "platformFile":{"type":"string","required":true,"batsim":[{"-p":"{}"}]},
-    "seed-failures":{"type":"bool","batsim":[{"--seed-failures":""}]},
+    "seed-failures":{"type":"bool","true_batsim":[{"--seed-failures":""}]},
     "batsim-log":[
         {"type":"string","regex":"^(info|information)$","batsim":[{"-v":"information"}]},
         {"type":"string","regex":"^(network-only|debug|quiet)$","batsim":[{"-v":"{}"}]},
@@ -45,13 +45,14 @@
     "checkpointError":{"type":"float","batsim":[{"--compute_checkpointing_error":"{}"}]},
     "batsched-policy":[
         {"type":"string","regex":"^conservative_bf$","batsim":[{"--forward-profiles-on-submission":""}]},
-        {"type":"string","batsched":[{"-v":"{}"}]}
+        {"type":"string","batsched":[{"-v":"{}"}]},
+        {"type":"none","required":true}
     ],
-    "forward-profiles-on-submission":{"type":"bool","batsim":[{"--forward-profiles-on-submission":""}]},
+    "forward-profiles-on-submission":{"type":"bool","true_batsim":[{"--forward-profiles-on-submission":""}]},
     "queue-depth":{"type":"int","batsim":[{"--queue-depth":"{}"}]},
     "reservations-start":{"type":"string","batsim":[{"--reservations-start":"{}"}]},
     "MTTR":{"type":"float","batsim":[{"--MTTR":"{}"}]},
-    "seed-repair-times":{"type":"bool","batsim":[{"--seed-repair-times":""}]},
+    "seed-repair-times":{"type":"bool","true_batsim":[{"--seed-repair-times":""}]},
     "checkpoint-batsim-interval":{"type":"string","batsim":[{"--checkpoint-batsim-interval":"{}"}]},
     "submission-time-after":{"type":"string","batsim":[{"--submission-time-after":"{}"}]},
     "submission-time-before":{"type":"string","batsim":[{"--submission-time-before":"{}"}]},
@@ -60,7 +61,10 @@
         {"type":"bool","false_batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]},
         {"type":"none","batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]}
     ],
-    "start-from-checkpoint":{"type":"int","batsim":[{"--start-from-checkpoint":"{}"}]},
+    "start-from-checkpoint":[
+        {"type":"int","real_start":[{"startFromCheckpoint":"{}"}],"batsim":[{"--start-from-checkpoint":"{}"}]},
+        {"type":"none","real_start":[{"startFromCheckpoint":false}]}
+    ],
     "start-from-checkpoint-keep":[
         {"type":"int","real_start":[{"startFromCheckpointKeep":"{}"}]},
         {"type":"none","real_start":[{"startFromCheckpointKeep":false}]}
