@@ -1,88 +1,521 @@
 {
-    "synthetic-workload":{
-        "type":"object",
-        "required":false,
-        "workloadFile":{"type":"string","required":true,"batsim":[{"-w":"{}"}]},
-        "profileType":{"type":"string","required":true,"regex":"^(delay|parallel_homogeneous)$"},
-        "speed":{"type":"float","required":false}
+    "MTTR": {
+        "type": "float",
+        "batsim": [
+            {
+                "--MTTR": "{}"
+            }
+        ]
     },
-    "grizzly-workload":{
-        "type":"object",
-        "required":false,
-        "workloadFile":{"type":"string","required":true,"batsim":[{"-w":"{}"}]},
-        "profileType":{"type":"string","required":true,"regex":"^(delay|parallel_homogeneous)$"},
-        "speed":{"type":"float","required":false}
+    "SMTBF": {
+        "type": "float",
+        "batsim": [
+            {
+                "--SMTBF": "{}"
+            }
+        ]
     },
-    "nodes":{"type":"int","required":true,"real_start":[{"nodes":"{}"}]},
-    "cores":{"type":"int"},
-    "speeds":{"type":"string"},
-    "share-packing":{"type":"bool","true_batsim":[{"--share-packing":""}]},
-    "share-packing-holdback":{"type":"int","batsim":[{"--share-packing-holdback":"{}"}]},
-    "core-percent":{"type":"float","batsim":[{"--core-percent":"{}"}]},
-    "checkpointing-on":{"type":"bool","true_batsim":[{"--checkpointing-on":""}]},
-    "SMTBF":{"type":"float","batsim":[{"--SMTBF":"{}"}]},
-    "checkpoint-interval":[
-        {"type":"string","regex":"^[0-9]+$","batsim":[{"--checkpointing-interval":"{}"}]},
-        {"type":"string","regex":"^optimal$","batsim":[{"--compute-checkpointing":""}]}
-    ],  
-    "performance-factor":{"type":"float","batsim":[{"--performance-factor":"{}"}]},
-    "calculate-checkpointing":{"type":"bool","true_batsim":[{"--compute-checkpointing":""}]},
-    "platformFile":{"type":"string","required":true,"batsim":[{"-p":"{}"}]},
-    "seed-failures":{"type":"bool","true_batsim":[{"--seed-failures":""}]},
-    "batsim-log":[
-        {"type":"string","regex":"^(info|information)$","batsim":[{"-v":"information"}]},
-        {"type":"string","regex":"^(network-only|debug|quiet)$","batsim":[{"-v":"{}"}]},
-        {"type":"string","regex":"^[-]q$","batsim":[{"-q":""}]},
-        {"type":"none","batsim":[{"-q":""}]}
+    "batsched-log": [
+        {
+            "type": "string",
+            "regex": "^(info|information)$",
+            "batsched": [
+                {
+                    "--verbosity": "info"
+                }
+            ]
+        },
+        {
+            "type": "string",
+            "regex": "^(silent|debug|quiet)$",
+            "batsched": [
+                {
+                    "--verbosity": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "batsched": [
+                {
+                    "--verbosity": "quiet"
+                }
+            ]
+        }
     ],
-    "batsched-log":[
-        {"type":"string","regex":"^(info|information)$","batsched":[{"--verbosity":"info"}]},
-        {"type":"string","regex":"^(silent|debug|quiet)$","batsched":[{"--verbosity":"{}"}]},
-        {"type":"none","batsched":[{"--verbosity":"quiet"}]}
+    "batsched-policy": [
+        {
+            "type": "string",
+            "regex": "^conservative_bf$",
+            "batsim": [
+                {
+                    "--forward-profiles-on-submission": ""
+                }
+            ]
+        },
+        {
+            "type": "string",
+            "batsched": [
+                {
+                    "-v": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "required": true
+        }
     ],
-    "repair-time":{"type":"float","batsim":[{"--repair-time":"{}"}]},
-    "fixed-failures":{"type":"float","batsim":[{"--fixed-failures":"{}"}]},
-    "checkpointError":{"type":"float","batsim":[{"--compute_checkpointing_error":"{}"}]},
-    "batsched-policy":[
-        {"type":"string","regex":"^conservative_bf$","batsim":[{"--forward-profiles-on-submission":""}]},
-        {"type":"string","batsched":[{"-v":"{}"}]},
-        {"type":"none","required":true}
+    "batsim-log": [
+        {
+            "type": "string",
+            "regex": "^(info|information)$",
+            "batsim": [
+                {
+                    "-v": "information"
+                }
+            ]
+        },
+        {
+            "type": "string",
+            "regex": "^(network-only|debug|quiet)$",
+            "batsim": [
+                {
+                    "-v": "{}"
+                }
+            ]
+        },
+        {
+            "type": "string",
+            "regex": "^[-]q$",
+            "batsim": [
+                {
+                    "-q": ""
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "batsim": [
+                {
+                    "-q": ""
+                }
+            ]
+        }
     ],
-    "forward-profiles-on-submission":{"type":"bool","true_batsim":[{"--forward-profiles-on-submission":""}]},
-    "queue-depth":{"type":"int","batsim":[{"--queue-depth":"{}"}]},
-    "reservations-start":{"type":"string","batsim":[{"--reservations-start":"{}"}]},
-    "MTTR":{"type":"float","batsim":[{"--MTTR":"{}"}]},
-    "seed-repair-times":{"type":"bool","true_batsim":[{"--seed-repair-times":""}]},
-    "checkpoint-batsim-interval":{"type":"string","batsim":[{"--checkpoint-batsim-interval":"{}"}]},
-    "submission-time-after":{"type":"string","batsim":[{"--submission-time-after":"{}"}]},
-    "submission-time-before":{"type":"string","batsim":[{"--submission-time-before":"{}"}]},
-    "copy":{"type":"string","batsim":[{"--copy":"{}"}]},
-    "disable-dynamic-jobs":[
-        {"type":"bool","false_batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]},
-        {"type":"none","batsim":[{"--enable-dynamic-jobs":""},{"--acknowledge-dynamic-jobs":""}]}
+    "log-b-log": {
+        "type": "bool",
+        "true_batsim":[
+            {
+                "--log-b-log": ""
+            }
+        ]
+    },
+    "calculate-checkpointing": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--compute-checkpointing": ""
+            }
+        ]
+    },
+    "checkpoint-batsim-interval": {
+        "type": "string",
+        "batsim": [
+            {
+                "--checkpoint-batsim-interval": "{}"
+            }
+        ]
+    },
+    "checkpoint-batsim-keep": {
+        "type": "int",
+        "batsim": [
+            {
+                "--checkpoint-batsim-keep": "{}"
+            }
+        ]
+    },
+    "checkpoint-batsim-signal": {
+        "type": "int",
+        "batsim": [
+            {
+                "--checkpoint-batsim-signal": "{}"
+            }
+        ]
+    },
+    "checkpoint-interval": [
+        {
+            "type": "string",
+            "regex": "^[0-9]+$",
+            "batsim": [
+                {
+                    "--checkpointing-interval": "{}"
+                }
+            ]
+        },
+        {
+            "type": "string",
+            "regex": "^optimal$",
+            "batsim": [
+                {
+                    "--compute-checkpointing": ""
+                }
+            ]
+        }
     ],
-    "start-from-checkpoint":[
-        {"type":"int","real_start":[{"startFromCheckpoint":"{}"}],"batsim":[{"--start-from-checkpoint":"{}"}]},
-        {"type":"none","real_start":[{"startFromCheckpoint":false}]}
+    "checkpointError": {
+        "type": "float",
+        "batsim": [
+            {
+                "--compute_checkpointing_error": "{}"
+            }
+        ]
+    },
+    "checkpointing-on": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--checkpointing-on": ""
+            }
+        ]
+    },
+    "copy": {
+        "type": "string",
+        "batsim": [
+            {
+                "--copy": "{}"
+            }
+        ]
+    },
+    "core-percent": {
+        "type": "float",
+        "batsim": [
+            {
+                "--core-percent": "{}"
+            }
+        ]
+    },
+    "cores": {
+        "type": "int"
+    },
+    "disable-dynamic-jobs": [
+        {
+            "type": "bool",
+            "false_batsim": [
+                {
+                    "--enable-dynamic-jobs": ""
+                },
+                {
+                    "--acknowledge-dynamic-jobs": ""
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "batsim": [
+                {
+                    "--enable-dynamic-jobs": ""
+                },
+                {
+                    "--acknowledge-dynamic-jobs": ""
+                }
+            ]
+        }
     ],
-    "start-from-checkpoint-keep":[
-        {"type":"int","real_start":[{"startFromCheckpointKeep":"{}"}]},
-        {"type":"none","real_start":[{"startFromCheckpointKeep":false}]}
+    "discard-last-frame": [
+        {
+            "type": "bool",
+            "real_start": [
+                {
+                    "discardLastFrame": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "real_start": [
+                {
+                    "discardLastFrame": false
+                }
+            ]
+        }
     ],
-    "start-from-frame":[
-        {"type":"int","real_start":[{"startFromFrame":"{}"}]},
-        {"type":"none","real_start":[{"startFromFrame":false}]}
+    "fixed-failures": {
+        "type": "float",
+        "batsim": [
+            {
+                "--fixed-failures": "{}"
+            }
+        ]
+    },
+    "forward-profiles-on-submission": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--forward-profiles-on-submission": ""
+            }
+        ]
+    },
+    "grizzly-workload": {
+        "type": "object",
+        "required": false,
+        "profileType": {
+            "type": "string",
+            "required": true,
+            "regex": "^(delay|parallel_homogeneous)$"
+        },
+        "speed": {
+            "type": "float",
+            "required": false
+        },
+        "workloadFile": {
+            "type": "string",
+            "required": true,
+            "batsim": [
+                {
+                    "-w": "{}"
+                }
+            ]
+        }
+    },
+    "nodes": {
+        "type": "int",
+        "required": true,
+        "real_start": [
+            {
+                "nodes": "{}"
+            }
+        ]
+    },
+    "output-svg": {
+        "type": "string",
+        "regex": "^(none|all|short)$",
+        "batsim": [
+            {
+                "--output-svg": "{}"
+            }
+        ]
+    },
+    "output-svg-method": {
+        "type": "string",
+        "regex": "^(svg|text|both)$",
+        "batsim": [
+            {
+                "--output-svg-method": "{}"
+            }
+        ]
+    },
+    "performance-factor": {
+        "type": "float",
+        "batsim": [
+            {
+                "--performance-factor": "{}"
+            }
+        ]
+    },
+    "platformFile": {
+        "type": "string",
+        "required": true,
+        "batsim": [
+            {
+                "-p": "{}"
+            }
+        ]
+    },
+    "queue-depth": {
+        "type": "int",
+        "batsim": [
+            {
+                "--queue-depth": "{}"
+            }
+        ]
+    },
+    "queue-policy": {
+        "type": "string",
+        "batsim": [
+            {
+                "--queue-policy": "{}"
+            }
+        ]
+    },
+    "repair-time": {
+        "type": "float",
+        "batsim": [
+            {
+                "--repair-time": "{}"
+            }
+        ]
+    },
+    "reservations-start": {
+        "type": "string",
+        "batsim": [
+            {
+                "--reservations-start": "{}"
+            }
+        ]
+    },
+    "seed-failures": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--seed-failures": ""
+            }
+        ]
+    },
+    "seed-repair-times": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--seed-repair-times": ""
+            }
+        ]
+    },
+    "share-packing": {
+        "type": "bool",
+        "true_batsim": [
+            {
+                "--share-packing": ""
+            }
+        ]
+    },
+    "share-packing-holdback": {
+        "type": "int",
+        "batsim": [
+            {
+                "--share-packing-holdback": "{}"
+            }
+        ]
+    },
+    "speeds": {
+        "type": "string"
+    },
+    "start-from-checkpoint": [
+        {
+            "type": "int",
+            "real_start": [
+                {
+                    "startFromCheckpoint": "{}"
+                }
+            ],
+            "batsim": [
+                {
+                    "--start-from-checkpoint": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "real_start": [
+                {
+                    "startFromCheckpoint": false
+                }
+            ]
+        }
     ],
-    "discard-last-frame":[
-        {"type":"bool","real_start":[{"discardLastFrame":"{}"}]},
-        {"type":"none","real_start":[{"discardLastFrame":false}]}
+    "start-from-checkpoint-keep": [
+        {
+            "type": "int",
+            "real_start": [
+                {
+                    "startFromCheckpointKeep": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "real_start": [
+                {
+                    "startFromCheckpointKeep": false
+                }
+            ]
+        }
     ],
-    "checkpoint-batsim-signal":{"type":"int","batsim":[{"--checkpoint-batsim-signal":"{}"}]},
-    "checkpoint-batsim-keep":{"type":"int","batsim":[{"--checkpoint-batsim-keep":"{}"}]},
-    "output-svg":{"type":"string","regex":"^(none|all|short)$","batsim":[{"--output-svg":"{}"}]},
-    "output-svg-method":{"type":"string","regex":"^(svg|text|both)$","batsim":[{"--output-svg-method":"{}"}]},
-    "svg-frame-start":{"type":"int","batsim":[{"--svg-frame-start":"{}"}]},
-    "svg-frame-end":{"type":"int","batsim":[{"--svg-frame-end":"{}"}]},
-    "svg-output-start":{"type":"int","batsim":[{"--svg-output-start":"{}"}]},
-    "svg-output-end":{"type":"int","batsim":[{"--svg-output-end":"{}"}]}       
+    "start-from-frame": [
+        {
+            "type": "int",
+            "real_start": [
+                {
+                    "startFromFrame": "{}"
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "real_start": [
+                {
+                    "startFromFrame": false
+                }
+            ]
+        }
+    ],
+    "submission-time-after": {
+        "type": "string",
+        "batsim": [
+            {
+                "--submission-time-after": "{}"
+            }
+        ]
+    },
+    "submission-time-before": {
+        "type": "string",
+        "batsim": [
+            {
+                "--submission-time-before": "{}"
+            }
+        ]
+    },
+    "svg-frame-end": {
+        "type": "int",
+        "batsim": [
+            {
+                "--svg-frame-end": "{}"
+            }
+        ]
+    },
+    "svg-frame-start": {
+        "type": "int",
+        "batsim": [
+            {
+                "--svg-frame-start": "{}"
+            }
+        ]
+    },
+    "svg-output-end": {
+        "type": "int",
+        "batsim": [
+            {
+                "--svg-output-end": "{}"
+            }
+        ]
+    },
+    "svg-output-start": {
+        "type": "int",
+        "batsim": [
+            {
+                "--svg-output-start": "{}"
+            }
+        ]
+    },
+    "synthetic-workload": {
+        "type": "object",
+        "required": false,
+        "profileType": {
+            "type": "string",
+            "required": true,
+            "regex": "^(delay|parallel_homogeneous)$"
+        },
+        "speed": {
+            "type": "float",
+            "required": false
+        },
+        "workloadFile": {
+            "type": "string",
+            "required": true,
+            "batsim": [
+                {
+                    "-w": "{}"
+                }
+            ]
+        }
+    }
 }

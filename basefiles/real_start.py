@@ -76,15 +76,15 @@ location = str(os.path.dirname(os.path.abspath(__file__)))
 print(path,flush=True)
 socketCount=int(args["--socketCount"])
 mySimTime=int(args["--sim-time"])
-functions.batsimOptions={"-s":f"tcp://localhost:{socketCount}"}
-functions.batschedOptions={"-s":f"tcp://*:{socketCount}"}
+functions.batsimOptions={"-s":[f"tcp://localhost:{socketCount}"]}
+functions.batschedOptions={"-s":[f"tcp://*:{socketCount}"]}
 functions.batsimCMD=""
 functions.batschedCMD=""
 
 if method == "charliecloud":
-    functions.batsimOptions["-e"]=f"{chPath}/output/expe-out/out"
+    functions.batsimOptions["-e"]=[f"{chPath}/output/expe-out/out"]
 else:
-    functions.batsimOptions["-e"]=f"{path}/output/expe-out/out"
+    functions.batsimOptions["-e"]=[f"{path}/output/expe-out/out"]
 
 with open(path+"/input/config.ini","r") as InFile:
     InConfig = json.load(InFile)

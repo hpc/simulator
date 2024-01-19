@@ -474,7 +474,7 @@ def populateCMDs():
     global batsimOptions
     global batschedOptions
     #lets start with our base case
-    batsimCMD = f" -s {batsimOptions.pop('-s')} -p {batsimOptions.pop('-p')} -w {batsimOptions.pop('-w')} -e {batsimOptions.pop('-e')}"
+    batsimCMD = f" -s {batsimOptions.pop('-s')[0]} -p {batsimOptions.pop('-p')[0]} -w {batsimOptions.pop('-w')[0]} -e {batsimOptions.pop('-e')[0]}"
     batsimCMD += " --disable-schedule-tracing --disable-machine-state-tracing"
     #ok let's add to it
     while len(batsimOptions) > 0:
@@ -485,7 +485,7 @@ def populateCMDs():
             else:
                 batsimCMD += f" {key}"
     #lets start with our base case
-    batschedCMD = f" -v {batschedOptions.pop('-v')} -s {batschedOptions.pop('-s')} --verbosity {batschedOptions.pop('--verbosity')}"
+    batschedCMD = f" -v {batschedOptions.pop('-v')[0]} -s {batschedOptions.pop('-s')[0]} --verbosity {batschedOptions.pop('--verbosity')[0]}"
     #ok let's add to it
     while len(batschedOptions) > 0:
         key,v_list=batschedOptions.popitem()

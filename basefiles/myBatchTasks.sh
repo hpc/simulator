@@ -6,7 +6,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:D --long file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DC --long test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -21,7 +21,9 @@ P_METHOD='tasks'
 FOLDER1_ABS=false
 FILE1_ABS=false
 PERMISSIONS=false
+TEST_SUITE=false
 START_FROM_CHECKPOINT=false
+SKIP_COMPLETED=false
 FRAME=0
 KEEP=1
 DISCARD=""
@@ -101,9 +103,17 @@ while true; do
         PERMISSIONS="$2"
         shift 2
         ;;
+    --test-suite)
+        TEST_SUITE=true
+        shift 1
+        ;;
     -S | --start-from-checkpoint)
         START_FROM_CHECKPOINT=$2
         shift 2
+        ;;
+    -C | --skip-completed-sims)
+        SKIP_COMPLETED=true
+        shift 1
         ;;
     -D | --discard-last-frame)
         DISCARD=" --discard-last-frame "
@@ -197,11 +207,16 @@ Optional Options:
                                             STR = The octal numbers for the permissions
                                             ex: '--permissions 777' = rwxrwxrwx
                                                 '--permissions 750' = rwxr-x---
-                                                '--permissions 755' = rwxr-xr-
+                                                '--permissions 755' = rwxr-xr-x
+
+    --test-suite                            set this flag to create progress.log in one folder up from FOLDER1
 Checkpoint Batsim Options:
 
     -S, --start-from-checkpoint <INT>       Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
                                             Typically '1', the latest
+                                            [default: false]
+
+    -C, --skip-completed-sims               Set this to skip sims that are in progress.log as completed
                                             [default: false]
 
     -D, --discard-last-frame                Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
@@ -246,7 +261,7 @@ if [ $? -eq 1 ];then
 else
     echo "*********************  JSON Check Appears To Be SUCCESSFUL *********************"
 fi
-
+python3 $basefiles/alphabetize_json.py -i $basefiles/configIniSchema.json
 
 if [ $P_METHOD = 'tasks' ];then
     case $METHOD in
@@ -271,8 +286,13 @@ if [ $P_METHOD = 'tasks' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
-cat <<EOF > $FOLDER1_DIR/progress.log
+if [ $TEST_SUITE = true ]; then
+    progress_dir="$FOLDER1_DIR"
+else
+    progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
+fi
+if ! [[ -f "$progress_dir/progress.log" ]]; then
+cat <<EOF > $progress_dir/progress.log
 {
  "progress":true    
 }
@@ -308,8 +328,13 @@ elif [ $P_METHOD = 'sbatch' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
-cat <<EOF > $FOLDER1_DIR/progress.log
+if [ $TEST_SUITE = true ]; then
+    progress_dir="$FOLDER1_DIR"
+else
+    progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
+fi
+if ! [[ -f "$progress_dir/progress.log" ]]; then
+cat <<EOF > $progress_dir/progress.log
 {
  "progress":true    
 }
@@ -350,8 +375,13 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if ! [[ -f "$FOLDER1_DIR/progress.log" ]]; then
-cat <<EOF > $FOLDER1_DIR/progress.log
+if [ $TEST_SUITE = true ]; then
+    progress_dir="$FOLDER1_DIR"
+else
+    progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
+fi
+if ! [[ -f "$progress_dir/progress.log" ]]; then
+cat <<EOF > $progress_dir/progress.log
 {
  "progress":true    
 }
