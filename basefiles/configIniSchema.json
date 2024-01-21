@@ -386,10 +386,16 @@
             }
         ]
     },
-    "skip-completed-sims": {
-        "type": "bool",
-        "real_start":[{"skipCompletedSims":"{}"}]
-    },
+    "skip-completed-sims": [
+        {
+            "type": "bool",
+            "real_start":[{"skipCompletedSims":"{}"}]
+        },
+        {
+            "type": "none",
+            "real_start":[{"skipCompletedSims":false}]
+        }
+    ],
     "speeds": {
         "type": "string"
     },
@@ -522,8 +528,14 @@
             ]
         }
     },
-    "test-suite": {
-        "type": "bool",
-        "real_start": [{"testSuite":"{}"}]
-    }
+    "test-suite": [
+        {
+            "type": "bool",
+            "real_start": [{"testSuite":"{}"}]
+        },
+        {
+            "type": "none",
+            "real_start": [{"testSuite":false}]
+        }
+    ]
 }

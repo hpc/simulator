@@ -24,6 +24,7 @@ def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCh
 
 def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,path,wrapper):
     import os
+    import json
     old_folder = f"{path}/expe-out"
     new_folder = f"{path}/expe-out_1"
     
@@ -73,10 +74,19 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
         if (len(frames) == 0) or (startFromFrame > (max(frames)+1)):
             import sys
             print(f"ERROR!!! --start-from-frame {startFromFrame}  does not exist!")
-            sys.exit()
+            sys.exit(1)
     frame_folder = f"{path}/expe-out_{startFromFrame}"
     os.system(f"mv {old_folder} {new_folder}")
     os.system(f"mkdir {old_folder}")
+    #first check that checkpoint # is valid
+    if not os.path.exists(f"{frame_folder}/checkpoint_{nb_startFromCheckpoint}"):
+        print(f"ERROR! {frame_folder}/checkpoint_{nb_startFromCheckpoint} does not exist!!!")
+        sys.exit(1)
+    with open(f"{frame_folder}/checkpoint_{nb_startFromCheckpoint}/workload.json","r") as InFile:
+        workload=json.load(InFile)
+        if len(workload["jobs"]) == 0:
+            print(f"ERROR! {frame_folder}/checkpoint_{nb_startFromCheckpoint}/workload.json has empty jobs array")
+            sys.exit(1)
     os.system(f"cp -R {frame_folder}/checkpoint_{nb_startFromCheckpoint} {old_folder}/start_from_checkpoint")
     os.system(f"cp -R {frame_folder}/cmd {old_folder}/cmd")
     os.system(f"cp {old_folder}/start_from_checkpoint/out_jobs.csv {old_folder}/out_jobs.csv")
