@@ -386,6 +386,10 @@
             }
         ]
     },
+    "skip-completed-sims": {
+        "type": "bool",
+        "real_start":[{"skipCompletedSims":"{}"}]
+    },
     "speeds": {
         "type": "string"
     },
@@ -517,5 +521,9 @@
                 }
             ]
         }
+    },
+    "test-suite": {
+        "type": "bool",
+        "real_start": [{"testSuite":"{}"}]
     }
 }

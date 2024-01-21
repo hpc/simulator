@@ -25,10 +25,15 @@ Options:
 
     --increase-heldback-nodes               If this flag is included, will treat heldback nodes as additional nodes
 
+    --test-suite                            If this flag is included, puts the progress.log file one folder up from --output
+                                            Otherwise puts it in --output
+
 Checkpoint Batsim Options:
     --start-from-checkpoint <INT>           Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
                                             Typically '1', the latest. -1 means to not to start from a checkpoint...the default.
                                             [default: -1]
+    --skip-completed-sims                   Set this if you want to skip starting from a checkpoint if the sim is included in progress.log with success
+                                            
     --discard-last-frame                    Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
                                             Does not make sense to use with --start-from-checkpoint-keep
                                             Will not change any of the kept expe-out_#'s and will not keep the current expe-out
@@ -510,12 +515,14 @@ if args["--config-info"]:
 ###########################################################################################################
 profile_type=""
 base = args["--output"].rstrip('/')
+testSuite = True if args["--test-suite"] else False
+skipCompletedSims = True if args["--skip-completed-sims"] else False
 startFromCheckpoint = int(args["--start-from-checkpoint"])
 startFromCheckpointKeep = int(args["--start-from-checkpoint-keep"])
 startFromFrame = int(args["--start-from-frame"])
 discardLastFrame = bool(args["--discard-last-frame"])
 if startFromCheckpoint != -1:
-    start_from_checkpoint.changeInputFiles(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base)
+    start_from_checkpoint.changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base)
     sys.exit()
     
 os.makedirs(base,exist_ok=True)
@@ -691,6 +698,9 @@ for experiment in experiments:
             for exp in ourInput.keys():
                 data = deepcopy(ourInput[exp])
                 data[i] = config[experiment]["input"][i]
+                #add in test-suite and skip-completed-sims options
+                data["test-suite"]=testSuite
+                data["skip-completed-sims"]=skipCompletedSims
                 ourInput[exp] = data
                 
     #our config is ready, now make the correct directory structure and output the tailored config files

@@ -21,9 +21,9 @@ P_METHOD='tasks'
 FOLDER1_ABS=false
 FILE1_ABS=false
 PERMISSIONS=false
-TEST_SUITE=false
+TEST_SUITE=""
 START_FROM_CHECKPOINT=false
-SKIP_COMPLETED=false
+SKIP_COMPLETED=""
 FRAME=0
 KEEP=1
 DISCARD=""
@@ -104,7 +104,7 @@ while true; do
         shift 2
         ;;
     --test-suite)
-        TEST_SUITE=true
+        TEST_SUITE=" --test-suite"
         shift 1
         ;;
     -S | --start-from-checkpoint)
@@ -112,7 +112,7 @@ while true; do
         shift 2
         ;;
     -C | --skip-completed-sims)
-        SKIP_COMPLETED=true
+        SKIP_COMPLETED=" --skip-completed-sims"
         shift 1
         ;;
     -D | --discard-last-frame)
@@ -209,19 +209,20 @@ Optional Options:
                                                 '--permissions 750' = rwxr-x---
                                                 '--permissions 755' = rwxr-xr-x
 
-    --test-suite                            set this flag to create progress.log in one folder up from FOLDER1
+    --test-suite                            set this flag to create current_progress.log in one folder up from FOLDER1
+
+    -C, --skip-completed-sims               Set this to skip sims that are in progress.log as completed
+                                            [default: false]
 Checkpoint Batsim Options:
 
     -S, --start-from-checkpoint <INT>       Set this if starting from a checkpoint.  The <INT> is the number of the checkpoint.
                                             Typically '1', the latest
                                             [default: false]
 
-    -C, --skip-completed-sims               Set this to skip sims that are in progress.log as completed
-                                            [default: false]
-
     -D, --discard-last-frame                Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
                                             Does not make sense to use with --start-from-checkpoint-keep
-                                            Will not change any of the kept expe-out_#'s and will not keep the current expe-out
+                                            Flag to give the following behavior:
+                                                Will not change any of the kept expe-out_#'s and will not keep the current expe-out
 
     -K, --start-from-checkpoint-keep <INT>  Used in conjunction with --start-from-checkpoint
                                             Will keep expe-out_1 through exp-out_<INT>.  Only use with --start-from-checkpoint
@@ -268,16 +269,16 @@ if [ $P_METHOD = 'tasks' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED" 
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
             fi
             ;;
         'docker')
@@ -286,13 +287,13 @@ if [ $P_METHOD = 'tasks' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE = true ]; then
+if [ $TEST_SUITE != ""  ]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
 fi
-if ! [[ -f "$progress_dir/progress.log" ]]; then
-cat <<EOF > $progress_dir/progress.log
+if ! [[ -f "$progress_dir/current_progress.log" ]]; then
+cat <<EOF > $progress_dir/current_progress.log
 {
  "progress":true    
 }
@@ -310,16 +311,16 @@ elif [ $P_METHOD = 'sbatch' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED"
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
             else    
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
             fi
             ;;
         'docker')
@@ -328,13 +329,13 @@ elif [ $P_METHOD = 'sbatch' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE = true ]; then
+if [ $TEST_SUITE != "" ]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
 fi
-if ! [[ -f "$progress_dir/progress.log" ]]; then
-cat <<EOF > $progress_dir/progress.log
+if ! [[ -f "$progress_dir/current_progress.log" ]]; then
+cat <<EOF > $progress_dir/current_progress.log
 {
  "progress":true    
 }
@@ -351,37 +352,37 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED"
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
             fi
             ;;
         'docker')
             prefix=/home/sim/simulator
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
             fi
             ;;
     esac
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE = true ]; then
+if [ $TEST_SUITE != "" ]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
 fi
-if ! [[ -f "$progress_dir/progress.log" ]]; then
-cat <<EOF > $progress_dir/progress.log
+if ! [[ -f "$progress_dir/current_progress.log" ]]; then
+cat <<EOF > $progress_dir/current_progress.log
 {
  "progress":true    
 }

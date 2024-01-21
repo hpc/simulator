@@ -80,6 +80,9 @@ with open(path+"/input/config.ini","r") as InFile:
 
 scriptPath = pathlib.Path(__file__).parent.absolute()
 
+queuePolicy=InConfig["queue-policy"] if dictHasKey(InConfig,'queue-policy') else False
+logBLog=InConfig["log-b-log"] if dictHasKey(InConfig,'log-b-log') else False
+
 syntheticWorkload = InConfig['synthetic-workload'] if dictHasKey(InConfig,'synthetic-workload') else False
 grizzlyWorkload = InConfig['grizzly-workload'] if dictHasKey(InConfig,'grizzly-workload') else False
 nodes = int(InConfig['nodes']) if dictHasKey(InConfig,'nodes') else False
@@ -239,6 +242,10 @@ if submitTimeBefore:
     batsimCMD+=f" --submission-time-before {submitTimeBefore}"
 if submitTimeAfter:
     batsimCMD+=f" --submission-time-after {submitTimeAfter}"
+if queuePolicy:
+    batsimCMD+=f" --queue-policy {queuePolicy}"
+if logBLog:
+    batsimCMD+=f" --log-b-log"
 
 print("finished making batsimCMD")
 print(batsimCMD)

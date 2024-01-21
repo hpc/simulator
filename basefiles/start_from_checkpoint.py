@@ -1,4 +1,4 @@
-def changeInputFiles(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base):
+def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base):
     import os
     import json
     experiments=[i for i in os.listdir(base) if os.path.isdir(base+"/"+i) and i!="heatmaps"]
@@ -17,6 +17,8 @@ def changeInputFiles(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,
                             config["start-from-checkpoint-keep"]=startFromCheckpointKeep
                             config["start-from-frame"]=startFromFrame
                             config["discard-last-frame"]=discardLastFrame
+                            config["skip-completed-sims"]=skipCompletedSims
+                            config["test-suite"]=testSuite
                         with open(input_config,'w') as IOFile:
                             json.dump(config,IOFile,indent=4)
 

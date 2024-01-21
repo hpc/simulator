@@ -1,4 +1,4 @@
-BATVERSION="1.0.3"
+BATVERSION="1.0.4"
 #when sourced you will see a '(batsim_env)' in your command prompt
 #you will still have your python_env but it won't show '(python_env)'
 if [[ $BATSIM_ENV_ACTIVATED == "" ]];then
