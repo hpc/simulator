@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 """
 Usage:
-    aggregate-makespan.py -i FOLDER [--output FOLDER] [--start-run INT] [--end-run INT]
+    aggregate-makespan.py -i FOLDER [--output FOLDER] [--try-frame1] [--start-run INT] [--end-run INT]
 
 Required Options:
     -i FOLDER --input FOLDER    where the experiments are
@@ -8,6 +9,9 @@ Required Options:
 Options:
     -o FOLDER --output FOLDER   where the output should go
                                 [default: input]
+
+    -t --try-frame1             if we don't find makespan.csv in normal expe-out, then try expe-out_1
+
     --start-run INT             only include runs starting at start-run
                              
     --end-run INT               only include runs ending at and including end-run
@@ -40,6 +44,7 @@ rawOutPath = outPath.rstrip("/") + "/raw_total_makespan.csv"
 outPath = outPath.rstrip("/") + "/total_makespan.csv"
 startRun=args["--start-run"] if args["--start-run"] else 1
 endRun=args["--end-run"] if args["--end-run"] else False
+tryFrame1=True if args["--try-frame1"] else False
 df = pd.DataFrame()
 df4 = pd.DataFrame()
 df5 = pd.DataFrame()
@@ -75,16 +80,22 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                 if runs > 1:
                     df1 = pd.DataFrame()
                     df3 = pd.DataFrame()
-                
+                    neRuns=0
                     for number in range(startRun,runs+1,1):
                         run = "Run_"+ str(number)
                         makespanPath = path+"/"+exp+"/"+job + "/" + anId + "/" + run    + "/output/expe-out/makespan.csv"
                         fileExists=os.path.exists(makespanPath)
                         if not fileExists:
-                            print("Doesn't Exist: "+makespanPath,flush=True)
-                            OutFile.write("Doesn't Exist: "+makespanPath+"\n")
-                            neCount+=1
-                            neCountJob+=1
+                            if tryFrame1:
+                                print("Doesn't Exist: "+makespanPath,flush=True)
+                                neRuns+=1
+                                makespanPath = path+"/"+exp+"/"+job + "/" + anId + "/" + run    + "/output/expe-out_1/makespan.csv"
+                                fileExists = os.path.exists(makespanPath)
+                            if not fileExists:
+                                print("*** Doesn't Exist: "+makespanPath,flush=True)
+                                OutFile.write("Doesn't Exist: "+makespanPath+"\n")
+                                neCount+=1
+                                neCountJob+=1
                         if fileExists:
                             try:
                                 dfTmp = pd.read_csv(makespanPath,sep=",",header=0)
@@ -101,7 +112,7 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                             dfTmp2["exp"]=exp
                             df1 = pd.concat([df1,dfTmp],axis=0)
                             df3 = pd.concat([df3,dfTmp2],axis=0)
-                                
+                    print(f"Number Runs don't exist: {neRuns}")            
                     df2 = pd.DataFrame()
                     if len(df1)>0:
                         df2["nodes"] = [df1["nodes"].values[0]]

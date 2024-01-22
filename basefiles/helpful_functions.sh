@@ -55,7 +55,9 @@ function batFile
                                     It will help you choose a config file in your $prefix/configs and set it to file1
                                     It will also help with setting folder1
         Usage:
-            batFile [ls options]
+            batFile [-NF] [ls options]
+
+            -NF                     No Folder, will not ask you for a folder after asking for the file
 
             -[ls options]           Normally 'ls' is invoked to read your $prefix/configs folder without any options.
                                     You may find it helpful to use options to 'ls' such as: sort by time, reverse etc...
@@ -71,9 +73,13 @@ function batFile
 EOF
     
     else
-
-        /usr/bin/ls $@ "$prefix/configs" | nl
-        files="`/usr/bin/ls $@ "$prefix/configs" | nl`"
+        if [[ $1 == "-NF" ]];then
+            /usr/bin/ls ${@:1} "$prefix/configs" | nl
+            files="`/usr/bin/ls ${@:1} "$prefix/configs" | nl`"
+        else
+            /usr/bin/ls $@ "$prefix/configs" | nl
+            files="`/usr/bin/ls $@ "$prefix/configs" | nl`"
+        fi
         IFS=$'\n' read -d '' -ra filesArray <<< "$files"
         printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
         read choice
@@ -82,13 +88,23 @@ EOF
             return
         fi
         file1="${filesArray[$choice]}"
-        file1="`echo "$file1" | awk '{print $NF}'`"
+        export file1="`echo "$file1" | awk '{print $NF}'`"
+        if [[ $1 == "-NF" ]];then
+            echo "file1   = $file1"
+            echo "folder1 = $folder1"
+            return
+        fi
         printf "\\033[48;5;23;38;5;16;1mEnter your folder1 name:\\033[0m \n"
-        read -er -i "${file1%.config}" -p "folder1 = "
+        read -er -i "${file1%.config}" -p "Use a dot to exit: folder1 = "
+        if [[ $REPLY == "." ]];then
+            echo "file1   = $file1"
+            echo "folder1 = $folder1"
+            return
+        fi
         folder1=$REPLY
         echo "file1   = $file1"
         printf "\\033[48;5;23;38;5;16;1mNow complete your myBatchTasks command\\033[0m\n"
-        last=$(grep '^myBatchTasks.sh -f ${file1} -o ${folder1} ' ~/.bash_history | tail -n 1)
+        last=$(grep '^myBatchTasks.sh -f ${file1}' ~/.bash_history | tail -n 1)
         if [[ $last == "" ]];then
             last='myBatchTasks.sh -f ${file1} -o ${folder1} '
         fi
@@ -133,12 +149,7 @@ function batFolder
                                     Just pass the ls options you would normally want to use to batFile and you should be fine.
                                     I suggest using batFile like so:
                                     batFile -ltr
-            ------------------------------------------------------------------------------------------------------------------
-            post-running            After running this script you will see the last myBatchTasks command you entered
-                                    It checks your ~/.bash_history file for this.  If all that shows up is:
-                                    "myBatchTasks -f ${file1} -o ${folder1} "
-                                    Then you may need to flush your history with "history -w"
-                                    I leave this to the user as you may not want this flushed
+
 EOF
 
     else

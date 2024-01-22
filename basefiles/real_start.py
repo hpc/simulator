@@ -32,6 +32,9 @@ import pathlib
 import start_from_checkpoint
 import fcntl
 import functions
+import signal
+import subprocess
+
 
 def acquireLock(locked_file):
     ''' acquire exclusive lock file access '''
@@ -49,6 +52,9 @@ def dictHasKey(myDict,key):
         return True
     else:
         return False
+def signal_handler(signum,frame):
+    sid = os.getsid(myProcess.pid)
+    os.system(f"pkill -{signum} -s {sid} batsched")
 
 try:
     args=docopt(__doc__,help=True,options_first=False)
@@ -77,6 +83,7 @@ location = str(os.path.dirname(os.path.abspath(__file__)))
 print(path,flush=True)
 socketCount=int(args["--socketCount"])
 mySimTime=int(args["--sim-time"])
+checkpointBatsimSignal=35
 functions.batsimOptions={"-s":[f"tcp://localhost:{socketCount}"]}
 functions.batschedOptions={"-s":[f"tcp://*:{socketCount}"]}
 functions.batsimCMD=""
@@ -93,25 +100,43 @@ with open(scriptPath+"/configIniSchema.json","r") as InFile:
     InSchema = json.load(InFile)
 functions.applyJsonSchema(InConfig,InSchema)
 globals().update(functions.realStartOptions)
-startCommand=f"touch {path}/output/progress.log"
-os.system(startCommand)
+signal.signal(checkpointBatsimSignal,signal_handler)
+if testSuite:
+    progress_path = dirname
+
+if not os.path.exists(f"{path}/output/progress.log"):
+    myJson="""
+    {
+        "completed":false
+    }
+    """
+    with open(f"{path}/output/progress.log","w") as OutFile:
+        json.dump(json.loads(myJson),OutFile,indent=4)
+
 if skipCompletedSims:
     with open(f"{path}/output/progress.log","r") as InFile:
         progressJson=json.load(InFile)
         if progressJson["completed"]:
+            print("ATTN: completed already, no work to do")
+           
+            locked_fd = acquireLock(locked_file)
+            #we have the lock
+            with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                progress=json.load(InOutFile)
+                progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
+            with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+                json.dump(progress,InOutFile,indent=4)
+            releaseLock(locked_fd)
             sys.exit(0)
-    locked_fd = acquireLock(locked_file)
-    #we have the lock
-    with open(f"{dirname}/current_progress.log","r") as InOutFile:
-        progress=json.load(InOutFile)
-        progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
-    with open(f"{dirname}/current_progress.log","w") as InOutFile:
-        json.dump(progress,InOutFile,indent=4)
-    releaseLock(locked_fd)
-if testSuite:
-    progress_path = dirname
-    
+with open(f"{path}/output/progress.log","r") as InFile:
+        progressJson=json.load(InFile)
+progressJson["completed"]=False
+with open(f"{path}/output/progress.log","w") as OutFile:
+    json.dump(progressJson,OutFile,indent=4)
 
+
+
+myProcess=None
 print("finished making batsimCMD and batschedCMD")
 print(functions.batsimCMD)
 print(functions.batschedCMD)
@@ -147,6 +172,7 @@ elif method == "docker":
     postCmd = """python3 {location}/post-processing.py
     -i {path}""".format(location="/home/sim/simulator/basefiles",path=path).replace("\n","")
 elif method == "bare-metal":
+    wrapper=f"source {scriptPath}/batsim_environment.sh; "
     genCommand="""{outPutPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\"batsim {batsimCMD}\"
@@ -156,10 +182,11 @@ elif method == "bare-metal":
     --simulation-timeout={mySimTime}
     --success-timeout=300""".format(mySimTime=str(mySimTime),outPutPath=path+"/input",output=path+"/output",batsimCMD=functions.batsimCMD,batschedCMD=functions.batschedCMD).replace("\n","")
     mvFolderPath = f"{path}/output"
-    myGenCmd="robin generate {genCommand}".format(genCommand=genCommand)
-    mySimCmd="robin {yamlPath}".format(yamlPath=path+"/input/experiment.yaml")
-    postCmd = """python3 {location}/post-processing.py
-    -i {path}""".format(location=scriptPath,path=path).replace("\n","")
+    myGenCmd=f"{wrapper} robin generate {genCommand}"
+    mySimCmd=f"{wrapper} robin {path+'/input/experiment.yaml'}"
+    postCmd = """{wrapper} python3 {location}/post-processing.py
+    -i {path}""".format(wrapper=wrapper,location=scriptPath,path=path).replace("\n","")
+
 
 print("real_start.py, finished making genCommand and myGenCmd",flush=True)
 print(myGenCmd,flush=True)
@@ -168,8 +195,9 @@ if not args["--only-output"]:
     if startFromCheckpoint:
         start_from_checkpoint.move_output_folder(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,mvFolderPath,wrapper)
     os.system(myGenCmd)
-    myReturn = os.system(mySimCmd)
-    if myReturn >1:
+    myProcess = subprocess.Popen(["/usr/bin/bash","-c",mySimCmd],preexec_fn=os.setsid)
+    myProcess.wait()
+    if myProcess.returncode >1:
         locked_fd = acquireLock(locked_file)
         with open(f"{progress_path}/current_progress.log","r") as InOutFile:
             progress=json.load(InOutFile)
@@ -178,7 +206,7 @@ if not args["--only-output"]:
         with open(f"{progress_path}/current_progress.log","w") as InOutFile:
             json.dump(progress,InOutFile,indent=4)
         releaseLock(locked_fd)
-        sys.exit(myReturn)
+        sys.exit(myProcess.returncode)
     else:
         locked_fd = acquireLock(locked_file)
         #we have the lock
@@ -188,14 +216,12 @@ if not args["--only-output"]:
         with open(f"{progress_path}/current_progress.log","w") as InOutFile:
             json.dump(progress,InOutFile,indent=4)
         releaseLock(locked_fd)
-        completedJson="""
-        {
-            "completed":true
-        }
-        """
+        with open(f"{path}/output/progress.log","r") as InFile:
+            progressJson=json.load(InFile)
+        progressJson["completed"]=True
         with open(f"{path}/output/progress.log","w") as OutFile:
-            json.dump(json.loads(completedJson),OutFile,indent=4)
-    
+            json.dump(progressJson,OutFile,indent=4)
+
 
 
 with open(path+"/output/config.ini","r") as InFile:
@@ -212,7 +238,7 @@ if passFail:
     postCmd = """python3 {location}/pass-fail-processing.py -i {logfile} --duration {duration} --allowed-failures {failures}""".format(duration=duration,failures=failures,location=location,logfile=path+"/output")
 else:
     print("real_start.py, passFail=False",flush=True)
-    
+
 
 print("real_start.py, call to post-processing.py",flush=True)
 print(postCmd,flush=True)

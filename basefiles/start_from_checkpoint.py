@@ -25,6 +25,7 @@ def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCh
 def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,path,wrapper):
     import os
     import json
+    import sys
     old_folder = f"{path}/expe-out"
     new_folder = f"{path}/expe-out_1"
     

@@ -137,6 +137,7 @@
     },
     "checkpoint-batsim-signal": {
         "type": "int",
+        "real_start":[{"checkpointBatsimSignal":"{}"}],
         "batsim": [
             {
                 "--checkpoint-batsim-signal": "{}"
@@ -195,8 +196,9 @@
             }
         ]
     },
-    "cores": {
-        "type": "int"
+    "core-count": {
+        "type": "int",
+        "batsim":[{"--enable-compute-sharing":""}]
     },
     "disable-dynamic-jobs": [
         {
@@ -375,6 +377,9 @@
         "true_batsim": [
             {
                 "--share-packing": ""
+            },
+            {
+                "--enable-compute-sharing": ""
             }
         ]
     },

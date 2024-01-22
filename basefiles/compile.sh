@@ -1,5 +1,5 @@
 #!/bin/bash
-VALID_ARGS=$(getopt -o cf:p:ho:d --long clean,format:,path:,only:,debug,help -- "$@")
+VALID_ARGS=$(getopt -o cf:p:ho:dm: --long modules,clean,format:,path:,only:,debug,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -17,6 +17,7 @@ HELP=false
 CLEAN=false
 BUILDTYPE="release"
 ONLY="both"
+modules=false
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
@@ -34,6 +35,10 @@ while true; do
         ;;
     -o | --only)
         ONLY="$2"
+        shift 2
+        ;;
+    -m | --modules)
+        modules="$2"
         shift 2
         ;;
     -d | --debug)
@@ -82,6 +87,8 @@ Optional Options 1:
     -o, --only <STR>                only compile:
                                     batsim | batsched | both
                                     [default: both]
+    -m, --modules <STR>             Load modules in comma seperated STR
+                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
 
 
     -d, --debug                     compile with debugging and profiling
@@ -96,6 +103,11 @@ Required Options 3:
 
 EOF
     exit 1
+fi
+if [ $modules != false ];then
+    for i in $(echo $modules | tr "," "\n");do
+        module load "$i"
+    done
 fi
 prefix=${MY_PATH%/basefiles}
 if [ $FORMAT == "charliecloud" ];then

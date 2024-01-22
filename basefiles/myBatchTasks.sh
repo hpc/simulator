@@ -287,7 +287,7 @@ if [ $P_METHOD = 'tasks' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE != ""  ]; then
+if [[ $TEST_SUITE != ""  ]]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
@@ -329,7 +329,7 @@ elif [ $P_METHOD = 'sbatch' ];then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE != "" ]; then
+if [[ $TEST_SUITE != "" ]]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
@@ -376,7 +376,7 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     if [ $PERMISSIONS != false ];then
         chmod -R $PERMISSIONS $FOLDER1
     fi
-if [ $TEST_SUITE != "" ]; then
+if [[ $TEST_SUITE != "" ]]; then
     progress_dir="$FOLDER1_DIR"
 else
     progress_dir="${FOLDER1_DIR}/${FOLDER1_BASE}"
