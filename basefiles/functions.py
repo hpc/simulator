@@ -369,6 +369,8 @@ def applyKeyJsonSchema(value,schema,passedKeys):
                 print(f"Error, applyKeyJsonSchema: schema says key:{'->'.join(f'{i}' for i in passedKeys+[key])} is required, but config file is missing it")
                 sys.exit(1)
             applyKeyJsonSchema(value[key],schema[key],passedKeys+[key])
+    elif schema["type"] == "ignore":
+        return
     else:
         #ok this schema is an actual value, let's check the config value type against the schema type
         if switchTypes[schema["type"]] == ourType:

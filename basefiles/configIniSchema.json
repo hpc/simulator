@@ -356,6 +356,15 @@
             }
         ]
     },
+    "resv": {
+        "type": "ignore"
+    },
+    "resv-sweep-number": {
+        "type": "ignore"
+    },
+    "reservations-resv1": {
+        "type": "ignore"
+    },
     "seed-failures": {
         "type": "bool",
         "true_batsim": [
