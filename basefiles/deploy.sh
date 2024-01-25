@@ -55,7 +55,7 @@ while true; do
     -c | --continue)
         CONTINUE=true
         UNPACK=true
-        shift 1;
+        shift 1
         ;;
     --with-gui)
         withGui=true
