@@ -62,7 +62,7 @@ ${INSTALL} libhiredis.so $install_prefix/lib/libhiredis.so.0.14
 ln -sf $install_prefix/lib/libhiredis.so.0.14 $install_prefix/lib/libhiredis.so
 ${INSTALL} libhiredis.a $install_prefix/lib/
 mkdir -p $install_prefix/lib/pkgconfig
-source $myDir/genHiRedisPC
+source $basefiles_prefix/genHiRedisPC
 line_number=$i
 cd $downloads_prefix/libev
 git clean -d -f -x
@@ -132,9 +132,9 @@ cmake -DCMAKE_INSTALL_PREFIX=$install_prefix -D CMAKE_C_COMPILER=gcc -D CMAKE_CX
 make
 make install
 line_number=$i
-source $myDir/genGmpPC
-source $myDir/genEvPC
-source $myDir/genLoguruPC
+source $basefiles_prefix/genGmpPC
+source $basefiles_prefix/genEvPC
+source $basefiles_prefix/genLoguruPC
 line_number=$i
 cd $downloads_prefix/loguru
 git clean -d -f -x

@@ -315,7 +315,6 @@ if [ $CLEAN = true ];then
     exit 0
 fi
 if [ $CONVERT != false ] && [ $OUTPUT != false ];then
-    myDir=$MY_PATH
     export prefix=$OUTPUT
     export basefiles_prefix=$prefix/basefiles
     export python_prefix=$prefix/python_env
@@ -327,7 +326,7 @@ if [ $CONVERT != false ] && [ $OUTPUT != false ];then
     export BOOST_ROOT=$install_prefix
     source $python_prefix/bin/activate
     mkdir -p $install_prefix
-    end_line=`cat $myDir/deploy_commands_no_internet | wc -l`
+    end_line=`cat $basefiles_prefix/deploy_commands_no_internet | wc -l`
     oneliner=1
     line_number=1
     if [ $LINE != false ];then
@@ -338,10 +337,10 @@ if [ $CONVERT != false ] && [ $OUTPUT != false ];then
         if [[ $oneliner -eq 0 ]]
         then
             line=`tr -d '\\' <<< $line`
-            current=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            current=`sed -n ${i}p $basefiles_prefix/deploy_commands_no_internet`
             line="$line $current"
         else
-            line=`sed -n ${i}p $myDir/deploy_commands_no_internet`
+            line=`sed -n ${i}p $basefiles_prefix/deploy_commands_no_internet`
         fi
         echo "line: $line_number  cmd:$line"
         oneliner=0
@@ -366,8 +365,8 @@ if [ $CONVERT != false ] && [ $OUTPUT != false ];then
 
                 echo "Error after line_number: $line_number"
                 echo "Try to fix error and start this script again. Exiting..."
-                echo "$line_number" > $myDir/deploy.config
-                echo "$prefix" >> $myDir/deploy.config
+                echo "$line_number" > $basefiles_prefix/deploy.config
+                echo "$prefix" >> $basefiles_prefix/deploy.config
                 exit 1
             fi
         fi
@@ -467,14 +466,14 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mv deploy.sh ./batsim_packaged/
     echo $(basename $prefix) > ./batsim_packaged/prefixName.txt
     cat <<EOF
-        ************************************************************************************************************
+        ******************************************************************************************************************************************
         Finished making your packaged directory
     
         1. copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet
         2. then run this same script with un-package argument and look at modules argument as well
         3. If any errors happen during un-package you can use the -c and -l arguments after correcting the errors
 
-        *************************************************************************************************************
+        *******************************************************************************************************************************************
 EOF
     exit 0
 fi
@@ -483,7 +482,6 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
     prefixName=`cat $pack_prefix/prefixName.txt`
     tar -xf batsim.tar.gz
     export prefix=$pack_prefix/$prefixName
-    export MY_PATH=$prefix
     cd $prefix
     mkdir python_env
     mv python_env.tar.gz $prefix
@@ -497,6 +495,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
     export PATH=$PATH:$install_prefix/bin
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
+    export MY_PATH=$basefiles_prefix
     cat <<EOF
             *********************************************
 
@@ -522,7 +521,7 @@ EOF
     sleep 10
 fi
 if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
-    export prefix=$MY_PATH
+    export prefix=${MY_PATH%/basefiles}
     export basefiles_prefix=$prefix/basefiles
     export python_prefix=$prefix/python_env
     export downloads_prefix=$prefix/Downloads
@@ -530,6 +529,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
     export PATH=$PATH:$install_prefix/bin
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
+   
 
     source $python_prefix/bin/activate
     end_line=`cat $basefiles_prefix/deploy_commands_no_internet_checkout | wc -l`
@@ -571,8 +571,8 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
 
                 echo "Error after line_number: $line_number"
                 echo "Try to fix error and start this script again. Exiting..."
-                echo "$line_number" > $myDir/deploy.config
-                echo "$prefix" >> $myDir/deploy.config
+                echo "$line_number" > $basefiles_prefix/deploy.config
+                echo "$prefix" >> $basefiles_prefix/deploy.config
                 exit 1
             fi
         fi
@@ -650,10 +650,10 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
         if [[ $oneliner -eq 0 ]]
         then
             line=`tr -d '\\' <<< $line`
-            current=`sed -n ${i}p $myDir/deploy_commands`
+            current=`sed -n ${i}p $basefiles_prefix/deploy_commands`
             line="$line $current"
         else
-            line=`sed -n ${i}p $myDir/deploy_commands`
+            line=`sed -n ${i}p $basefiles_prefix/deploy_commands`
         fi
         echo "line: $line_number  cmd:$line"
         oneliner=0
@@ -678,8 +678,8 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
 
                 echo "Error after line_number: $line_number"
                 echo "Try to fix error and start this script again. Exiting..."
-                echo "$line_number" > $myDir/deploy.config
-                echo "$prefix" >> $myDir/deploy.config
+                echo "$line_number" > $basefiles_prefix/deploy.config
+                echo "$prefix" >> $basefiles_prefix/deploy.config
                 exit 1
             fi
         fi

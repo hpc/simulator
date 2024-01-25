@@ -85,7 +85,7 @@ ${INSTALL} libhiredis.so $install_prefix/lib/libhiredis.so.0.14
 ln -sf $install_prefix/lib/libhiredis.so.0.14 $install_prefix/lib/libhiredis.so
 ${INSTALL} libhiredis.a $install_prefix/lib/
 mkdir -p $install_prefix/lib/pkgconfig
-source $myDir/genHiRedisPC
+source $basefiles_prefix/genHiRedisPC
 line_number=$i
 cd $downloads_prefix/libev
 ./configure --prefix=$install_prefix
@@ -166,9 +166,9 @@ cmake -DCMAKE_INSTALL_PREFIX=$install_prefix ..
 make
 make install
 line_number=$i
-source $myDir/genGmpPC
-source $myDir/genEvPC
-source $myDir/genLoguruPC
+source $basefiles_prefix/genGmpPC
+source $basefiles_prefix/genEvPC
+source $basefiles_prefix/genLoguruPC
 line_number=$i
 cd $downloads_prefix/loguru
 g++ -std=c++11 -o libloguru.so -shared -pthread -fPIC loguru.cpp
@@ -200,6 +200,6 @@ go install -v framagit.org/batsim/batexpe/cmd/robintest@latest
 
 
 
-rm $myDir/deploy.config
+rm $basefiles_prefix/deploy.config
 
 line_number="end"
