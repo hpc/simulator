@@ -146,7 +146,7 @@ if parallelMode == "sbatch":
                         os.system(cmd)
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
-                    command = """source {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
+                    command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
                     --output={jobPath}/output/slurm-%j.out --comment='{folder}_{exp}_{job}j_{ourId}i_{run}r' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
                     """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=os.path.basename(path),priority=priority,\
@@ -217,7 +217,7 @@ elif parallelMode == "tasks":
                     if (srunCount == tasksPerNode) or (total_sims==0):
                         #ok we have reached our limit for a single sbatch, time to sbatch and start another
 
-                        command = """source {basefiles}/batsim_environment.sh;sbatch {partition} -N1 --exclusive --ntasks={tasksPerNode} --export=mySimTime='{mySimTime}',jobPathString='{jobPathString}',experimentString='{experimentString}',jobString='{jobString}',idString='{ourIdString}',runString='{runString}',basefiles='{basefiles}',priority='{priority}',socketCountString='{socketCountString}'
+                        command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 --exclusive --ntasks={tasksPerNode} --export=mySimTime='{mySimTime}',jobPathString='{jobPathString}',experimentString='{experimentString}',jobString='{jobString}',idString='{ourIdString}',runString='{runString}',basefiles='{basefiles}',priority='{priority}',socketCountString='{socketCountString}'
                     {myTime}
                     --output={expPath}/sbatch-{batch_num}.out --comment='{folder}_{batch_num}' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}

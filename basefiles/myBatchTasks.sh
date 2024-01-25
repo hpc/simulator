@@ -2,9 +2,9 @@
 MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
 export prefix="$(cd -- "$MY_PATH"/../ && pwd)"
 
-source $prefix/basefiles/batsim_environment.sh
+. $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
-source $prefix/python_env/bin/activate
+. $prefix/python_env/bin/activate
 
 VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DC --long test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,help -- "$@")
 if [[ $? -ne 0 ]]; then

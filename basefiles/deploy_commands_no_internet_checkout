@@ -153,6 +153,4 @@ git checkout main
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
-cd $basefiles_prefix/simulator
-git checkout main
 line_number="end"

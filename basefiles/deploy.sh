@@ -263,7 +263,7 @@ function deployGui
 
             export PATH=$PATH:$basefiles_prefix:$install_prefix/bin:/usr/bin:/usr/sbin
             export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
-            source $basefiles_prefix/deploy_gui
+            . $basefiles_prefix/deploy_gui
             gui_build
         ;;
         "charliecloud")
@@ -275,7 +275,7 @@ function deployGui
                 $ch_bin/ch-run $ch_loc --write  -- /bin/bash -c 'source /home/sim/.environ; source $basefiles_prefix/deploy_gui;gui_build'
             elif [ $NO = true ] && [ $PACK = true ];then
                 mkdir -p $prefix/gui_package/downloads && cd $prefix/gui_package/downloads
-                source $prefix/basefiles/deploy_gui
+                . $prefix/basefiles/deploy_gui
                 downloads_prefix=$prefix/gui_package/downloads
                 gui_download
                 cd $prefix/gui_package
@@ -324,7 +324,7 @@ if [ $CONVERT != false ] && [ $OUTPUT != false ];then
     export PATH=$PATH:$install_prefix/bin
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
-    source $python_prefix/bin/activate
+    . $python_prefix/bin/activate
     mkdir -p $install_prefix
     end_line=`cat $basefiles_prefix/deploy_commands_no_internet | wc -l`
     oneliner=1
@@ -408,7 +408,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mkdir -p $python_prefix && \
     cd $python_prefix
     python3 -m venv ./
-    source ./bin/activate
+    . ./bin/activate
     python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
     python3 -m pip install meson
     python3 -m pip install ninja
@@ -484,8 +484,8 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
     export prefix=$pack_prefix/$prefixName
     cd $prefix
     mkdir python_env
-    mv python_env.tar.gz $prefix
-    cd $prefix
+    mv python_env.tar.gz $prefix/python_env
+    cd $prefix/python_env
     tar -xf python_env.tar.gz
     cd $prefix
     export basefiles_prefix=$prefix/basefiles
@@ -531,7 +531,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
     export BOOST_ROOT=$install_prefix
    
 
-    source $python_prefix/bin/activate
+    . $python_prefix/bin/activate
     end_line=`cat $basefiles_prefix/deploy_commands_no_internet_checkout | wc -l`
     oneliner=1
     line_number=1
@@ -581,14 +581,17 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
         then
 
             cat <<EOF
-            *********************************************
+            *****************************************************************
 
             Successfully Compiled and Installed Batsim and Batsched!!!
 
-            *********************************************
+            *****************************************************************
 
-            You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need
-            At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.
+
+            ***********************************************************************************************************************************
+            *    You will want to make sure .../basefiles/batsim_environment.sh is edited with options you need                               *
+            *    At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.   *
+            ***********************************************************************************************************************************
 EOF
         fi
     done
@@ -640,7 +643,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
         echo $line_number > $myDir/deploy.config
         echo "$prefix" >> $myDir/deploy.config
     fi
-    source genPrefix
+    . genPrefix
     mkdir -p $downloads_prefix && \
     mkdir -p $install_prefix && \
     mkdir -p $python_prefix && \
@@ -712,7 +715,7 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     prefix=${MY_PATH%/basefiles}
     mkdir python_env && cd python_env
     python3 -m venv ./
-    source ./bin/activate
+    . ./bin/activate
     python_prefix=$prefix/python_env
     python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
     python3 -m pip install meson
@@ -815,7 +818,7 @@ deactivate
 cd ../
 mkdir python_env && cd python_env
 python3 -m venv ./
-source ./bin/activate
+. ./bin/activate
 python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
 python3 -m pip install meson
 python3 -m pip install ninja
