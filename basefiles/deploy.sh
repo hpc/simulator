@@ -1,5 +1,95 @@
 #!/usr/bin/bash
-VALID_ARGS=$(getopt -o f:npux:l:hco:m:c --long clean,format:,no-internet,continue,package,un-package,prefix:,line-number:,with-gui,gui,convert-charliecloud:,modules:,help -- "$@")
+
+printUsage()
+{
+cat <<"EOF"
+
+
+    deploy.sh               automates the downloading compiling and building of batsim into different formats and in different conditions.
+                            NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
+
+Usage:
+  [1]  deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] | [-c] )] [--with-gui]
+  [2]  deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
+  [3]  deploy.sh --convert-charliecloud <PATH> -o <PATH> [-m <STR>] [-l <INT>]
+  [4]  deploy.sh --clean
+
+Required Options 1:
+
+    -f, --format <STR>              The format to build things for:
+                                    bare-metal | charliecloud | docker
+
+Optional Options 1:
+    -x, --prefix  <STR>             Only used with --format=bare-metal.
+                                    The full path to the folder that everything is going to install to
+                                    Typically the /path/to/simulator folder.
+
+    -l, --line-number <INT>         Only used with --format=bare-metal.
+                                    The line number into deploy_commands to start at.
+
+    -n, --no-internet               Only used with --format=charliecloud || bare-metal
+                                    '   When using bare-metal, will require gcc/cmake and build-tools on remote computer.
+                                    '   Will also require time on the remote computer, as everything will need to compile.  About an hour.
+                                    If set, will package a folder up that you can then move to
+                                    the computer with no internet.  The folder is about a 3.5GB
+                                    folder with tar.gz files inside.
+                                    Must use -p or -u or -c options with this.
+
+    -m, --modules <STR>             Load modules in comma seperated STR.  Used only with --format bare-metal
+                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
+
+    -p, --package                   Only used with --no-internet.
+                                    Will initiate the packaging of batsim
+
+    -u, --un-package                Only used with --no-internet.
+                                    Will initiate the un-packaging of batsim.
+                                    ' when --format=bare-metal, will initiate the compiling of all necessary code as well
+
+    -c, --continue-unpacking        Will continue the un-packaging of batsim with --line-number.  Only used with
+                                    --format=bare-metal and --no-internet
+
+    --with-gui                      TODO When this flag is given, gui components will be installed as well.
+                                    Gui components are text/terminal based
+
+Required Options 2:
+    --gui                           TODO only deploy the gui.
+                                    Meant to be run after normal deployment if you later decide you want the gui.
+                                    Uses install_prefix environment variable from sourcing .../basefiles/batsim_environment.sh
+
+    -f, --format <STR>              The format to build things for:
+                                    bare-metal | charliecloud | docker
+
+    -n, --no-internet               Only used with --format=charliecloud
+                                    If set, will package a folder up that you can then move to
+                                    the computer with no internet.
+                                    Must use -p or -u options with this.
+Required Options 3:
+    --convert-charliecloud          Convert charliecloud deployment to bare-metal
+                                    Provide the full path to the charliecloud (batsim_ch folder)
+                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch
+
+    -o, --output                    Where to put Install folder
+                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch -o /path/to/simulator
+                                    ' creates /path/to/simulator/Install with all your needed programs compiled in
+                                    ' /path/to/simulator/Install/bin
+Optional Options 3:
+    -m, --modules <STR>             Load modules in comma seperated STR
+                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
+
+    -l, --line-number <INT>         The line number into deploy_commands_no_internet to start at
+
+Required Options 4:
+
+    --clean                         Will clean up the basefiles folder from a previous deploy
+
+
+
+    -h, --help                      Display this usage page
+
+EOF
+    exit 1
+}
+VALID_ARGS=$(getopt -o f:npux:l:ho:m:c --long clean,format:,no-internet,continue-unpacking,package,un-package,prefix:,line-number:,with-gui,gui,convert-charliecloud:,modules:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -28,7 +118,7 @@ CONTINUE=false
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
-    -c | --clean)
+    --clean)
         CLEAN=true
         shift 1
         ;;
@@ -52,9 +142,10 @@ while true; do
         count=$(( $count + 1 ))
         shift 2
         ;;
-    -c | --continue)
+    -c | --continue-unpacking)
         CONTINUE=true
         UNPACK=true
+        count=$(( $count + 1 ))
         shift 1
         ;;
     --with-gui)
@@ -107,104 +198,37 @@ done
 # if format is not charliecloud but any of -nup is used
 # if format is charliecloud but -n is not used and -up are used
 # if format is charliecloud and -n is used but both -up are used or -n is used but neither -up are used
+echo "$FORMAT , $NO, $PACK, $UNPACK"
 if [ $CLEAN = false ]; then
 if [ $CONVERT = false ]; then
-if [ $HELP = true ] || [ $FORMAT = false ] || \
-    ([ $FORMAT != 'bare-metal' ] && ( [ $PREFIX != false ] || [ $LINE != false ] )) || \
-    ([ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] && [ $FORMAT != 'docker' ]) || \
-    ( ([ $FORMAT != 'charliecloud' ] || [ $FORMAT != 'bare-metal' ]) && ([ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ]) ) || \
-    ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && ([ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) ) || \
-    ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && [ $NO = true ] && ( ([ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ])));then
+if [ $HELP = true ] || [ $FORMAT = false ];then
+    echo "1"
+    printUsage
+fi
+if ([ $FORMAT != 'bare-metal' ] && ( [ $PREFIX != false ] || [ $LINE != false ] ));then
+    echo "2"
+    printUsage
+fi
+if ([ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] && [ $FORMAT != 'docker' ]);then
+    echo "3"
+    printUsage
+fi
+if ( ( [ $FORMAT != 'charliecloud' ] && [ $FORMAT != 'bare-metal' ] ) && ( [ $NO = true ] || [ $PACK = true ] || [ $UNPACK = true ] ) );then
+    echo "4"
+    printUsage
+fi
+if ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && ([ $NO = false ] && ( [ $PACK = true ] || [ $UNPACK = true ]) ) );then
+    echo "5"
+    printUsage
+fi
+if ( ([ $FORMAT == 'charliecloud' ] || [ $FORMAT == 'bare-metal' ]) && [ $NO = true ] && ( ( [ $PACK = true ] && [ $UNPACK = true ] ) || ( [ $PACK = false ] && [ $UNPACK = false ] )));then
+    echo "6"
+    printUsage
+fi
 
-    cat <<"EOF"
-
-
-    deploy.sh               automates the downloading compiling and building of batsim into different formats and in different conditions.
-                            NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
-
-Usage:
-  [1]  deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] | [-c] )] [--with-gui]
-  [2]  deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
-  [3]  deploy.sh --convert-charliecloud <PATH> -o <PATH> [-m <STR>] [-l <INT>]
-  [4]  deploy.sh --clean
-
-Required Options 1:
-
-    -f, --format <STR>              The format to build things for:
-                                    bare-metal | charliecloud | docker
-
-Optional Options 1:
-    -x, --prefix  <STR>             Only used with --format=bare-metal.
-                                    The full path to the folder that everything is going to install to
-                                    Typically the /path/to/simulator folder.
-
-    -l, --line-number <INT>         Only used with --format=bare-metal.
-                                    The line number into deploy_commands to start at.
-
-    -n, --no-internet               Only used with --format=charliecloud || bare-metal
-                                    '   When using bare-metal, will require gcc/cmake and build-tools on remote computer.
-                                    '   Will also require time on the remote computer, as everything will need to compile.  About an hour.
-                                    If set, will package a folder up that you can then move to
-                                    the computer with no internet.  The folder is about a 3.5GB
-                                    folder with tar.gz files inside.
-                                    Must use -p or -u or -c options with this.
-
-    -m, --modules <STR>             Load modules in comma seperated STR.  Used only with --format bare-metal
-                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
-
-    -p, --package                   Only used with --no-internet.
-                                    Will initiate the packaging of batsim
-
-    -u, --un-package                Only used with --no-internet.
-                                    Will initiate the un-packaging of batsim.
-                                    ' when --format=bare-metal, will initiate the compiling of all necessary code as well
-
-    -c, --continue                  Will continue the un-packaging of batsim with --line-number.  Only used with
-                                    --format=bare-metal and --no-internet
-
-    --with-gui                      TODO When this flag is given, gui components will be installed as well.
-                                    Gui components are text/terminal based
-
-Required Options 2:
-    --gui                           TODO only deploy the gui.  
-                                    Meant to be run after normal deployment if you later decide you want the gui.
-                                    Uses install_prefix environment variable from sourcing .../basefiles/batsim_environment.sh
-
-    -f, --format <STR>              The format to build things for:
-                                    bare-metal | charliecloud | docker
-
-    -n, --no-internet               Only used with --format=charliecloud
-                                    If set, will package a folder up that you can then move to
-                                    the computer with no internet.
-                                    Must use -p or -u options with this.
-Required Options 3:
-    --convert-charliecloud          Convert charliecloud deployment to bare-metal
-                                    Provide the full path to the charliecloud (batsim_ch folder)
-                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch
-
-    -o, --output                    Where to put Install folder
-                                    ' example: --convert-charliecloud /path/to/simulator/batsim_ch -o /path/to/simulator
-                                    ' creates /path/to/simulator/Install with all your needed programs compiled in 
-                                    ' /path/to/simulator/Install/bin 
-Optional Options 3:
-    -m, --modules <STR>             Load modules in comma seperated STR
-                                    ' example: --modules "gcc/10.3.0,cmake/3.22.3"
-                                    
-    -l, --line-number <INT>         The line number into deploy_commands_no_internet to start at
-
-Required Options 4:
-
-    -c, --clean                     Will clean up the basefiles folder from a previous deploy
-
-
-
-    -h, --help                      Display this usage page
-
-EOF
-    exit 1
 fi
 fi
-fi
+
 if [ $modules != false ];then
     for i in $(echo $modules | tr "," "\n");do
         module load "$i"
@@ -557,6 +581,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
             At a bare minimum set prefix=? to the correct prefix. This is probably going to be the full path to your simulator folder.
 EOF
         fi
+    done
 
 
 exit 0
