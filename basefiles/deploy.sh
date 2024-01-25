@@ -472,7 +472,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     
         1. copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet
         2. then run this same script with un-package argument and look at modules argument as well
-        3. If any errors happen durring un-package you can use the -c and -l arguments after correcting the errors
+        3. If any errors happen during un-package you can use the -c and -l arguments after correcting the errors
 
         *************************************************************************************************************
 EOF
@@ -514,7 +514,7 @@ EOF
                 Future invocations of deploy.sh should
                 come from .../batsim_packaged/simulator/basefiles/deploy.sh
                 
-                If errors happen durring unpacking you can now use -c and -l arguments
+                If errors happen during unpacking you can now use -c and -l arguments
                 to start where you left off
 
             ****************************************************************************
