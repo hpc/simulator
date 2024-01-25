@@ -487,6 +487,11 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
     mv python_env.tar.gz $prefix/python_env
     cd $prefix/python_env
     tar -xf python_env.tar.gz
+    if [ -d ./python_env ];then
+        mv ./python_env $prefix/python_tmp
+        rm -rf $prefix/python_env
+        mv $prefix/python_tmp $prefix/python_env
+    fi
     cd $prefix
     export basefiles_prefix=$prefix/basefiles
     export python_prefix=$prefix/python_env
@@ -784,6 +789,11 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $UNPACK = true ];then
     mv python_env.tar.gz $prefix/python_env
     cd $prefix/python_env
     tar -xf python_env.tar.gz
+    if [ -d ./python_env ];then
+        mv ./python_env $prefix/python_tmp
+        rm -rf $prefix/python_env
+        mv $prefix/python_tmp $prefix/python_env
+    fi
     cd $prefix
     mkdir batsim_ch
     cd batsim_ch
