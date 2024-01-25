@@ -466,14 +466,15 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mv batsim.tar.gz ./batsim_packaged/
     mv deploy.sh ./batsim_packaged/
     echo $(basename $prefix) > ./batsim_packaged/prefixName.txt
-    cat <<"EOF"
-        **************************************************************************************
+    cat <<EOF
+        ************************************************************************************************************
         Finished making your packaged directory
     
         1. copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet
-        2. then run this same script with un-package argument
+        2. then run this same script with un-package argument and look at modules argument as well
+        3. If any errors happen durring un-package you can use the -c and -l arguments after correcting the errors
 
-        **************************************************************************************
+        *************************************************************************************************************
 EOF
     exit 0
 fi
@@ -507,13 +508,16 @@ EOF
     sleep 10
     rm $pack_prefix/deploy.sh
     cat <<EOF
-            *******************************************************************
+            ***************************************************************************
                 Deleted .../batsim_packaged/deploy.sh
 
                 Future invocations of deploy.sh should
                 come from .../batsim_packaged/simulator/basefiles/deploy.sh
+                
+                If errors happen durring unpacking you can now use -c and -l arguments
+                to start where you left off
 
-            *******************************************************************
+            ****************************************************************************
 EOF
     sleep 10
 fi
