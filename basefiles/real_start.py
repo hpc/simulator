@@ -172,7 +172,7 @@ elif method == "docker":
     postCmd = """python3 {location}/post-processing.py
     -i {path}""".format(location="/home/sim/simulator/basefiles",path=path).replace("\n","")
 elif method == "bare-metal":
-    wrapper=f"source {scriptPath}/batsim_environment.sh; "
+    wrapper=f". {scriptPath}/batsim_environment.sh; "
     genCommand="""{outPutPath}/experiment.yaml
     --output-dir={output}/expe-out
     --batcmd=\"batsim {batsimCMD}\"

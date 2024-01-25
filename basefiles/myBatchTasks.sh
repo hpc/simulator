@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
 export prefix="$(cd -- "$MY_PATH"/../ && pwd)"
 

@@ -150,7 +150,7 @@ df.update(restarts_ext.restarts)
 df["submission_time"]=df["original_submit"]
 df["turnaround_time"]=df["finish_time"]-df["submission_time"]
 df["waiting_time"]=df["starting_time"]-df["submission_time"]
-df.loc[df.starting_time == df.submission_time,df.waiting_time]=0
+df.loc[df['starting_time'] == df['submission_time'],'waiting_time']=0
 # first change start to original_start
 original_starts = df.loc[df.original_start != -1.0].copy()
 original_starts["cpu"] = original_starts["progressTimeCpu"]

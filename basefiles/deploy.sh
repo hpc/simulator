@@ -1,5 +1,5 @@
-#!/bin/bash
-VALID_ARGS=$(getopt -o f:npux:l:hco:m: --long clean,format:,no-internet,package,un-package,prefix:,line-number:,with-gui,gui,convert-charliecloud:,modules:,help -- "$@")
+#!/usr/bin/bash
+VALID_ARGS=$(getopt -o f:npux:l:hco:m:c --long clean,format:,no-internet,continue,package,un-package,prefix:,line-number:,with-gui,gui,convert-charliecloud:,modules:,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -24,6 +24,7 @@ modules=false
 gui=false
 withGui=false
 count=0
+CONTINUE=false
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in
@@ -50,6 +51,11 @@ while true; do
         modules="$2"
         count=$(( $count + 1 ))
         shift 2
+        ;;
+    -c | --continue)
+        CONTINUE=true
+        UNPACK=true
+        shift 1;
         ;;
     --with-gui)
         withGui=true
@@ -117,7 +123,7 @@ if [ $HELP = true ] || [ $FORMAT = false ] || \
                             NOTE: For charliecloud and bare-metal, gcc,make,cmake,python3 etc... is assumed to be working and a recent version.
 
 Usage:
-  [1]  deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] )] [--with-gui]
+  [1]  deploy.sh -f <STR>  [-x][-l]  [--no-internet ( [-p] | [-u] | [-c] )] [--with-gui]
   [2]  deploy.sh --gui -f <STR> [--no-internet ([-p] | [-u]) ]
   [3]  deploy.sh --convert-charliecloud <PATH> -o <PATH> [-m <STR>] [-l <INT>]
   [4]  deploy.sh --clean
@@ -141,7 +147,7 @@ Optional Options 1:
                                     If set, will package a folder up that you can then move to
                                     the computer with no internet.  The folder is about a 3.5GB
                                     folder with tar.gz files inside.
-                                    Must use -p or -u options with this.
+                                    Must use -p or -u or -c options with this.
 
     -m, --modules <STR>             Load modules in comma seperated STR.  Used only with --format bare-metal
                                     ' example: --modules "gcc/10.3.0,cmake/3.22.3"
@@ -152,6 +158,9 @@ Optional Options 1:
     -u, --un-package                Only used with --no-internet.
                                     Will initiate the un-packaging of batsim.
                                     ' when --format=bare-metal, will initiate the compiling of all necessary code as well
+
+    -c, --continue                  Will continue the un-packaging of batsim with --line-number.  Only used with
+                                    --format=bare-metal and --no-internet
 
     --with-gui                      TODO When this flag is given, gui components will be installed as well.
                                     Gui components are text/terminal based
@@ -438,18 +447,18 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     echo "then run this same script with un-package argument"
     exit 0
 fi
-if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
+if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONTINUE = false ];then
     pack_prefix=$MY_PATH
     prefixName=`cat $pack_prefix/prefixName.txt`
     tar -xf batsim.tar.gz
-    prefix=$pack_prefix/$prefixName
+    export prefix=$pack_prefix/$prefixName
+    export MY_PATH=$prefix
     cd $prefix
     mkdir python_env
-    mv python_env.tar.gz $prefix/python_env
-    cd $prefix/python_env
+    mv python_env.tar.gz $prefix
+    cd $prefix
     tar -xf python_env.tar.gz
     cd $prefix
-    myDir=$MY_PATH
     export basefiles_prefix=$prefix/basefiles
     export python_prefix=$prefix/python_env
     export downloads_prefix=$prefix/Downloads
@@ -465,10 +474,31 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
 
             *********************************************
 EOF
-    sleep 15
+    sleep 10
+    rm $pack_prefix/deploy.sh
+    cat <<EOF
+            *******************************************************************
+                Deleted .../batsim_packaged/deploy.sh
+
+                Future invocations of deploy.sh should
+                come from .../batsim_packaged/simulator/basefiles/deploy.sh
+
+            *******************************************************************
+EOF
+    sleep 10
+fi
+if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
+    export prefix=$MY_PATH
+    export basefiles_prefix=$prefix/basefiles
+    export python_prefix=$prefix/python_env
+    export downloads_prefix=$prefix/Downloads
+    export install_prefix=$prefix/Install
+    export PATH=$PATH:$install_prefix/bin
+    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
+    export BOOST_ROOT=$install_prefix
 
     source $python_prefix/bin/activate
-    end_line=`cat $myDir/deploy_commands_no_internet_checkout | wc -l`
+    end_line=`cat $basefiles_prefix/deploy_commands_no_internet_checkout | wc -l`
     oneliner=1
     line_number=1
     if [ $LINE != false ];then
@@ -479,10 +509,10 @@ EOF
         if [[ $oneliner -eq 0 ]]
         then
             line=`tr -d '\\' <<< $line`
-            current=`sed -n ${i}p $myDir/deploy_commands_no_internet_checkout`
+            current=`sed -n ${i}p $basefiles_prefix/deploy_commands_no_internet_checkout`
             line="$line $current"
         else
-            line=`sed -n ${i}p $myDir/deploy_commands_no_internet_checkout`
+            line=`sed -n ${i}p $basefiles_prefix/deploy_commands_no_internet_checkout`
         fi
         echo "line: $line_number  cmd:$line"
         oneliner=0

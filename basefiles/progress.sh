@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 if [ -f ~/.dirB.sh ];then
     source ~/.dirB.sh
 fi
@@ -249,6 +249,7 @@ while true; do
   case "$1" in
     -[1-9])
         folder="folder${1:1}"
+        echo "folder: $folder"
         get_input_variable ${!folder}
         shift 1
         ;;
@@ -412,6 +413,8 @@ Usage:
 Mostly Required Options:
     -#                             Will use the environment variable folder# for input.  It will act as if you used -i ${folder#}
                                    This is best used in conjunction with batFolder
+                                   NOTE: using this method requires folder# to be exported: export folder#
+                                   NOTE: batFolder automatically exports the corresponding folder# variable
     -d <bookmark>                  Will use the dibB.sh bookmark
                                    
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh

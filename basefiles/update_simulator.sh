@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 cd $prefix
 cp $prefix/basefiles/batsim_environment.sh ../
 git pull
