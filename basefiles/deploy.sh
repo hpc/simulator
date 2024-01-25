@@ -466,9 +466,15 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mv batsim.tar.gz ./batsim_packaged/
     mv deploy.sh ./batsim_packaged/
     echo $(basename $prefix) > ./batsim_packaged/prefixName.txt
-    echo "Finished making your packaged directory"
-    echo "copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet"
-    echo "then run this same script with un-package argument"
+    cat <<"EOF"
+        **************************************************************************************
+        Finished making your packaged directory
+    
+        1. copy $(dirname $prefix)/batsim_packaged folder over to computer with no internet
+        2. then run this same script with un-package argument
+
+        **************************************************************************************
+EOF
     exit 0
 fi
 if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONTINUE = false ];then
