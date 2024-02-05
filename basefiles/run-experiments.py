@@ -142,7 +142,7 @@ if parallelMode == "sbatch":
                 for ourId in ids:
                     
                     if not(start == 1):
-                        cmd="rm {jobPath}/output/*.out".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
+                        cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
                         os.system(cmd)
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
@@ -201,7 +201,7 @@ elif parallelMode == "tasks":
                 ids.sort(key=natural_keys)
                 for ourId in ids:
                     if not(start == 1):
-                        cmd="rm {jobPath}/output/*.out".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
+                        cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
                         os.system(cmd)
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
 
@@ -273,7 +273,7 @@ elif parallelMode == "background":
                 ids.sort(key=natural_keys)
                 for ourId in ids:
                     if not(start == 1):
-                        cmd="rm {jobPath}/output/*.out".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
+                        cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
                         os.system(cmd)
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles

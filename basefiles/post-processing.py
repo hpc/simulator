@@ -161,7 +161,7 @@ original_starts["stretch"]=original_starts.turnaround_time/original_starts.execu
 df.update(original_starts)
 job_ids=df.job_id.str.extract(r'(?P<job_id>\d+[#]?\d*)[$]?\d*')
 df.update(job_ids)
-df.to_csv("testing_post_out.csv")
+
 
 
 
@@ -225,7 +225,7 @@ df['resubmit']=resubmits_ext['resubmit']
 # finish time is the max finish time in the group. num_resubmits is the count - 1
 # in the group. real_final_state is the last resubmit's final state.
 df2=df.copy()
-df2.to_csv("before_sum.csv")
+
 
 df2['total_execution_time'] = df.groupby('parent')['execution_time'].transform('sum')
 df2['total_waiting_time'] = df.groupby('parent')['waiting_time'].transform('sum')
@@ -310,12 +310,12 @@ df2 = pd.concat([df2Resubmits,df2Parents,df2NonResubmits],axis=0,sort=False)
 df2=df2.sort_values(by=['parent','job_id'],axis=0)
 if raw==2 or raw==3:
     df2.to_csv(raw_outfile_debug)
-df2.to_csv("raw_debug.csv")
+
 
 #df3 becomes everything df2 was without the resubmitted jobs
 df3=df2[df2.resubmit==0].copy()
 
-df3.to_csv("df3.csv")
+
 
 
 #reorder columns

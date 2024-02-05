@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Usage:
     aggregate-makespan-heatmap.py -p FOLDER [-c FILE] [-o FOLDER] [-b] [--normalize]
@@ -227,7 +228,7 @@ for file in dictAllSummaryOut:
         for name,title in heatmaps:
             print(name)
             heatmap=tmp[["SMTBF","MTTR",name]].copy()
-            heatmap["SMTBF"]=((1728000000/node_num)/heatmap["SMTBF"].astype(float)).apply(np.floor)
+            heatmap["SMTBF"]=((1728000000/node_num)/heatmap["SMTBF"].astype(float)).apply(np.round)
             heatmap["MTTR"]=heatmap["MTTR"]/3600
             heatmap=heatmap.pivot(index="SMTBF",columns="MTTR",values=name)
             heatmap=heatmap.sort_index(ascending=False)
