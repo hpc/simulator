@@ -23,7 +23,7 @@ def getStrings():
                                                     it is the amount
                                                     of jobs from the end going backward.If not specified,
                                                     all jobs in the time range are included.
-                                                    required for --random-selection
+                                                    required for 'random-selection'
 
         "scale-widths-based-on": INT                change the widths of jobs based on:
                                                     'new_width = old_width * --nodes/INT'
@@ -32,7 +32,7 @@ def getStrings():
                                                     this is typically the value for INT
          
               
-        "random-selection":true|false               To get a random selection of jobs
+        "random-selection":true|false               To get a random selection of jobs. 'number-of-jobs' is required using this option
 
         "submission-time": <FLOAT><:exp|fixed>      This dictates the time between submissions and what kind of randomness.
                            <FLOAT:FLOAT:unif>       If zero is used for a float,combined with ":fixed" then all jobs will start at time zero.
@@ -243,55 +243,7 @@ Optional Options:
 
 
     """
-    node_sweep="""
-    The node sweep should come first since many other sweeps and options are based off of it.
-    Start with:
     
-        input{
-                "node-sweep":{
-            
-                }
-                
-                ...
-            
-            
-    Like other sweeps that involve numbers you can use a min, max (inclusive), step:
-    Negative steps are acceptable, just make sure it doesn't bring your number to negative or 0.
-    Only integers make sense for this sweep.
-                
-                "node-sweep":{
-                    "min":1,
-                    "max":5,
-                    "step":1
-                }
-                    
-    You can also use a predefined range:
-    
-                "node-sweep":{
-                    "range":[1,4,5]
-                }
-                
-    You can also base it on a formula where the variable "i" is replaced with either
-    a min,max,step   or a range:
-    
-                "node-sweep":{
-                    "formula":"(1/2) * i",
-                    "min":"2",
-                    "max":10,
-                    "step":2
-                }
-                
-    or        
-                "node-sweep":{
-                    "formula":"(1/2) * i",
-                    "range":[2,4,6,8,10]
-                }
-                
-    both of these will multiply "i" by (1/2), so for both you would end up with 1,2,3,4,5
-    You can use any valid python function including sqrt() for square root and "**" for exponent.
-    You can only use "i" as a variable, but you can use it multiple times.
-
-    """
     smtbf_sweep="""
     The SMTBF sweep usually comes after the node-sweep. It is the "System Mean Time Between Failure" for the whole cluster.
     The value is in seconds.
@@ -366,6 +318,80 @@ Optional Options:
     """
 
     
+   
+    checkpoint_error_sweep="""
+    The checkpointError sweep is supposed to be used in conjunction with
+        
+        "checkpoint-sweep":{
+            "range":["optimal"]
+        },
+        checkpointing-on":true,
+    
+    It is meant for an analysis of what values of Average Application Efficiency you get back
+    when going lower than "optimal" or higher than "optimal".  This "error" can be swept through as follows:
+    
+    This is a number sweep so "min,max,step" works as well as "range" and "formula".
+    Negative steps are acceptable, just make sure it doesn't bring your number to negative or 0.
+    
+        
+    
+    Start with:
+    
+        input{
+                "node-sweep":{
+                    ...
+                },
+                
+                ...
+                
+                "checkpoint-sweep":{
+                    "range":["optimal"]
+                },
+                "checkpointing-on":true,
+                "checkpointError-sweep":{
+                    
+                    ...
+                    
+                }
+                
+                ...
+            
+            
+    Like other sweeps that involve numbers you can use a min, max (inclusive), step:
+                
+                "checkpointError-sweep":{
+                    "min":0.1,
+                    "max":,4.0,
+                    "step":0.1
+                }
+                    
+    You can also use a predefined range:
+    
+                "checkpointError-sweep":{
+                    "range":[0.1,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0]
+                }
+                
+    You can also base it on a formula where the variable "i" is replaced with either
+    a min,max,step   or a range:
+    
+                "checkpointError-sweep":{
+                    "formula":"0.1*i",
+                    "min":"1",
+                    "max":40,
+                    "step":1
+                }
+                
+    or        
+                "checkpointError-sweep":{
+                    "formula":"(10**(-1))*i",
+                    "range":[1,5,10,15,20,25,30,35,40]
+                }
+                
+    Notice the formula for range uses 10**(-1) where "**" is the exponential function.  You can use any valid
+    python function including sqrt() for square root.  You can only use "i" as a variable, but you can use it multiple times.
+    
+
+    """
     checkpoint_sweep="""
     The checkpoint sweep is a sweep on how often to checkpoint.  This checkpoint interval is in seconds.
     
@@ -434,77 +460,136 @@ Optional Options:
                 }
 
     """
-    checkpoint_error_sweep="""
-    The checkpointError sweep is supposed to be used in conjunction with
-        
-        "checkpoint-sweep":{
-            "range":["optimal"]
-        },
-        checkpointing-on":true,
+    core_count_sweep="""
+    The core count sweep will sweep over how many cores each node has.
+    You can use min,max,step/step-percent  as well as range for this sweep.
+    'formula' has NOT been added to this sweep yet.
     
-    It is meant for an analysis of what values of Average Application Efficiency you get back
-    when going lower than "optimal" or higher than "optimal".  This "error" can be swept through as follows:
+    Using core-count, as using this sweep will set, will imply you want to enable-compute-sharing and will be turned on automatically.
+
+    "coreCount-sweep":{
+        "min":
+        "max":
+        "step: or "step-percent":
+    }
+
+    or
+
+    "coreCount-sweep":{
+        "range":[]
+    }
+
+    """
+    core_percent_sweep="""
+    The core percent sweep will sweep over how much of the cores a node can use.  This is a floating point greater than or equal to zero.
+    if set to 0.5, 50% of the cores can be used
+    if set to 2.0, 200% of the cores can be used, and as the amount of cores being used goes over 100%, the node will experience slow-down
+
+    You can use min,max,step/step-percent as well as range for this sweep
+    'formula' has NOT been added to this sweep yet.
+
+     "corePercent-sweep":{
+        "min":
+        "max":
+        "step: or "step-percent":
+    }
+
+    or
     
-    This is a number sweep so "min,max,step" works as well as "range" and "formula".
-    Negative steps are acceptable, just make sure it doesn't bring your number to negative or 0.
+    "corePercent-sweep":{
+        "range":[]
+    }
+    """
+    jobs_sweep="""
+    jobs sweep will set the amount of jobs in the workload.  This will end up making multiple workloads.
+    It will make a config entry number-of-jobs for each experiment.
+
+    You can use min,max,step/step-percent as well as range for this sweep
+    'formula' has NOT been added to this sweep yet.
+
+     "jobs-sweep":{
+        "min":
+        "max":
+        "step: or "step-percent":
+    }
+
+    or
     
-        
+    "jobs-sweep":{
+        "range":[]
+    }
     
+    """
+    MTTR_sweep="""
+    MTTR sweep is the Mean Time To Repair sweep.  It sets the exponential distribution to have this Mean and the sweep will sweep
+    over different MTTR's.
+
+    You can use min,max,step as well as range for this sweep.
+    You can also use 'formula' in conjunction with those.
+
+
+                "MTTR-sweep":{
+                    "formula":"i*3600",
+                    "min":"0",
+                    "max":5,
+                    "step":1
+                }
+                
+    or        
+                "MTTR-sweep":{
+                    "formula":"i*3600",
+                    "range":[0,1,2,3,4,5] //0,1,2,3,4,5 hours
+                }
+
+
+    """
+    node_sweep="""
+    The node sweep should come first since many other sweeps and options are based off of it.
     Start with:
     
         input{
                 "node-sweep":{
-                    ...
-                },
-                
-                ...
-                
-                "checkpoint-sweep":{
-                    "range":["optimal"]
-                },
-                checkpointing-on":true,
-                "checkpointError-sweep":{
-                    
-                    ...
-                    
+            
                 }
                 
                 ...
             
             
     Like other sweeps that involve numbers you can use a min, max (inclusive), step:
+    Negative steps are acceptable, just make sure it doesn't bring your number to negative or 0.
+    Only integers make sense for this sweep.
                 
-                "checkpointError-sweep":{
-                    "min":0.1,
-                    "max":,4.0,
-                    "step":0.1
+                "node-sweep":{
+                    "min":1,
+                    "max":5,
+                    "step":1
                 }
                     
     You can also use a predefined range:
     
-                "checkpointError-sweep":{
-                    "range":[0.1,0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0]
+                "node-sweep":{
+                    "range":[1,4,5]
                 }
                 
     You can also base it on a formula where the variable "i" is replaced with either
     a min,max,step   or a range:
     
-                "checkpointError-sweep":{
-                    "formula":"0.1*i",
-                    "min":"1",
-                    "max":40,
-                    "step":1
+                "node-sweep":{
+                    "formula":"(1/2) * i",
+                    "min":"2",
+                    "max":10,
+                    "step":2
                 }
                 
     or        
-                "checkpointError-sweep":{
-                    "formula":"(10**(-1))*i",
-                    "range":[1,5,10,15,20,25,30,35,40]
+                "node-sweep":{
+                    "formula":"(1/2) * i",
+                    "range":[2,4,6,8,10]
                 }
                 
-    Notice the formula for range uses 10**(-1) where "**" is the exponential function.  You can use any valid
-    python function including sqrt() for square root.  You can only use "i" as a variable, but you can use it multiple times.
-    
+    both of these will multiply "i" by (1/2), so for both you would end up with 1,2,3,4,5
+    You can use any valid python function including sqrt() for square root and "**" for exponent.
+    You can only use "i" as a variable, but you can use it multiple times.
 
     """
     performance_sweep="""
@@ -565,6 +650,46 @@ Optional Options:
     
 
     """
+    queueDepth_sweep="""
+    The queue depth sweep sweeps over queue-depth, which is a setting for conservative_bf algorithm
+    queue-depth will limit how many jobs in the queue will get scheduled.  It will not backfill as many jobs as it probably could if
+    it were left alone, but will save you time running the sims.
+
+    You can use min,max,step/step-percent  as well as range
+    'formula' has NOT been added to this sweep yet
+
+    "queueDepth-sweep":{
+        "min":
+        "max":
+        "step: or "step-percent":
+    }
+
+    or
+    
+    "queueDepth-sweep":{
+        "range":[]
+    }
+    """
+    repairTime_sweep="""
+    repair time sweep will sweep over values for the global repair time that every failure will incur.  It is a fixed value, as opposed to MTTR.
+
+    You can use min,max,step/step-percent and range
+    You can also use 'formula' in conjunction with those
+
+                "repairTime-sweep":{
+                    "formula":"i * 3600",
+                    "min":"2",
+                    "max":10,
+                    "step":2
+                }
+                
+    or        
+                "repairTime-sweep":{
+                    "formula":"i * 3600",
+                    "range":[2,4,6,8,10] //2,4,6,8,10 hours
+                }
+
+    """
     general="""
     The general format of a config file:
     
@@ -574,6 +699,15 @@ Optional Options:
                                                     in one config file and each will end up in it's own folder under the --output folder.
                                                     Notice the opening and closing curly brace.  Make sure you put a comma after the closing
                                                     curly brace if you plan on having another experiment in the same config file
+
+                #                           \       Json does not allow for comments (unfortunately).  You may still want comments in your config,  
+                # python/shell comment       \      however.  You can use all of these types of comments and it will get removed before parsing.
+                // c/c++ style comment        \     Be aware that it can get difficult to trace down a simple mistake in your config when many 
+                /* c/c++ block style comment  /     comments are used due to the line numbers being off and generally more clutter in your config.
+                    Comments are fun.        /      But comments can make things a lot clearer, too. 
+                    This comment is too.    /       The original and a stripped version will be in your --output folder.
+                */                
+                
                 
                 "input":{    <-------------------   Always make sure you have an input and an output in your experiment
                 
@@ -657,6 +791,7 @@ Optional Options:
     input_options="""
     
     "checkpointing-on":true                                                     Turn checkpointing on.  This is needed when doing a checkpointing sweep
+                                                                                and anytime you set simulated checkpoint-intervals/dump-times/read-times
     
     
     
@@ -678,6 +813,8 @@ Optional Options:
  
     return {"grizzly-workload":grizzly_workload,"synthetic-workload":synthetic_workload,
         "output":output,
-        "node-sweep":node_sweep,"SMTBF-sweep":smtbf_sweep,"checkpoint-sweep":checkpoint_sweep,"checkpointError-sweep":checkpoint_error_sweep,"performance-sweep":performance_sweep,
+        "checkpointError-sweep":checkpoint_error_sweep,"checkpoint-sweep":checkpoint_sweep,"coreCount_sweep":core_count_sweep,"corePercent_sweep":core_percent_sweep,
+        "jobs-sweep":jobs_sweep,"MTTR-sweep":MTTR_sweep,"node-sweep":node_sweep,"performance-sweep":performance_sweep,"queueDepth-sweep":queueDepth_sweep,
+        "SMTBF-sweep":smtbf_sweep,
         "general":general,"sweeps":sweeps,"input-options":input_options}
 

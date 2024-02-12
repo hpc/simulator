@@ -13,14 +13,14 @@ def MTTRSweep(SweepInput,ourInput,origInput):
         if myFormula:
             #ok so we have a formula
             formula_range = list(np.arange(minimum,maximum+step,step))
-            sweepRange = [int(eval(myFormula)) for i in formula_range]
+            sweepRange = [eval(myFormula) for i in formula_range]
         else:
-            sweepRange = list(range(int(minimum),int(maximum+step),int(step)))
+            sweepRange = list(np.arange(minimum,maximum+step,step))
     elif myFormula:
         formula_range = myRange
-        sweepRange = [int(eval(myFormula)) for i in formula_range]
+        sweepRange = [float(eval(myFormula)) for i in formula_range]
     else:
-        sweepRange = myRange
+        sweepRange = [float(i) for i in myRange]
     currentExperiments = len(ourInput.keys())
     #if there were no sweeps before  
     if currentExperiments == 0: 

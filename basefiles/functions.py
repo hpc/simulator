@@ -373,7 +373,7 @@ def applyKeyJsonSchema(value,schema,passedKeys):
         return
     else:
         #ok this schema is an actual value, let's check the config value type against the schema type
-        if switchTypes[schema["type"]] == ourType:
+        if (switchTypes[schema["type"]] == ourType) or ((switchTypes[schema["type"]] == float ) and (ourType == int)):
             #ok let's see if we need to regex it
             if (schema["type"] == "string") and dictHasKey(schema,"regex"):
                 #yes we do, let's check it
@@ -407,6 +407,9 @@ def applyKeyJsonSchema(value,schema,passedKeys):
             if dictHasKey(schema,"false_batsched"):
                 if value == False:
                     batschedOptions=getCMDOptions("false_batsched",batschedOptions,schema,value)
+        else:
+            print(f"Error, applyKeyJsonSchema: key: {'->'.join(f'{i}' for i in passedKeys)} did not match any of the available types")
+            sys.exit(1)
 #apply items that did not show up in config that have a none type in schema
 def applyNone(schema,InConfig,passedKeys):
     import sys

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Usage:
-    aggregate-makespan-heatmap.py -p FOLDER [-c FILE] [-o FOLDER] [-b] [--normalize]
+    aggregate-makespan-heatmap.py -p FOLDER [-c FILE] [-o FOLDER] [-b] [--normalize] [--skip-heatmaps]
 
 Required Options:
     -p FOLDER --path FOLDER             where the experiments are
@@ -18,6 +18,8 @@ Options:
 
     --normalize                         Will normalize based on the amount of nodes, so 1490 nodes will have a y scale with
                                         the same min/max as 2980 nodes
+
+    --skip-heatmaps                     Skip making the heatmaps, just aggregate
    
 """
 
@@ -54,6 +56,7 @@ outPath = f"{path}/heatmaps" if args["--output"] == "path/heatmaps" else args["-
 concat = f"{args['--concatenate']}" if args["--concatenate"] else False
 bins = True if args["--bins"] else False
 normalize=True if args["--normalize"] else False
+skipHeatmap=True if args["--skip-heatmaps"] else False
 basePath = outPath
 df_fin = pd.DataFrame()
 df_raw_fin = pd.DataFrame()
@@ -134,6 +137,7 @@ with open(basePath+"/errors_aggregate_heatmap.txt","w") as OutFile:
                             summary_out["MTTR"] = [aggregate_runs["MTTR"].values[0]]
                             summary_out["fixed-failures"] = [aggregate_runs["fixed-failures"].values[0]]
                             summary_out["repair-time"] = [aggregate_runs["repair-time"].values[0]]
+                            summary_out["number-of-jobs"] = [aggregate_runs["number_of_jobs"].values[0]]
                             summary_out["makespan"] = [aggregate_runs["makespan_sec"].mean()]
                             summary_out["avg-avg-pp-slowdown"] = [aggregate_runs["avg-pp-slowdown"].mean()]
                             #summary_out["avg-pp-slowdown-tau"] = [aggregate_runs["avg-pp-slowdown-tau"].values[0]]
@@ -192,6 +196,7 @@ for i in dictAllSummaryOut:
 
 import re
 files=["total_makespan.csv"]
+
 for file in dictAllSummaryOut:
     df = dictAllSummaryOut[file].copy()
     if concat:
@@ -210,47 +215,49 @@ for file in dictAllSummaryOut:
         for column in ["avg-avg-utilization","AAE"]:
             df[column]=((df[column]*df["nb_runs"])+(df_old[column]*df_old["nb_runs"]))/runs_combined
         df["nb_runs"]=runs_combined
-    #ok df is now ready to make a heatmap of
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    import os
-    import numpy as np
-    heatmaps=[("avg-avg-waiting","Average Queue Waiting Time (seconds)"),("avg-tat","Average Turnaround Time (seconds)"),("avg-avg-utilization","Average Utilization")]
-    nodes=df["nodes"].unique()
-    if bins:
-        os.makedirs(f"{outPath}/bins",exist_ok=True)
-    limits={}
-    for name,title in heatmaps:
-        limits[name]={"min":df[name].min(),"max":df[name].max()}
-    for node_num in nodes:
-        print(node_num)
-        tmp=df.loc[df.nodes==node_num]
+    if not skipHeatmap:
+        #ok df is now ready to make a heatmap of
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        import os
+        import numpy as np
+        heatmaps=[("avg-avg-waiting","Average Queue Waiting Time (seconds)"),("avg-tat","Average Turnaround Time (seconds)"),("avg-avg-utilization","Average Utilization")]
+        nodes=df["nodes"].unique()
+        if bins:
+            os.makedirs(f"{outPath}/bins",exist_ok=True)
+        limits={}
         for name,title in heatmaps:
-            print(name)
-            heatmap=tmp[["SMTBF","MTTR",name]].copy()
-            heatmap["SMTBF"]=((1728000000/node_num)/heatmap["SMTBF"].astype(float)).apply(np.round)
-            heatmap["MTTR"]=heatmap["MTTR"]/3600
-            heatmap=heatmap.pivot(index="SMTBF",columns="MTTR",values=name)
-            heatmap=heatmap.sort_index(ascending=False)
-            plt.figure(figsize=(10,10),dpi=300)
-            if normalize:
-                g = sns.heatmap(heatmap,annot=True,fmt=".4f",vmin=limits[name]["min"],vmax=limits[name]["max"])
-            else:
-                g = sns.heatmap(heatmap,annot=True,fmt=".4f")
-            plt.ylabel("SMTBF Factor")
-            plt.xlabel("Mean Time To Repair (hours)")
-            if (name == "avg-avg-waiting") or (name == "avg-tat"):
-                for t in g.texts: t.set_text(f"{float(t.get_text()):,.0f}")
-            else:
-                for t in g.texts: t.set_text(f"{float(t.get_text())*100:.2f} %")
-            plt.title(title)
-            if file == "makespan":
-                plt.savefig(f"{outPath}/{node_num}_{name}_heatmap.png",dpi=300)
-            else:
-                plt.savefig(f"{outPath}/bins/{node_num}_{file}_{name}_heatmap.png",dpi=300)
-            plt.close()
+            limits[name]={"min":df[name].min(),"max":df[name].max()}
+        for node_num in nodes:
+            print(node_num)
+            tmp=df.loc[df.nodes==node_num]
+            for name,title in heatmaps:
+                print(name)
+                heatmap=tmp[["SMTBF","MTTR",name]].copy()
+                heatmap["SMTBF"]=((1728000000/node_num)/heatmap["SMTBF"].astype(float)).apply(np.round)
+                heatmap["MTTR"]=heatmap["MTTR"]/3600
+                heatmap=heatmap.pivot(index="SMTBF",columns="MTTR",values=name)
+                heatmap=heatmap.sort_index(ascending=False)
+                plt.figure(figsize=(10,10),dpi=300)
+                if normalize:
+                    g = sns.heatmap(heatmap,annot=True,fmt=".4f",vmin=limits[name]["min"],vmax=limits[name]["max"])
+                else:
+                    g = sns.heatmap(heatmap,annot=True,fmt=".4f")
+                plt.ylabel("SMTBF Factor")
+                plt.xlabel("Mean Time To Repair (hours)")
+                if (name == "avg-avg-waiting") or (name == "avg-tat"):
+                    for t in g.texts: t.set_text(f"{float(t.get_text()):,.0f}")
+                else:
+                    for t in g.texts: t.set_text(f"{float(t.get_text())*100:.2f} %")
+                plt.title(title)
+                if file == "makespan":
+                    plt.savefig(f"{outPath}/{node_num}_{name}_heatmap.png",dpi=300)
+                else:
+                    plt.savefig(f"{outPath}/bins/{node_num}_{file}_{name}_heatmap.png",dpi=300)
+                plt.close()
     dictAllSummaryOut[file]=df.copy()
-
+if bins:
+            os.makedirs(f"{outPath}/bins",exist_ok=True)
 for i in dictAllSummaryOut:
     ourdf = dictAllSummaryOut[i].copy()
     if i=="makespan":

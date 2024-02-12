@@ -115,7 +115,7 @@
         "type": "bool",
         "true_batsim": [
             {
-                "--compute-checkpointing": ""
+                "--compute_checkpointing": ""
             }
         ]
     },
@@ -159,7 +159,7 @@
             "regex": "^optimal$",
             "batsim": [
                 {
-                    "--compute-checkpointing": ""
+                    "--compute_checkpointing": ""
                 }
             ]
         }

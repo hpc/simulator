@@ -1,5 +1,6 @@
 from sweeps.sweepFunctions import *
 import numpy as np
+import sys
  
 def SMTBFSweep(SMTBFSweepInput,ourInput,origInput):
     myRange = SMTBFSweepInput["range"] if dictHasKey(SMTBFSweepInput,"range") else False
