@@ -341,12 +341,15 @@ else:
             ,'real_finish_time','total_waiting_time','total_turnaround_time','delay','real_delay','cpu','real_cpu','MTBF','SMTBF','fixed-failures','repair-time','Tc_Error','jitter']
 
 df3=df3[cols]
+
 if checkpointing:
     cols_to_int=['workload_num_machines','requested_number_of_resources','success','num_resubmits','total_dumps','restarts']
+    df3['total_dumps'] = df3['total_dumps'].astype(str)
+    df3.loc[df3['total_dumps'] == "nan" ,'total_dumps']=-1.0
+    df3['total_dumps'] = df3['total_dumps'].astype(np.double)
 else:
     cols_to_int=['workload_num_machines','requested_number_of_resources','success','restarts']
 for myColumn in cols_to_int:
-    print(myColumn)
     df3[myColumn]=df3[myColumn].astype(int)
 
 if checkpointing and profileType == "delay":
