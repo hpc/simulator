@@ -366,18 +366,26 @@
         "type": "ignore"
     },
     "seed-failures": {
-        "type": "bool",
-        "true_batsim": [
+        "type": "int",
+        "batsim": [
             {
-                "--seed-failures": ""
+                "--seed-failures": "{}"
+            }
+        ]
+    },
+    "seed-machine":{
+        "type":"int",
+        "batsim": [
+            {
+                "--seed-machine": "{}"
             }
         ]
     },
     "seed-repair-times": {
-        "type": "bool",
-        "true_batsim": [
+        "type": "int",
+        "batsim": [
             {
-                "--seed-repair-times": ""
+                "--seed-repair-times": "{}"
             }
         ]
     },
