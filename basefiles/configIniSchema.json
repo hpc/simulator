@@ -373,11 +373,11 @@
             }
         ]
     },
-    "seed-machine":{
+    "seed-failure-machine":{
         "type":"int",
         "batsim": [
             {
-                "--seed-machine": "{}"
+                "--seed-failure-machine": "{}"
             }
         ]
     },
