@@ -340,6 +340,14 @@
             }
         ]
     },
+    "reject-jobs-after-nb-repairs": {
+        "type": "int",
+        "batsim": [
+            {
+                "--reject-jobs-after-nb-repairs": "{}"
+            }
+        ]
+    },
     "repair-time": {
         "type": "float",
         "batsim": [

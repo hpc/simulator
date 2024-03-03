@@ -690,6 +690,15 @@ Optional Options:
                 }
 
     """
+    reservation_sweep="""
+    reservation sweep is the most complicated of all the sweeps.  It will take a reservation and sweep over it: changing values, adding values
+    So let's look at an example:
+
+
+    """
+    sharePackingHoldback_sweep="""
+
+    """
     general="""
     The general format of a config file:
     
@@ -815,6 +824,6 @@ Optional Options:
         "output":output,
         "checkpointError-sweep":checkpoint_error_sweep,"checkpoint-sweep":checkpoint_sweep,"coreCount_sweep":core_count_sweep,"corePercent_sweep":core_percent_sweep,
         "jobs-sweep":jobs_sweep,"MTTR-sweep":MTTR_sweep,"node-sweep":node_sweep,"performance-sweep":performance_sweep,"queueDepth-sweep":queueDepth_sweep,
-        "SMTBF-sweep":smtbf_sweep,
+        "repairTime-sweep":repairTime_sweep,"SMTBF-sweep":smtbf_sweep,
         "general":general,"sweeps":sweeps,"input-options":input_options}
 

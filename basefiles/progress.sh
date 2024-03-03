@@ -415,6 +415,7 @@ Mostly Required Options:
                                    This is best used in conjunction with batFolder
                                    NOTE: using this method requires folder# to be exported: export folder#
                                    NOTE: batFolder automatically exports the corresponding folder# variable
+                                   
     -d <bookmark>                  Will use the dibB.sh bookmark
                                    
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh

@@ -104,8 +104,10 @@ args["--output"] = args["--output"] if not (args["--output"]=="input_path/output
 #path to results of the simulation
 if absolutePath:
     path = runPath+"/out_jobs.csv"
+    failurePath = runPath+"/failures.csv"
 else:
     path=runPath + "/output/expe-out/out_jobs.csv"
+    failurePath = runPath +"/output/expe-out/failures.csv"
 
 #path to outfile
 outfile = args["--output"].rstrip('/') +"/post_out_jobs.csv"
@@ -118,10 +120,17 @@ oneSecond = speed
 
 if checkpointing:
     avgAE_path=args["--input"].rstrip('/') + "/avgAE.csv"
-
+SMTBF_Failures = 0
+MTBF_Failures = 0
+Fixed_Failures = 0
 
 
 df = pd.read_csv(path,sep=',',header=0,dtype={"job_id": str, "profile": str,"metadata":str,"batsim_metadata":str,"jitter":str})
+if os.path.exists(failurePath):
+    failures_df = pd.read_csv(failurePath,sep=",",header=0)
+    SMTBF_Failures = len(failures_df.loc[(failures_df["event"] == "FAILURE") & (failures_df["data"]=="SMTBF")])
+    MTBF_Failures = len(failures_df.loc[(failures_df["event"] == "FAILURE") & (failures_df["data"]=="MTBF")])
+    Fixed_Failures = len(failures_df.loc[(failures_df["event"] == "FAILURE") & (failures_df["data"]=="FIXED_FAILURE")])
 MTBF = df["MTBF"].iloc[0] if not df["MTBF"].isnull().iloc[0] else -1
 SMTBF = df["SMTBF"].iloc[0] if not df["SMTBF"].isnull().iloc[0] else -1
 fixedFailures = df["fixed-failures"].iloc[0] if not df["fixed-failures"].isnull().iloc[0] else -1
@@ -139,6 +148,9 @@ df["original_start"]=df["original_start"].astype(np.double)
 df["workload_num_machines"]=df["workload_num_machines"].astype(np.int64)
 df["stretch"]=np.round(df["stretch"])
 df["job_id"] = df.job_id.astype('str')
+
+
+
 
 df_save = df.copy()
 #first deal with restart from checkpoint
@@ -397,6 +409,7 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
     ourDf["util_work"]=ourDf["execution_time"]*ourDf["requested_number_of_resources"]
     utilization = ourDf["util_work"].sum()/(total_makespan*numNodes)
     makespan = ourDf3.real_finish_time.max() - ourDf3.starting_time.min()
+    rejected_available = len(ourDf3.loc[ourDf3["real_final_state"] == "REJECTED_NOT_ENOUGH_AVAILABLE_RESOURCES"])
     print(f"rft_max={ourDf3.real_finish_time.max()} start_min={ourDf3.starting_time.min()}")
     avg_slowdown = 0
     if reservations_as_jobs:
@@ -438,6 +451,10 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
                                 "number_of_jobs":[len(ourDf3)],
                                 "submission_time":[submissionTime],
                                 "avg_utilization":[utilization],
+                                "SMTBF_failures": [SMTBF_Failures],
+                                "MTBF_failures": [MTBF_Failures],
+                                "Fixed_failures": [Fixed_Failures],
+                                "rejected_not_enough_available_resources":[rejected_available],
                                 "jitter":[str(ourDf3['jitter'].dropna().unique())]
                                })
     if checkpointing:

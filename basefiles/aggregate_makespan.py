@@ -144,6 +144,9 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                         df2["avg_tat_dhms"] = [avg_tat_dhms]
                         df2["avg-avg-pp-slowdown_dhms"]=[avg_avg_pp_slowdown_dhms]
                         df2["AAE"]=[df1["AAE"].mean()]
+                        df2["SMTBF_failures"]=[df1["SMTBF_failures"].mean()]
+                        df2["MTBF_failures"]=[df1["MTBF_failures"].mean()]
+                        df2["Fixed_failures"]=[df1["Fixed_failures"].mean()]
                         if "checkpointed_num" in df1.columns:
                             df2["checkpointed_num"] = [df1["checkpointed_num"].mean()]
                             if "percent_checkpointed" in df1.columns:
@@ -174,14 +177,7 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                 jobECount[str(exp)+"  "+str(job)]=eCountJob
                 neCountJob=0
                 eCountJob=0 
-            if len(ids)>1:
-                    
-                    
-                    df5 = pd.concat
-            groups=df.groupby(df.exp).groups
-            dfavg=pd.DataFrame()
-
-
+            
         expNeCount[str(exp)]=neCount
         expECount[str(exp)]=eCount
         totNeCount+=neCount
