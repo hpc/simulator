@@ -147,6 +147,10 @@ with open(basePath+"/errors_aggregate_heatmap.txt","w") as OutFile:
                             sec4 = timedelta(seconds=int(avg_waiting))
                             summary_out["avg-avg-waiting"]=[avg_waiting]
                             summary_out["avg-avg-waiting_dhms"]=str(sec4)
+                            summary_out["SMTBF_failures"]=[aggregate_runs["SMTBF_failures"].mean()]
+                            summary_out["MTBF_failures"]=[aggregate_runs["MTBF_failures"].mean()]
+                            summary_out["Fixed_failures"]=[aggregate_runs["Fixed_failures"].mean()]
+                            summary_out["rejected_not_enough_available_resources"]=[aggregate_runs["rejected_not_enough_available_resources"].mean()]
 
 
         
@@ -257,7 +261,7 @@ for file in dictAllSummaryOut:
                 plt.close()
     dictAllSummaryOut[file]=df.copy()
 if bins:
-            os.makedirs(f"{outPath}/bins",exist_ok=True)
+    os.makedirs(f"{outPath}/bins",exist_ok=True)
 for i in dictAllSummaryOut:
     ourdf = dictAllSummaryOut[i].copy()
     if i=="makespan":

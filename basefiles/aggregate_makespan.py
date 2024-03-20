@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Usage:
-    aggregate-makespan.py -i FOLDER [--output FOLDER] [--try-frame1] [--start-run INT] [--end-run INT]
+    aggregate-makespan.py -i FOLDER [--output FOLDER] [--try-frame1] [--start-run INT] [--end-run INT] [--bins]
 
 Required Options:
     -i FOLDER --input FOLDER    where the experiments are
@@ -15,6 +15,10 @@ Options:
     --start-run INT             only include runs starting at start-run
                              
     --end-run INT               only include runs ending at and including end-run
+
+    --bins                      TODO If set, will calculate from binned data
+                                This assumes you have run post-processing with bins located in output/config.ini
+                                and that it produced output/expe-out/bins/*.csv files
    
 """
 
@@ -32,7 +36,7 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
         
 
-
+datetime.to_timedelta()
 
 args=docopt(__doc__,help=True,options_first=False)
 
@@ -94,6 +98,7 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                             if not fileExists:
                                 print("*** Doesn't Exist: "+makespanPath,flush=True)
                                 OutFile.write("Doesn't Exist: "+makespanPath+"\n")
+                                neRuns+=1
                                 neCount+=1
                                 neCountJob+=1
                         if fileExists:
@@ -147,6 +152,8 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                         df2["SMTBF_failures"]=[df1["SMTBF_failures"].mean()]
                         df2["MTBF_failures"]=[df1["MTBF_failures"].mean()]
                         df2["Fixed_failures"]=[df1["Fixed_failures"].mean()]
+                        df2["number_of_makespans"]=[len(df1)]
+                        df2["rejected_not_enough_available_resources"]=[df1["rejected_not_enough_available_resources"].mean()]
                         if "checkpointed_num" in df1.columns:
                             df2["checkpointed_num"] = [df1["checkpointed_num"].mean()]
                             if "percent_checkpointed" in df1.columns:

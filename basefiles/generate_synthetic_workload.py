@@ -350,7 +350,7 @@ def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number
 
     ids = list(range(startIds,number_of_jobs+1))
     ids = [str(e) for e in ids ]
-
+  
     #get profile ids and types
     if profile_type == "delay":
         types = ["delay"]*number_of_jobs
@@ -377,23 +377,23 @@ def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number
 
     #Handle Optional Options
     #--------------------------------------------------
-    if wallclock_limit:
+    if ((wallclock_limit != False) and (wallclock_limit != "False")):
         wallclockLimits = parseTimeString(wallclock_limit,durations,number_of_jobs)
         cols.append(wallclockLimits)
         column_names.append("walltime")
-    if read_time:
+    if ((read_time != False) and (read_time != "False")):
         readTimes = parseTimeString(read_time,durations,number_of_jobs)
         cols.append(readTimes)
         column_names.append("readtime")
-    if dump_time:
+    if ((dump_time != False) and (dump_time != "False")):
         dumpTimes = parseTimeString(dump_time,durations,number_of_jobs)
         cols.append(dumpTimes)
         column_names.append("dumptime")
-    if checkpoint_interval:
+    if ((checkpoint_interval != False) and (checkpoint_interval != "False")):
         checkpointIntervals = parseTimeString(checkpoint_interval,durations,number_of_jobs)
         cols.append(checkpointIntervals)
         column_names.append("checkpoint_interval")
-
+    
 
     #Create the json file
     #----------------------------------------------------
@@ -703,7 +703,7 @@ if args["--db"]:
     reservations=False
     if not ((reservation_json == False) or (reservation_json == "False")):
         reservations=generate_reservations_from_json(reservation_json)
-        
+
     workload=generate_workload(speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,total_resources=totalResources,number_resources=numberResources,\
                         duration_time=durationTime,submission_time=submissionTime,wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
                         checkpoint_interval=checkpointInterval,seed=seed)

@@ -72,7 +72,7 @@ Requirements (bare-metal and charliecloud):
 - linux os
 - gcc >= 8.0 (bare-metal needs c++17, charliecloud method may allow for previous versions)
 - cmake >= 3.15.4  (maybe previous versions)
-- python >= 3.6
+- python == 3.6
 - python3-venv
 - pip3
 - typical build system

@@ -294,15 +294,15 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
         walltimes = parseTimeString(wallclockLimit,durations_times,newSize,error="Wallclock Limit")
     cols.append(walltimes)
     column_names.append("walltime")
-    if readTime:
+    if (readTime != False) and (readTime != "False"):
         readtimes = parseTimeString(read_time,durations_times,newSize,error="Read Time")
         cols.append(readtimes)
         column_names.append("readtime")
-    if dumpTime:
+    if (dumpTime != False) and (dumpTime != "False"):
         dumptimes = parseTimeString(dump_time,durations_times,newSize,error="Dump Time")
         cols.append(dumptimes)
         column_names.append("dumptime")
-    if checkpoint_interval:
+    if (checkpoint_interval != False) and (checkpoint_interval != "False"):
         checkpoint = parseTimeString(checkpoint_interval,durations_times,newSize,error="Checkpoint Interval")
         cols.append(checkpoint)
         column_names.append("checkpoint_interval")
