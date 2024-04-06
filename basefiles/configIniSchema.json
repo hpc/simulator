@@ -27,7 +27,7 @@
         },
         {
             "type": "string",
-            "regex": "^(silent|debug|quiet)$",
+            "regex": "^(silent|debug|quiet|CCU_INFO|CCU_DEBUG|CCU_DEBUG_FIN|CCU_DEBUG_ALL)$",
             "batsched": [
                 {
                     "--verbosity": "{}"
@@ -78,7 +78,7 @@
         },
         {
             "type": "string",
-            "regex": "^(network-only|debug|quiet)$",
+            "regex": "^(network-only|debug|quiet|CCU_INFO|CCU_DEBUG|CCU_DEBUG_FIN|CCU_DEBUG_ALL)$",
             "batsim": [
                 {
                     "-v": "{}"
@@ -488,6 +488,10 @@
             ]
         }
     ],
+    "submission-compression":{
+        "type": "string",
+        "regex": "^[0-9]+[%]$"   
+    },
     "submission-time-after": {
         "type": "string",
         "batsim": [

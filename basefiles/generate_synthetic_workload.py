@@ -80,6 +80,11 @@ Required Options 4:
                                                             '--submission-time "100.0:fixed"'
                                                             '--submission-time "0.0:fixed"'
                                                             '--submission-time "0:200.0:unif"'
+
+    --submission-compression <INT%>                 This changes all submission times, after they have been calculated, by the percent amount.
+                                                    ex:     '--submission-compression 80%'  will compress the submission spacing by .8
+                                                            '--submission-compression 150%' will expand the submission spacing by .5
+
     --type <STR>                                    Type of profile: delay || parallel_homogeneous
     
     --machine-speed <FLOAT>                         The speed (in flops/s) of the machines this will run on, used for type: parallel_homogeneous
@@ -282,6 +287,16 @@ def parseRandomChoiceString(aTimeStr,option,numberFunction,randomChoices,newSize
         times = np.cumsum(times)
     
     return times
+def compressSubmits(submits,submission_compression):
+    submission_compression = int(submission_compression.split("%")[0])
+    mydiffs = np.diff(submits)
+    mydiffs = np.insert(mydiffs,0,0)
+    mydiffs = mydiffs * (submission_compression/100)
+    if submission_compression < 100:
+        submits = submits - mydiffs
+    else:
+        submits = submits + mydiffs
+    return submits
 
 def generate_reservations_from_json(reservations_json):
     import reservations as rsv
@@ -367,6 +382,8 @@ def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number
         durations = parseRandomChoiceString(duration_time,"--duration-time",float,["fixed","unif","norm","exp","csv"],number_of_jobs,seed)
     if submission_time:
         submissions = parseRandomChoiceString(submission_time,"--submission-time",float,["fixed","unif","norm","exp"],number_of_jobs,seed)
+    if submission_compression != "False" and submission_compression != False:
+        submissions = compressSubmits(submissions,submission_compression)
 
     #set the required columns
     cols=[ids,submissions,resources,ids]
@@ -605,7 +622,7 @@ elif args["<type-of-info>"] == "usage":
             generate_synthetic_workload.py --help [<type-of-info>]
             generate_synthetic_workload.py -F FILE
             generate_synthetic_workload.py --db FILE --file-name FILE
-            generate_synthetic_workload.py --number-of-jobs INT --nodes INT  --number-of-resources STR --duration-time STR --submission-time STR 
+            generate_synthetic_workload.py --number-of-jobs INT --nodes INT  --number-of-resources STR --duration-time STR --submission-time STR --submission-compression INT%
                                             [--output FILE]
                                             [--wallclock-limit <FLOAT|INT%|STR>]
                                             [--read-time <FLOAT|INT%|STR>] [--dump-time <FLOAT|INT%|STR>]
@@ -693,6 +710,7 @@ if args["--db"]:
     numberResources=df["number-of-resources"].values[0]
     durationTime=df["duration-time"].values[0]
     submissionTime=df["submission-time"].values[0]
+    submission_compression = df["submission-compression"].values[0]
     wallclockLimit=df["wallclock-limit"].values[0]
     readTime=df["read-time"].values[0]
     dumpTime=df["dump-time"].values[0]
@@ -705,8 +723,8 @@ if args["--db"]:
         reservations=generate_reservations_from_json(reservation_json)
 
     workload=generate_workload(speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,total_resources=totalResources,number_resources=numberResources,\
-                        duration_time=durationTime,submission_time=submissionTime,wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
-                        checkpoint_interval=checkpointInterval,seed=seed)
+                        duration_time=durationTime,submission_time=submissionTime,submission_compression=submission_compression,wallclock_limit=wallclockLimit,\
+                        read_time=readTime,dump_time=dumpTime,checkpoint_interval=checkpointInterval,seed=seed)
     if reservations:
         workload=add_reservations_to_workload(workload, reservations)
     jsonData={"nb_res":totalResources,"jobs":workload[1],"profiles":workload[2]}
@@ -738,6 +756,8 @@ durationTime = args['--duration-time']
 
     #submission times?
 submissionTime = args['--submission-time']
+    #submission compression/expansion?
+submission_compression = args["--submission-compression"]
 
 #Optional Options
 #--------------------------------------

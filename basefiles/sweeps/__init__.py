@@ -25,7 +25,8 @@ def sweepSwitch(kindOfSweep):
         "jobs":jobs_sweep.jobsSweep,
         "reservation": reservation_sweep.reservationSweep,
         "queueDepth": queue_depth_sweep.queueDepthSweep,
-        "MTTR": MTTR_sweep.MTTRSweep
+        "MTTR": MTTR_sweep.MTTRSweep,
+        "submissionCompression": submission_compression_sweep.submissionCompressionSweep
     }
     return functions[kindOfSweep]
 

@@ -66,6 +66,7 @@ repairTime = InConfig['repair-time'] if dictHasKey(InConfig,'repair-time') else 
 fixedFailures = InConfig['fixed-failures'] if dictHasKey(InConfig,'fixed-failures') else False
 checkpointError = InConfig['checkpointError'] if dictHasKey(InConfig,'checkpointError') else False
 startFromCheckpoint = InConfig['start-from-checkpoint'] if dictHasKey(InConfig,'start-from-checkpoint') else False
+submissionCompression = InConfig['submission-compression'] if dictHasKey(InConfig,'submission-compression') else "100%"
 
 reservations_as_jobs = True if args["--reservations-as-jobs"] else False
 submissionTime = False
@@ -450,6 +451,7 @@ def get_makespan_df(ourDf,ourDf3,total_makespan,checkpointing):
                                 "avg-pp-slowdown-tau":[pp_slowdown],   
                                 "number_of_jobs":[len(ourDf3)],
                                 "submission_time":[submissionTime],
+                                "submission_compression":[submissionCompression],
                                 "avg_utilization":[utilization],
                                 "SMTBF_failures": [SMTBF_Failures],
                                 "MTBF_failures": [MTBF_Failures],

@@ -149,7 +149,7 @@ def equaldf(df1,idf2,cols):
 ####                                                                                                  #####
 ###########################################################################################################		
 
-def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,base):
+def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,experiment,basefiles,exp,base):
     import uuid
     import pandas as pd
     import os
@@ -197,10 +197,13 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     scaleWidths=int(config['scale-widths-based-on']) if dictHasKey(config,'scale-widths-based-on') else False
     scaleTimeWidth=int(config['scale-time-width-based-on']) if dictHasKey(config,'scale-time-width-based-on') else False
     seed = int(config["seed"]) if dictHasKey(config,"seed") else False
-    cols=["filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_for_folder=["folder","experiment","filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_without_filename=["nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
-    cols_without_scale=["nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","wallclock-limit","read-time","dump-time","checkpoint-interval","reservation-json"]
+    all_cols=["filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","submission-compression","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
+    cols=all_cols
+    cols_for_folder=["folder","experiment","filename"] + all_cols
+    cols_without_filename=all_cols[1:]
+    cols_without_scale=cols_without_filename
+    cols_without_scale.remove("scale-widths-based-on")
+    cols_without_scale.remove("scale-time-width-based-on")
     df["nodes"]=[str(nodes)]
     df["number-of-jobs"]=[str(numberOfJobs)]
     df["index"]=[str(index)]
@@ -209,6 +212,7 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
     df["number-of-resources"]=[str(numberOfResources)]
     df["duration-time"]=[str(durationTime)] 
     df["submission-time"]=[str(submission)]
+    df["submission-compression"]=[str(submission_compression)]
     df["wallclock-limit"]=[str(wallclockLimit)]
     df["read-time"]=[str(readtime)]
     df["dump-time"]=[str(dumptime)]
@@ -326,7 +330,7 @@ def createSyntheticWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,ex
 ###########################################################################################################
 
 ##TODO incorporate jobs
-def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,base):
+def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,experiment,basefiles,exp,base):
     import uuid
     import pandas as pd
     import os
@@ -372,11 +376,11 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     checkpoint = config['checkpoint-interval'] if dictHasKey(config,'checkpoint-interval') else False
     machine_speed = config["machine-speed"] if dictHasKey(config,"machine-speed") else False
     copies=config["copy"] if dictHasKey(config,"copy") else False
-   
-    cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
-    cols_for_folder=["folder","experiment","filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
-    cols_merge=["filename_x","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
-    cols_without_filename=["nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+    all_cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","submission-compression","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
+    cols=all_cols
+    cols_for_folder=["folder","experiment","filename"] + all_cols
+    cols_merge=["filename_x"]+ all_cols
+    cols_without_filename=all_cols[1:]
     df["filename"]=[str(False)]
     df["nodes"]=[str(nodes)]
     df["time"]=[str(time)]
@@ -387,6 +391,7 @@ def createGrizzlyWorkload(ourId,config,resv,nodes,jobs,experiment,basefiles,exp,
     df["index"]=[str(index)]
     df["type"]=[str(profile_type)]
     df["submission-time"]=[str(submissionTime)]
+    df["submission-compression"]=[str(submission_compression)]
     df["machine-speed"]=[str(machine_speed)]
     df["wallclock-limit"]=[str(wallclockLimit)]
     df["read-time"]=[str(readtime)]
@@ -643,7 +648,7 @@ for experiment in experiments:
             handleSweep = sweeps.sweepSwitch(kindOfSweep)
             #execute that sweep's function
             handleSweep(config[experiment]["input"][i],ourInput,config[experiment]["input"])
-        elif not i.find("-workload") == -1:  # ok we have a workload
+        elif not i.find("-workload") == -1:  # ok we have a workload, this should be the last option in input, so we can create all workloads below
             #what kind of workload: synthetic or grizzly?
             #The naming convention is NAME-workload, so get the NAME and check its type
             if i.split("-workload",1)[0] == "synthetic":
@@ -655,6 +660,7 @@ for experiment in experiments:
             
             #in python we need to be careful what data we are talking about:views/slices, etc..
             # we create a copy here so we don't worry about it pointing back to some original.
+            # this data represents all the options in our input->workload section of this config "experiment"
             data = deepcopy(config[experiment]["input"][i])
             
             #get the name of the reservation it uses
@@ -682,12 +688,13 @@ for experiment in experiments:
                 cores = ourInput[exp]["core-count"] if dictHasKey(ourInput[exp],"core-count") else -1
                 speeds = ourInput[exp]["speeds"] if dictHasKey(ourInput[exp],"speeds") else -1
                 jobs = ourInput[exp]["number-of-jobs"] if dictHasKey(ourInput[exp],"number-of-jobs") else False
+                submission_compression = ourInput[exp]["submission-compression"] if dictHasKey(ourInput[exp],"submission-compression") else False
                 location = createPlatform(nodes,cores,speeds,basefiles)
                 ourInput[exp]["platformFile"]=location
                 all_data = deepcopy(ourInput[exp])
                 ourInput[exp]={}
                 for ourId in rangeOfIds:
-                    location,profile_type,machine_speed,submission,command = createWorkload(ourId,data,resv,nodes,jobs,experiment,basefiles,exp,base)
+                    location,profile_type,machine_speed,submission,command = createWorkload(ourId,submission_compression,data,resv,nodes,jobs,experiment,basefiles,exp,base)
                     ourInput[exp][ourId]=deepcopy(all_data)
                     ourInput[exp][ourId][i]={"workloadFile":location,"profileType":profile_type,"speed":machine_speed,"submissionTime":submission,"command":command}
                 

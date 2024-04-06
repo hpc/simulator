@@ -64,7 +64,10 @@ Optional Options:
                                                     '--submission-time "0:200.0:unif"'
                                                     '--submission-time "200.0:exp:10"'  <-- 10 is the seed
                                                     '--submission-time "0:200.0:unif:20"' <-- 20 is the seed
-
+                                                    
+    --submission-compression <INT%>         This changes all submission times, after they have been calculated, by the percent amount.
+                                            ex:     '--submission-compression 80%'  will compress the submission spacing by .8
+                                                    '--submission-compression 150%' will expand the submission spacing by .5
 
     --wallclock-limit <FLOAT|INT%|STR>      wallclock limits will all be set to this for FLOAT. (-1) means the value will not be used in Batsim.
                                             wallclock limits will be a % of run time for INT%
@@ -183,7 +186,7 @@ def add_reservations_to_workload(aWorkload,reservations):
 
 
 
-def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclock_limit,read_time,dump_time, checkpoint_interval,submission):
+def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclock_limit,read_time,dump_time, checkpoint_interval,submission,submission_compression):
     import pandas as pd
     import numpy as np
     #parse timeString
@@ -278,7 +281,9 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
         submits = (submits/10**9).astype('int')
     else:
         submits = parseSubmissionTime(submission,newSize)
-
+    #submits are now in the correct order, lets alter them if submit_compression is set
+    if submission_compression != "False" and submission_compression != False:
+        submits = compressSubmits(submits,submission_compression)
 
     # convert endtime - starttime to durations
     durations_times=((df["end_time"].astype("datetime64[ns]")-df["start_time"].astype("datetime64[ns]"))/10**9).astype('int')
@@ -398,7 +403,18 @@ def parseTimeString(aTimeStr,durations_times,newSize,error="Generic Time String"
         sys.exit(1)
     return times
                 
+def compressSubmits(submits,submission_compression):
+    submission_compression = int(submission_compression.split("%")[0])
+    mydiffs = np.diff(submits)
+    mydiffs = np.insert(mydiffs,0,0)
+    mydiffs = mydiffs * (submission_compression/100)
+    if submission_compression < 100:
+        submits = submits - mydiffs
+    else:
+        submits = submits + mydiffs
+    return submits
 
+    
 def parseSubmissionTime(aTimeStr,newSize):
     import re
     times=[]
@@ -571,6 +587,7 @@ if dbfile:
         number_of_jobs = False
     randomSelection = df["random-selection"].values[0]
     submission=df["submission-time"].values[0]
+    submission_compression=df["submission-compression"].values[0]
     profile_type=df["type"].values[0]
     speed=int(df["machine-speed"].values[0])
     wallclockLimit=df["wallclock-limit"].values[0]
@@ -594,6 +611,7 @@ else:
     number_of_jobs = int(args["--number-of-jobs"]) if args["--number-of-jobs"] else False
     randomSelection = int(args["--random-selection"]) if args["--random-selection"] else False
     submission = args["--submission-time"] if args["--submission-time"] else False
+    submission_compression = args["--submission-compression"] if args["--submission-compression"] else False
     profile_type = str(args["--profile-type"])
     speed=int(args["--machine-speed"])
     wallclockLimit = args["--wallclock-limit"] if args["--wallclock-limit"] else False
@@ -609,7 +627,7 @@ if not ((reservation_json == False) or (reservation_json == "False")):
 
 workload=generate_workload(time=time,inputPath=inputPath,speed=speed,profile_type=profile_type,number_of_jobs=number_of_jobs,\
                         wallclock_limit=wallclockLimit,read_time=readTime,dump_time=dumpTime,\
-                        checkpoint_interval=checkpointInterval,submission=submission)
+                        checkpoint_interval=checkpointInterval,submission=submission,submission_compression=submission_compression)
 
 if reservations:
     workload=add_reservations_to_workload(workload, reservations)

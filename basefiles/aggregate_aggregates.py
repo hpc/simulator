@@ -59,8 +59,8 @@ output = args["--output"] if args["--output"] != "<input>_agg.csv" else f"{basen
 
 
 #columns_to_ignore_for_comparison= ["makespan_sec","avg-avg-pp-slowdown","avg-pp-slowdown-tau","avg_tat","avg_avg_utilization","avg_avg_waiting","avg_avg_waiting_dhms","makespan_dhms","avg_tat_dhms","avg-avg-pp-slowdown_dhms","AAE","SMTBF_failures","MTBF_failures","Fixed_failures","number_of_makespans,rejected_not_enough_available_resources,checkpointed_num,percent_checkpointed,checkpointing_on_num,checkpointing_on_percent,id,job,exp]
-columns_to_compare=["nodes","SMTBF","NMTBF","MTTR","fixed-failures","repair-time","exp"]
-non_concat_columns=["nodes","SMTBF","NMTBF","MTTR","fixed-failures","repair-time","exp","id","job","number_of_makespans"]
+columns_to_compare = ["nodes","SMTBF","NMTBF","MTTR","fixed-failures","repair-time","submission_compression","exp"]
+non_concat_columns = columns_to_compare + ["id","job","number_of_makespans"]
 if not batches:
     #ok we need to get a list of all files that have the basename
     files = [ aFile for aFile in os.listdir(directory) if (os.path.isfile(aFile) and isPartOfBasename(aFile,basename))]
