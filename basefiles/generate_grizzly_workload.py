@@ -64,7 +64,7 @@ Optional Options:
                                                     '--submission-time "0:200.0:unif"'
                                                     '--submission-time "200.0:exp:10"'  <-- 10 is the seed
                                                     '--submission-time "0:200.0:unif:20"' <-- 20 is the seed
-                                                    
+
     --submission-compression <INT%>         This changes all submission times, after they have been calculated, by the percent amount.
                                             ex:     '--submission-compression 80%'  will compress the submission spacing by .8
                                                     '--submission-compression 150%' will expand the submission spacing by .5
@@ -408,10 +408,7 @@ def compressSubmits(submits,submission_compression):
     mydiffs = np.diff(submits)
     mydiffs = np.insert(mydiffs,0,0)
     mydiffs = mydiffs * (submission_compression/100)
-    if submission_compression < 100:
-        submits = submits - mydiffs
-    else:
-        submits = submits + mydiffs
+    submits = np.cumsum(mydiffs)
     return submits
 
     

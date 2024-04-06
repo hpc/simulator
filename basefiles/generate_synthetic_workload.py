@@ -292,10 +292,7 @@ def compressSubmits(submits,submission_compression):
     mydiffs = np.diff(submits)
     mydiffs = np.insert(mydiffs,0,0)
     mydiffs = mydiffs * (submission_compression/100)
-    if submission_compression < 100:
-        submits = submits - mydiffs
-    else:
-        submits = submits + mydiffs
+    submits = np.cumsum(mydiffs)
     return submits
 
 def generate_reservations_from_json(reservations_json):
@@ -349,7 +346,7 @@ def generate_workload_from_json(workload_json):
     
 
 def generate_workload(*,speed,profile_type,number_of_jobs,total_resources,number_resources,\
-                    duration_time,submission_time,percent=100,wallclock_limit=None,read_time=None,dump_time=None,\
+                    duration_time,submission_time,submission_compression,percent=100,wallclock_limit=None,read_time=None,dump_time=None,\
                     checkpoint_interval=None,add_to_workload=None,seed=False):
     startIds=1
     previousJobs=pd.DataFrame()

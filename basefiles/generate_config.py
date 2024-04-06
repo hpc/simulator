@@ -199,7 +199,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     seed = int(config["seed"]) if dictHasKey(config,"seed") else False
     all_cols=["filename","nodes","number-of-jobs","index","type","machine-speed","seed","number-of-resources","duration-time","submission-time","submission-compression","wallclock-limit","read-time","dump-time","checkpoint-interval","scale-widths-based-on","scale-time-width-based-on","reservation-json"]
     cols=all_cols
-    cols_for_folder=["folder","experiment","filename"] + all_cols
+    cols_for_folder=["folder","experiment"] + all_cols
     cols_without_filename=all_cols[1:]
     cols_without_scale=cols_without_filename
     cols_without_scale.remove("scale-widths-based-on")
@@ -378,7 +378,7 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     copies=config["copy"] if dictHasKey(config,"copy") else False
     all_cols=["filename","nodes","time","input-path","number-of-jobs","random-selection","index","type","submission-time","submission-compression","machine-speed","wallclock-limit","read-time","dump-time","checkpoint-interval","copy","reservation-json"]
     cols=all_cols
-    cols_for_folder=["folder","experiment","filename"] + all_cols
+    cols_for_folder=["folder","experiment"] + all_cols
     cols_merge=["filename_x"]+ all_cols
     cols_without_filename=all_cols[1:]
     df["filename"]=[str(False)]
