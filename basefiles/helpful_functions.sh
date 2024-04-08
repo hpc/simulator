@@ -14,7 +14,7 @@ function batExit
     BATSIM_ENV_ACTIVATED=""
     deactivate
     export PS1=$(echo "$PS1" | sed 's@(batsim_env)@@g' )
-    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
+    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
     export PATH="$tmp"
     tmp=`echo "$LD_LIBRARY_PATH" | sed "s@:$install_prefix/lib:$install_prefix/lib64@@g"`
     export LD_LIBRARY_PATH="$tmp"
