@@ -36,7 +36,6 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
         
 
-datetime.to_timedelta()
 
 args=docopt(__doc__,help=True,options_first=False)
 
@@ -124,7 +123,8 @@ with open(basePath+"/errors_total_makespan.txt","w") as OutFile:
                         df2["SMTBF"] = [df1["SMTBF"].values[0]]
                         df2["NMTBF"] = [df1["NMTBF"].values[0]]
                         df2["MTTR"] = [df1["MTTR"].values[0]]
-                        df2["submission_compression"] = [df1["submission_compression"].values[0]]
+                        if "submission_compression" in df1.keys():
+                            df2["submission_compression"] = [df1["submission_compression"].values[0]]
                         df2["fixed-failures"] = [df1["fixed-failures"].values[0]]
                         df2["repair-time"] = [df1["repair-time"].values[0]]
                         df2["makespan_sec"] = [df1["makespan_sec"].mean()]

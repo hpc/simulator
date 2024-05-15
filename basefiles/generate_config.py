@@ -169,11 +169,9 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     os.system(command)
     
     if os.path.isfile(db_path) and os.path.getsize(db_path) > 0:
-        print("line 116")
         database=pd.read_csv(db_path,sep="|",header=0,dtype=str)
     else:
         database=pd.DataFrame()
-    print(db_path)
     command = ""
     profile_type = config["type"]
     machine_speed = config['machine-speed'] if profile_type == "parallel_homogeneous" else -1
@@ -185,7 +183,6 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     if (numberOfJobs == False) and (not (type(jobs) == bool)):
         numberOfJobs = int(jobs)
     index=ourId
-    print(ourId)
     noCheck=config["force-creation"] if dictHasKey(config,"force-creation") else False
     numberOfResources=config['number-of-resources'] if dictHasKey(config,'number-of-resources') else False
     durationTime = config['duration-time'] if dictHasKey(config,'duration-time') else False
@@ -357,7 +354,6 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     else:
         database=pd.DataFrame()
     index=ourId
-    print("ourId %d" % index)
     #TODO profile_type
     profile_type=config["type"]
     
@@ -416,7 +412,6 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     if (len(equal) > 0) and not noCheck:
     #ok supposedly we have a workload file
     #lets make sure
-        print("not mask empty and len database[mask]) > 0")
         location=os.path.dirname(db_path)+"/"+equal["filename_x"].values[0]
         if os.path.exists(location):
             filegood=True
@@ -675,7 +670,9 @@ for experiment in experiments:
             #here we create our platform and workload and get back the location
             #of both of the files and put them into ourInput config
             #here exp is iterating through the experiments of one input in our config, whereas the outer loop - experiments - is iterating over "input"s in our config
+            print("creating workloads ...")
             for exp in ourInput.keys():
+                print(f"job: experiment_{exp}")
                 nodes = ourInput[exp]["nodes"]
                 resv = ourInput[exp]["resv"] if dictHasKey(ourInput[exp],"resv") else resv
                 heldback = ourInput[exp]["share-packing-holdback"] if dictHasKey(ourInput[exp],"share-packing-holdback") else -1
@@ -712,6 +709,7 @@ for experiment in experiments:
                 
     #our config is ready, now make the correct directory structure and output the tailored config files
     #for each simulation
+    print(f"creating folder structure for experiment: {experiment} ...")
     for i in ourInput.keys():
         #where are all these folders going?  --output + experiment + job(i) + id_j + Run_#(number)
         new_base_orig = base +"/" + experiment + "/" + i
