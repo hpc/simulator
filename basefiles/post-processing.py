@@ -168,12 +168,13 @@ df.loc[df['starting_time'] == df['submission_time'],'waiting_time']=0
 original_starts = df.loc[df.original_start != -1.0].copy()
 original_starts["cpu"] = original_starts["progressTimeCpu"]
 original_starts["starting_time"]=original_starts["original_start"]
-original_starts["execution_time"]=original_starts.finish_time - original_starts.starting_time
 original_starts["waiting_time"]=original_starts.starting_time - original_starts.submission_time
 original_starts["stretch"]=original_starts.turnaround_time/original_starts.execution_time
 df.update(original_starts)
 job_ids=df.job_id.str.extract(r'(?P<job_id>\d+[#]?\d*)[$]?\d*')
 df.update(job_ids)
+#execution time was computed to be different 
+df["execution_time"]=df.finish_time - df.starting_time
 
 
 

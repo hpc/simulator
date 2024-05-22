@@ -101,6 +101,7 @@ with open(scriptPath+"/configIniSchema.json","r") as InFile:
 functions.applyJsonSchema(InConfig,InSchema)
 globals().update(functions.realStartOptions)
 signal.signal(checkpointBatsimSignal,signal_handler)
+#testSuite gets defined in configIniSchema.json
 if testSuite:
     progress_path = dirname
 
@@ -112,7 +113,7 @@ if not os.path.exists(f"{path}/output/progress.log"):
     """
     with open(f"{path}/output/progress.log","w") as OutFile:
         json.dump(json.loads(myJson),OutFile,indent=4)
-
+#skipCompletedSims gets defined in configIniSchema.json
 if skipCompletedSims:
     with open(f"{path}/output/progress.log","r") as InFile:
         progressJson=json.load(InFile)
@@ -243,23 +244,23 @@ else:
 print("real_start.py, call to post-processing.py",flush=True)
 print(postCmd,flush=True)
 myReturn = os.system(postCmd)
-
-if myReturn>1:
-    locked_fd = acquireLock(locked_file)
-        #we have the lock
-    with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-        progress=json.load(InOutFile)
-        progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
-    with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-        json.dump(progress,InOutFile,indent=4)
-    releaseLock(locked_fd)
-    sys.exit(myReturn)
-else:
-    locked_fd = acquireLock(locked_file)
-        #we have the lock
-    with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-        progress=json.load(InOutFile)
-        progress[f"{dirname}/{basename}{rest_of_path}_post"]=1
-    with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-        json.dump(progress,InOutFile,indent=4)
-    releaseLock(locked_fd)
+if not args["--only-output"]:
+    if myReturn>1:
+        locked_fd = acquireLock(locked_file)
+            #we have the lock
+        with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+            progress=json.load(InOutFile)
+            progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
+        with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+            json.dump(progress,InOutFile,indent=4)
+        releaseLock(locked_fd)
+        sys.exit(myReturn)
+    else:
+        locked_fd = acquireLock(locked_file)
+            #we have the lock
+        with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+            progress=json.load(InOutFile)
+            progress[f"{dirname}/{basename}{rest_of_path}_post"]=1
+        with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+            json.dump(progress,InOutFile,indent=4)
+        releaseLock(locked_fd)

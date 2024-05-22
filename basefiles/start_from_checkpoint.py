@@ -91,3 +91,6 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     os.system(f"cp -R {frame_folder}/checkpoint_{nb_startFromCheckpoint} {old_folder}/start_from_checkpoint")
     os.system(f"cp -R {frame_folder}/cmd {old_folder}/cmd")
     os.system(f"cp {old_folder}/start_from_checkpoint/out_jobs.csv {old_folder}/out_jobs.csv")
+    os.system(f"mkdir {old_folder}/log")
+    os.system(f"mv {old_folder}/start_from_checkpoint/Soft_Errors.log {old_folder}/log/")
+    os.system(f"mv {old_folder}/start_from_checkpoint/failures.csv {old_folder}/")
