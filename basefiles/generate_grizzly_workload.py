@@ -295,7 +295,7 @@ def generate_workload(*,time,inputPath,speed,profile_type,number_of_jobs,wallclo
     walltimes=df["wallclock_limit"]
     cols=[ids,submits,resources,ids]
     column_names=["id","subtime","res","profile"]
-    if wallclock_limit:
+    if (wallclock_limit != False) and (wallclock_limit != "False"):
         walltimes = parseTimeString(wallclockLimit,durations_times,newSize,error="Wallclock Limit")
     cols.append(walltimes)
     column_names.append("walltime")
