@@ -48,7 +48,7 @@ if [[ $1 == "-i" ]]
     cd "$folder"
     #untar the tarball
     echo "untaring ..."
-    tar -xf $file
+    tar -xzf $file
     #remove the batsim4 and batsched4 folders
     echo "removing old code ..."
     rm -rf "${output}/Downloads/batsim4"
