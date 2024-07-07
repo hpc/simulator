@@ -360,6 +360,28 @@ function install_libtool
         export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
     fi
 }
+function install_python
+{
+    cd $python_prefix
+    test -f $python_prefix/bin/activate
+    hasActivate=$?
+    if [[ $hasActivate == 1 ]];then
+        python3 -m venv ./
+    fi
+    . ./bin/activate
+    python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
+    python3 -m pip install meson
+    python3 -m pip install ninja
+    python3 -m pip install pandas
+    python3 -m pip install numpy
+    python3 -m pip install seaborn
+    python3 -m pip install shapely
+    python3 -m pip install requests
+    python3 -m pip install venv-pack
+    export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
+    export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
+    sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
+}
 
 function deployGui
 {
@@ -467,20 +489,20 @@ if [ $CLEAN = true ];then
     rm -f $basefiles_prefix/deploy.config
     echo "Successfully cleaned basefiles"
     while true; do
-    read -p "Do you wish to delete Install,Downloads,charliecloud,and batsim_ch as well? " Y/n
-    case $yn in
-        [Yy]* ) rm -rf $install_prefix
-                rm -rf $downloads_prefix
-                rm -rf $prefix/charliecloud
-                rm -rf $prefix/batsim_ch
-                exit 0
+        read -p "Do you wish to delete Install,Downloads,charliecloud,and batsim_ch as well? Y/n? : " yn 
+        case $yn in
+            [Yy]* ) rm -rf $install_prefix
+                    rm -rf $downloads_prefix
+                    rm -rf $prefix/charliecloud
+                    rm -rf $prefix/batsim_ch
+                    exit 0
+                    ;;
+            [Nn]* ) exit
+                    ;;
+            * ) echo "Please answer yes or no."
                 ;;
-        [Nn]* ) exit
-                ;;
-        * ) echo "Please answer yes or no."
-            ;;
-    esac
-done
+        esac
+    done
 fi
 if [ $CONVERT != false ] && [ $OUTPUT != false ];then
     export prefix=$OUTPUT
@@ -569,21 +591,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     mkdir -p $downloads_prefix && \
     mkdir -p $install_prefix/bin/ && \
     mkdir -p $python_prefix && \
-    cd $python_prefix
-    python3 -m venv ./
-    . ./bin/activate
-    python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
-    python3 -m pip install meson
-    python3 -m pip install ninja
-    python3 -m pip install pandas
-    python3 -m pip install numpy
-    python3 -m pip install seaborn
-    python3 -m pip install shapely
-    python3 -m pip install requests
-    python3 -m pip install venv-pack
-    export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
-    export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
-    sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
+    install_python
     venv-pack -o $prefix/python_env.tar.gz
     cd $downloads_prefix
     wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
@@ -755,10 +763,11 @@ EOF
     done
 
 
-exit 0
+    exit 0
 fi
 
 if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
+    install_python
     install_pkgConfig
     install_libtool
     myDir=$MY_PATH
@@ -869,24 +878,11 @@ EOF
 fi
 if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     deactivate
-    cd ../
-    mkdir python_env && cd python_env
-    python3 -m venv ./
-    . ./bin/activate
-    python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
-    python3 -m pip install meson
-    python3 -m pip install ninja
-    python3 -m pip install pandas
-    python3 -m pip install numpy
-    python3 -m pip install seaborn
-    python3 -m pip install shapely
-    python3 -m pip install requests
-    python3 -m pip install venv-pack
-    export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
-    export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
-    sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
+    cd $prefix
+    mkdir $python_prefix && cd $python_prefix
+    install_python
     venv-pack -o $prefix/python_env.tar.gz
-
+    cd $basefiles_prefix
     install_pkgConfig
     install_libtool
 
@@ -974,73 +970,63 @@ You may want to run some tests using .../basefiles/tests/charliecloud/tests.sh
 You will want to add anything relevant to .../basefiles/batsim_environment.sh  as well
 At a bare minimum set prefix=? to the correct prefix. This is probably going to be your simulator folder.
 EOF
-exit 0
+    exit 0
 fi
 
 if [ $FORMAT = 'charliecloud' ] && [ $NO = false ]; then
-basefiles=$MY_PATH
-deactivate
-cd ../
-mkdir python_env && cd python_env
-python3 -m venv ./
-. ./bin/activate
-python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
-python3 -m pip install meson
-python3 -m pip install ninja
-python3 -m pip install pandas
-python3 -m pip install numpy
-python3 -m pip install seaborn
-python3 -m pip install shapely
-python3 -m pip install requests
-python3 -m pip install venv-pack
 
-#lets check that we have glib and pkg-config
-install_pkgConfig
-install_libtool
+    deactivate
+    cd $prefix
+    mkdir $python_prefix && cd $python_prefix
+    install_python
 
-cd $basefiles/CharlieCloud_compile
-rm -rf ./download ./boost_1_75_0
-rm -rf ../charliecloud
-rm -rf ../../batsim_ch
-mkdir ../charliecloud
-cd ../charliecloud
-url=$(curl -s https://api.github.com/repos/hpc/charliecloud/releases/latest | grep "browser_download_url" | awk -F: '{print $2":"$3}'| sed 's/\"//g')
-wget $url
-myFile=`basename $url`
-tar -xf $myFile
-mv ${myFile%.tar.gz} ./charliecloud
-cd charliecloud
-./configure
-make
-cd ./bin
-export PATH=`pwd`:$PATH
-cd $basefiles/CharlieCloud_compile
-wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
-tar -xf ./download
-chmod -R 777 ./boost_1_75_0
-export CH_IMAGE_STORAGE=`pwd`/$USER.ch
-rm -rf $CH_IMAGE_STORAGE
-ch-image delete batsim
-if [ $withGUI = true ];then
-    ch-image build --force --no-cache -t batsim -f DockerFile ./DockerfileGUI
-fi
-ch-image build --force --no-cache -t batsim -f Dockerfile ./
-ch-convert batsim ${basefiles%/basefiles}/batsim_ch
-cd ${basefiles%/basefiles}
-mkdir -p experiments
-mkdir -p configs
-cd $basefiles
-mv ./charliecloud ../
- cat <<EOF
-*****************************************
-        Deployment Finished
-*****************************************
+    #lets check that we have glib and pkg-config
+    install_pkgConfig
+    install_libtool
 
-You may want to run some tests using .../basefiles/tests/charliecloud/tests.sh
-You will want to add anything relevant to .../basefiles/batsim_environment.sh  as well
-At a bare minimum set prefix=? to the correct prefix. This is probably going to be your 'simulator' folder.
+    cd $basefiles/CharlieCloud_compile
+    rm -rf ./download ./boost_1_75_0
+    rm -rf ../charliecloud
+    rm -rf ../../batsim_ch
+    mkdir ../charliecloud
+    cd ../charliecloud
+    url=$(curl -s https://api.github.com/repos/hpc/charliecloud/releases/latest | grep "browser_download_url" | awk -F: '{print $2":"$3}'| sed 's/\"//g')
+    wget $url
+    myFile=`basename $url`
+    tar -xf $myFile
+    mv ${myFile%.tar.gz} ./charliecloud
+    cd charliecloud
+    ./configure
+    make
+    cd ./bin
+    export PATH=`pwd`:$PATH
+    cd $basefiles_prefix/CharlieCloud_compile
+    wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
+    tar -xf ./download
+    chmod -R 777 ./boost_1_75_0
+    export CH_IMAGE_STORAGE=`pwd`/$USER.ch
+    rm -rf $CH_IMAGE_STORAGE
+    ch-image delete batsim
+    if [ $withGUI = true ];then
+        ch-image build --force --no-cache -t batsim -f DockerFile ./DockerfileGUI
+    fi
+    ch-image build --force --no-cache -t batsim -f Dockerfile ./
+    ch-convert batsim ${basefiles_prefix%/basefiles}/batsim_ch
+    cd ${basefiles_prefix%/basefiles}
+    mkdir -p experiments
+    mkdir -p configs
+    cd $basefiles_prefix
+    mv ./charliecloud ../
+    cat <<EOF
+    *****************************************
+            Deployment Finished
+    *****************************************
+
+    You may want to run some tests using .../basefiles/tests/charliecloud/tests.sh
+    You will want to add anything relevant to .../basefiles/batsim_environment.sh  as well
+    At a bare minimum set prefix=? to the correct prefix. This is probably going to be your 'simulator' folder.
 EOF
-exit 0
+    exit 0
 fi
 
 if [ $FORMAT = 'docker' ]; then
