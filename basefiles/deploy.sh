@@ -362,6 +362,7 @@ function install_libtool
 }
 function install_python
 {
+    mkdir $python_prefix
     cd $python_prefix
     test -f $python_prefix/bin/activate
     hasActivate=$?
