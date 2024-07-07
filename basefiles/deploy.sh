@@ -258,12 +258,20 @@ function deployGui
     fi
     case $FORMAT in
         "bare-metal")
-            libtool_path=`which libtool`
             which libtool > /dev/null 2>&1
-            if [[ $? == 1 ]];then
-                echo "you don't have libtool installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
-                exit
+            hasLibtool=$?
+            if [[ $hasLibtool == 1 ]];then
+                which libtoolize > /dev/null 2>&1
+                hasLibtoolize=$?
+                if [[ $hasLibtoolize == 1 ]];then
+                    echo "you don't have libtool or libtoolize installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
+                    exit
+                else
+                    libtoolize_path=`which libtoolize`
+                    export ACLOCAL_PATH=${libtool_path%/bin/libtoolize}/share/aclocal
+                fi
             else
+                libtool_path=`which libtool`
                 export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
             fi
             cmakeV=`cmake --version | grep -o -E "[0-9]+[.][0-9.]+"`
