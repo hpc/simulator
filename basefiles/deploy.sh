@@ -83,6 +83,11 @@ Optional Options 3:
 Required Options 4:
 
     --clean                         Will clean up the basefiles folder from a previous deploy
+                                    Will prompt to delete all of:
+                                        .../simulator/Install 
+                                        .../simulator/Downloads
+                                        .../simulator/charliecloud
+                                        .../simulator/batsim_ch
 
 
 
@@ -96,7 +101,7 @@ if [[ $? -ne 0 ]]; then
     exit 1;
 fi
 MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
-MY_PATH="$(cd -- "$MY_PATH" && pwd)"
+export MY_PATH="$(cd -- "$MY_PATH" && pwd)"
 default_prefix="$(cd -- "$MY_PATH/.." && pwd)"
 if [[ $prefix == "" ]];then
     prefix=false
@@ -230,12 +235,131 @@ fi
 
 fi
 fi
+if [ $PREFIX = false ];then
+    prefix=$default_prefix
+else
+    prefix=$PREFIX
+fi
+export basefiles_prefix=$prefix/basefiles
+export python_prefix=$prefix/python_env
+export downloads_prefix=$prefix/Downloads
+export install_prefix=$prefix/Install
+
 
 if [ $modules != false ];then
     for i in $(echo $modules | tr "," "\n");do
         module load "$i"
     done
 fi
+function install_pkgConfig
+{
+    which pkg-config > /dev/null 2>&1
+    hasPkgConfig=$?
+    if [[ $hasPkgConfig == 1 ]];then
+        echo "ATTENTION:"
+        echo "pkg-config is not installed but is mandatory"
+        echo "we will attempt to install pkg-config and its dependency glib"
+        sleep 5
+        #chances are we don't have glib either
+
+        mkdir $install_prefix
+        mkdir $downloads_prefix
+        cd $downloads_prefix
+        git clone https://gitlab.freedesktop.org/pkg-config/pkg-config.git
+        cd $downloads_prefix/pkg-config
+        git checkout tags/pkg-config-0.29 -b our_v0.29
+        cd $downloads_prefix
+        git clone https://gitlab.gnome.org/GNOME/glib.git
+        cd $downloads_prefix/glib
+        git checkout tags/2.80.0 -b our_v2.80.0
+        meson setup _build --prefix=$install_prefix
+        meson compile -C _build
+        meson install -C _build
+        cd $downloads_prefix/pkg-config
+        test -d $install_prefix/include/glib-2.0
+        hasDir=$?
+        if [[ $hasDir == 1 ]];then
+            echo "ERROR - include dir not present"
+            echo "directory $install_prefix/include/glib-2.0 is not present.  Did installing glib above succeed?"
+            exit
+        fi
+        test -d $install_prefix/lib/x86_64-linux-gnu/glib-2.0/include
+        hasDir=$?
+        if [[ $hasDir == 1 ]];then
+            echo "ERROR - include dir not present"
+            echo "directory $install_prefix/lib/x86_64-linux-gnu/glib-2.0/include is not present.  Did installing glib above succeed?"
+            exit
+        fi
+        export GLIB_CFLAGS="-I$install_prefix/include/glib-2.0 -I$install_prefix/lib/x86_64-linux-gnu/glib-2.0/include"
+        test -f $install_prefix/lib/x86_64-linux-gnu/libglib-2.0.so
+        hasLib=$?
+        if [[ $hasLib == 1 ]];then
+            echo "ERROR - glib lib not present"
+            echo "file '$install_prefix/lib/x86_64-linux-gnu/libglib-2.0.so' is not present.  Did installing glib above succeed?"
+            exit
+        fi
+        export GLIB_LIBS="-L$install_prefix/lib/x86_64-linux-gnu -lglib-2.0"
+        ./autogen.sh
+        ./configure --prefix=$install_prefix
+        make
+        make install
+        export PATH=$PATH:$install_prefix/bin
+    fi
+}
+
+function install_libtool
+{
+    which libtool > /dev/null 2>&1
+    hasLibtool=$?
+    if [[ $hasLibtool == 1 ]];then
+        which libtoolize > /dev/null 2>&1
+        hasLibtoolize=$?
+        if [[ $hasLibtoolize == 1 ]];then
+            echo "ERROR - libtool not installed"
+            echo "you may have forgotten to load a module"
+            echo "you don't have libtool or libtoolize installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
+            echo "attempting to install libtool and its dependencies"
+            
+            mkdir $install_prefix
+            mkdir $downloads_prefix
+            cd $downloads_prefix
+            wget https://mirror.us-midwest-1.nexcess.net/gnu/help2man/help2man-1.43.3.tar.gz
+            tar -xzf ./help2man-1.43.3.tar.gz
+            cd $downloads_prefix/help2man-1.43.3
+            ./configure --prefix=$install_prefix
+            make
+            make install
+            cd $downloads_prefix
+            wget https://ftp.gnu.org/gnu/texinfo/texinfo-7.0.tar.gz
+            tar -xzf ./texinfo-7.0.tar.gz
+            cd $downloads_prefix/texinfo-7.0
+            ./configure --prefix=$install_prefix
+            make
+            make install
+            cd $downloads_prefix
+            git clone git://git.savannah.gnu.org/libtool.git
+            cd $downloads_prefix/libtool
+            export PATH=$PATH:$install_prefix/bin
+            ./bootstrap
+            ./configure --prefix=$install_prefix
+            make
+            make install
+            test -f $install_prefix/bin/libtool
+            hasLibtool=$?
+            if [[ $hasLibtool == 1 ]];then
+                echo "ERROR - libtool still not installed"
+                echo "check if a module will allow for libtool.  Use 'module avail' and 'module load'"
+                exit
+            fi
+        else
+            libtoolize_path=`which libtoolize`
+            export ACLOCAL_PATH=${libtool_path%/bin/libtoolize}/share/aclocal
+        fi
+    else
+        libtool_path=`which libtool`
+        export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
+    fi
+}
 
 function deployGui
 {
@@ -258,30 +382,9 @@ function deployGui
     fi
     case $FORMAT in
         "bare-metal")
-            which pkg-config > /dev/null 2>&1
-            hasPkgConfig=$?
-            if [[ $hasPkgConfig == 1 ]];then
-                echo "ERROR - pkg-config not installed"
-                echo "you don't have pkg-config installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
-                exit
-            fi
-            which libtool > /dev/null 2>&1
-            hasLibtool=$?
-            if [[ $hasLibtool == 1 ]];then
-                which libtoolize > /dev/null 2>&1
-                hasLibtoolize=$?
-                if [[ $hasLibtoolize == 1 ]];then
-                    echo "ERROR - libtool not installed"
-                    echo "you don't have libtool or libtoolize installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
-                    exit
-                else
-                    libtoolize_path=`which libtoolize`
-                    export ACLOCAL_PATH=${libtool_path%/bin/libtoolize}/share/aclocal
-                fi
-            else
-                libtool_path=`which libtool`
-                export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
-            fi
+            install_pkgConfig
+            install_libtool
+
             cmakeV=`cmake --version | grep -o -E "[0-9]+[.][0-9.]+"`
             cmakeMaj=`echo $cmakeV | awk -F. '{print $1}'`
             cmakeMin=`echo $cmakeV | awk -F. '{print $2}'`
@@ -317,6 +420,7 @@ function deployGui
             gui_build
         ;;
         "charliecloud")
+            install_pkgConfig
             if [ $NO = false ];then
                 ch_bin=$prefix/charliecloud/charliecloud/bin
                 ch_loc=$prefix/batsim_ch
@@ -357,12 +461,26 @@ function deployGui
  exit 0
 }
 if [ $CLEAN = true ];then
-    basefiles=$MY_PATH
-    rm -rf $basefiles/CharlieCloud_compile/download $basefiles/CharlieCloud_compile/boost_1_75_0
-    rm -rf $basefiles/charliecloud
-    rm -rf $basefiles/Docker_compile/download $basefiles/Docker_compile/boost_1_75_0
-    rm -f $basefiles/deploy.config
-    exit 0
+    rm -rf $basefiles_prefix/CharlieCloud_compile/download $basefiles/CharlieCloud_compile/boost_1_75_0
+    rm -rf $basefiles_prefix/charliecloud
+    rm -rf $basefiles_prefix/Docker_compile/download $basefiles/Docker_compile/boost_1_75_0
+    rm -f $basefiles_prefix/deploy.config
+    echo "Successfully cleaned basefiles"
+    while true; do
+    read -p "Do you wish to delete Install,Downloads,charliecloud,and batsim_ch as well? " Y/n
+    case $yn in
+        [Yy]* ) rm -rf $install_prefix
+                rm -rf $downloads_prefix
+                rm -rf $prefix/charliecloud
+                rm -rf $prefix/batsim_ch
+                exit 0
+                ;;
+        [Nn]* ) exit
+                ;;
+        * ) echo "Please answer yes or no."
+            ;;
+    esac
+done
 fi
 if [ $CONVERT != false ] && [ $OUTPUT != false ];then
     export prefix=$OUTPUT
@@ -448,11 +566,6 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     basefiles=$MY_PATH
     deactivate
     cd ../
-    prefix=${MY_PATH%/basefiles}
-    export basefiles_prefix=$prefix/basefiles
-    export python_prefix=$prefix/python_env
-    export downloads_prefix=$prefix/Downloads
-    export install_prefix=$prefix/Install
     mkdir -p $downloads_prefix && \
     mkdir -p $install_prefix/bin/ && \
     mkdir -p $python_prefix && \
@@ -543,10 +656,6 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
         mv $prefix/python_tmp $prefix/python_env
     fi
     cd $prefix
-    export basefiles_prefix=$prefix/basefiles
-    export python_prefix=$prefix/python_env
-    export downloads_prefix=$prefix/Downloads
-    export install_prefix=$prefix/Install
     export PATH=$PATH:$install_prefix/bin
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
@@ -576,16 +685,10 @@ EOF
     sleep 10
 fi
 if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
-    export prefix=${MY_PATH%/basefiles}
-    export basefiles_prefix=$prefix/basefiles
-    export python_prefix=$prefix/python_env
-    export downloads_prefix=$prefix/Downloads
-    export install_prefix=$prefix/Install
     export PATH=$PATH:$install_prefix/bin
     export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
    
-
     . $python_prefix/bin/activate
     end_line=`cat $basefiles_prefix/deploy_commands_no_internet_checkout | wc -l`
     oneliner=1
@@ -656,7 +759,8 @@ exit 0
 fi
 
 if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
-
+    install_pkgConfig
+    install_libtool
     myDir=$MY_PATH
     echo "myDir=$myDir"
     touch $myDir/deploy.config
@@ -764,14 +868,11 @@ EOF
     exit 0
 fi
 if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
-    basefiles=$MY_PATH
     deactivate
     cd ../
-    prefix=${MY_PATH%/basefiles}
     mkdir python_env && cd python_env
     python3 -m venv ./
     . ./bin/activate
-    python_prefix=$prefix/python_env
     python3 -m pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org --upgrade pip
     python3 -m pip install meson
     python3 -m pip install ninja
@@ -785,12 +886,16 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"
     sed -i 's/\(if delta > \)\([0-9]\+[.][0-9]\+\)\(.*\)/\15.0\3/g' $file
     venv-pack -o $prefix/python_env.tar.gz
-    cd $basefiles/CharlieCloud_compile
+
+    install_pkgConfig
+    install_libtool
+
+    cd $basefiles_prefix/CharlieCloud_compile
     rm -rf ./download ./boost_1_75_0
-    rm -rf $basefiles/charliecloud
+    rm -rf $basefiles_prefix/charliecloud
     rm -rf $prefix/batsim_ch
-    mkdir $basefiles/charliecloud
-    cd $basefiles/charliecloud
+    mkdir $basefiles_prefix/charliecloud
+    cd $basefiles_prefix/charliecloud
     url=$(curl -s https://api.github.com/repos/hpc/charliecloud/releases/latest | grep "browser_download_url" | awk -F: '{print $2":"$3}'| sed 's/\"//g')
     wget $url
     myFile=`basename $url`
@@ -803,7 +908,7 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     make
     cd ./bin
     export PATH=`pwd`:$PATH
-    cd $basefiles/CharlieCloud_compile
+    cd $basefiles_prefix/CharlieCloud_compile
     wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
     tar -xf ./download
     chmod -R 777 ./boost_1_75_0
@@ -812,13 +917,13 @@ if [ $FORMAT = 'charliecloud' ] && [ $NO = true ] && [ $PACK = true ];then
     ch-image delete batsim
     ch-image build --force --no-cache -t batsim -f Dockerfile ./
     ch-convert batsim $prefix/batsim_ch.tar.gz
-    rm -rf $basefiles/charliecloud/charliecloud
+    rm -rf $basefiles_prefix/charliecloud/charliecloud
     cd $prefix
     mkdir experiments
     mkdir configs
     rm -rf $prefix/python_env
     cd $prefix/..
-    cp $basefiles/deploy.sh ./
+    cp $basefiles_prefix/deploy.sh ./
     tar -czf batsim.tar.gz ./$(basename $prefix)
     mkdir -p batsim_packaged
     mv batsim.tar.gz ./batsim_packaged/
@@ -888,6 +993,10 @@ python3 -m pip install seaborn
 python3 -m pip install shapely
 python3 -m pip install requests
 python3 -m pip install venv-pack
+
+#lets check that we have glib and pkg-config
+install_pkgConfig
+install_libtool
 
 cd $basefiles/CharlieCloud_compile
 rm -rf ./download ./boost_1_75_0
