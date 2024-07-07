@@ -44,7 +44,7 @@ line_number=$i
 
 cd $downloads_prefix/simgrid/
 git checkout tags/v3.29 -b our_v3.29
-cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" $downloads_prefix/simgrid/  \
+cmake -DBOOST_ROOT="$install_prefix" -DCMAKE_INSTALL_PREFIX="$install_prefix" -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ $downloads_prefix/simgrid/  \
     -Denable_documentation=off \
     -Denable_java=off \
     -Denable_msg=on \

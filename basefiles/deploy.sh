@@ -1,5 +1,7 @@
 #!/usr/bin/bash
-
+GPP_MAJ=5
+CMAKE_MAJ=3
+CMAKE_MIN=11
 printUsage()
 {
 cat <<"EOF"
@@ -234,6 +236,7 @@ if [ $modules != false ];then
         module load "$i"
     done
 fi
+
 function deployGui
 {
     if [[ $FORMAT == "docker" ]];then
@@ -255,7 +258,38 @@ function deployGui
     fi
     case $FORMAT in
         "bare-metal")
-            
+            libtool_path=`which libtool`
+            which libtool > /dev/null 2>&1
+            if [[ $? == 1 ]];then
+                echo "you don't have libtool installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
+                exit
+            else
+                export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
+            fi
+            cmakeV=`cmake --version | grep -o -E "[0-9]+[.][0-9.]+"`
+            cmakeMaj=`echo $cmakeV | awk -F. '{print $1}'`
+            cmakeMin=`echo $cmakeV | awk -F. '{print $2}'`
+            if [[ $cmakeMaj < $CMAKE_MAJ ]];then
+                echo "ERROR cmake version too low"
+                echo "your major version of cmake is '$cmakeMaj'.  It needs to be at least version '$CMAKE_MAJ'. Using version: '$cmakeV'.  You need at least version $CMAKE_MAJ.$CMAKE_MIN"
+                echo "Possibly check if you have the correct modules loaded.  Look at 'module avail' and 'module load'"
+                exit
+            fi
+            if [[ $cmakeMin < $CMAKE_MIN ]];then
+                echo "ERROR cmake version too low"
+                echo "your minor version of cmake is '$cmakeMin'.  It needs to be at least version '$CMAKE_MIN'. Using version: '$cmakeV'.  You need at least version $CMAKE_MAJ.$CMAKE_MIN"
+                echo "Possibly check if you have the correct modules loaded.  Look at 'module avail' and 'module load'"
+                exit
+            fi
+            gppV=`g++ --version | grep -o -E "[0-9]+[.][0-9.]+"`
+            gppMaj=`echo $gppV | awk -F. '{print $1}'`
+            gppMin=`echo $gppV | awk -F. '{print $2}'`
+            if [[ $gppMaj < $GPP_MAJ ]];then
+                echo "ERROR g++ version too low"
+                echo "your major version of g++ is '$gppMaj'.  It needs to be at least version '$GPP_MAJ'. Using version: '$gppV'.  You need at least version $GPP_MAJ"
+                echo "Possibly check if you have the correct modules loaded.  Look at 'module avail' and 'module load'"
+                exit
+            fi
             export basefiles_prefix=$prefix/basefiles
             export install_prefix=$prefix/Install
             export downloads_prefix=$prefix/Downloads
