@@ -710,9 +710,11 @@ for experiment in experiments:
     #our config is ready, now make the correct directory structure and output the tailored config files
     #for each simulation
     print(f"creating folder structure for experiment: {experiment} ...")
+    totalJobs=len(ourInput.keys())
     for i in ourInput.keys():
-        #where are all these folders going?  --output + experiment + job(i) + id_j + Run_#(number)
+        #where are all these folders going?  --output + experiment + job(i) + id_(j) + Run_(number)
         new_base_orig = base +"/" + experiment + "/" + i
+        print(f"{i}/experiment_{totalJobs} ...")
         # j is our workload ids
         for j in ourInput[i].keys():
             new_base = new_base_orig + "/" + "id_"+str(j)

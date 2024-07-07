@@ -258,12 +258,20 @@ function deployGui
     fi
     case $FORMAT in
         "bare-metal")
+            which pkg-config > /dev/null 2>&1
+            hasPkgConfig=$?
+            if [[ $hasPkgConfig == 1 ]];then
+                echo "ERROR - pkg-config not installed"
+                echo "you don't have pkg-config installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
+                exit
+            fi
             which libtool > /dev/null 2>&1
             hasLibtool=$?
             if [[ $hasLibtool == 1 ]];then
                 which libtoolize > /dev/null 2>&1
                 hasLibtoolize=$?
                 if [[ $hasLibtoolize == 1 ]];then
+                    echo "ERROR - libtool not installed"
                     echo "you don't have libtool or libtoolize installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
                     exit
                 else
