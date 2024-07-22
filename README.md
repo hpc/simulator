@@ -356,7 +356,7 @@ Here you will see what a basic outline of a config file is.  It will give you a 
 
 <details><blockquote>
 
-```json
+```java
     The general format of a config file:
     
     {       <------------------------------------   Opening curly brace to be proper json
