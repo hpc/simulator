@@ -485,7 +485,7 @@ Sweeps can parameterize in multiple ways.  Here are the methods used:
 
 - **(iMMS)** integer Min Max Step
   - start from the minimum to the maximum (inclusive) with a step (can be negative)
-    ```json
+    ```java
     "min":0,
     "max":10,
     "step":2
@@ -494,7 +494,7 @@ Sweeps can parameterize in multiple ways.  Here are the methods used:
   - same as iMMS except you can use floating point numbers
 - **(iR)** integer Range
   - simply a list of integers
-    ```json
+    ```java
     "range":[10,20,30,80]
     ```
 - **(fR)** float Range
@@ -502,7 +502,7 @@ Sweeps can parameterize in multiple ways.  Here are the methods used:
 - **(iSR),(fSR)** integer Sticky Range and float Sticky Range
   - just like **iR** and **fR** except it requires the amount of values to equal the amount of jobs made from sweeps before it.  Instead of adding any more jobs, it sets the values contained in it to the jobs already there.
   - example:
-    ```json
+    ```java
     "node-sweep":{"range":[1000,2000]},  //creates two jobs: experiment_1 and experiment_2
     "SMTBF-sweep":{"sticky-range":[20000,30000]} 
     // normally with "range" this would 
@@ -517,7 +517,7 @@ Sweeps can parameterize in multiple ways.  Here are the methods used:
 - **(F)** formula
   - used in conjunction with iR, fR, iSR, fSR, iMMS and fMMS.  You can set a formula here with 'i' as your variable.  Each number in your min/max/step or range will be passed in as 'i' to your formula and the result will be your number.  Makes it easier to read.
   - Example:
-    ```json
+    ```java
     "range":[2,3,4],
     "formula":"i*3600"  // will make 2 hours, 3 hours, 4 hours. easier than 7200 sec,10800 sec,14400 sec
     ```
