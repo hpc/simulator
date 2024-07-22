@@ -1,16 +1,17 @@
 __all__=["dictHasKey","blockSize"]
-def atoi(text):
-    return int(text) if text.lstrip("-").lstrip("+").isdigit() else text
-
-def natural_keys(text):
-    import re
-    return [ atoi(c) for c in re.split(r'([-+]?\d+)', text) ]
 
 MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31]
 SECS_PER_MINUTE=60
 MINUTES_PER_HOUR=60
 HOURS_PER_DAY=24
 DAYS_PER_MONTH=30
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    import re
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+
 #get how many should be in each partition when
 #id = the partition, p= how many total partitions, n=how many total items there are, function is what to cast result as (int|float)
 def blockSize(id,p,n,function=int):
@@ -506,9 +507,12 @@ def populateCMDs():
 
 def applyJsonSchema(InConfig,InSchema):
     import sys
-    
+    import re
+    resv_regEx=re.compile("^reservations[-](?!start)")
     #first go through all the keys of what we have
     for key in InConfig.keys():
+        if resv_regEx.match(key) != None:
+            key = "reservations-"
         if not dictHasKey(InSchema,key):
             print(f"Error, applyJsonSchema: no key in schema. Key:{key}")
             sys.exit(1)

@@ -158,12 +158,14 @@ cp $downloads_prefix/loguru/loguru.hpp $install_prefix/include/
 line_number=$i
 cd $downloads_prefix/batsim4
 git checkout main
+$python_prefix/bin/meson setup --wipe build
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
 line_number=$i
 cd $downloads_prefix/batsched4
 git checkout main
+$python_prefix/bin/meson setup --wipe build
 $python_prefix/bin/meson build --prefix=$install_prefix --buildtype release
 $python_prefix/bin/ninja -C build
 $python_prefix/bin/meson install -C build
@@ -175,7 +177,7 @@ cd $downloads_prefix
 wget --no-check-certificate https://go.dev/dl/go1.19.2.linux-amd64.tar.gz
 tar -xf go1.19.2.linux-amd64.tar.gz
 mv ./go/bin/go $install_prefix/bin/
-
+line_number=$i
 go install -v framagit.org/batsim/batexpe/cmd/robin@latest
 go install -v framagit.org/batsim/batexpe/cmd/robintest@latest
 

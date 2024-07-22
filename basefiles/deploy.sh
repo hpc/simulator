@@ -251,6 +251,39 @@ if [ $modules != false ];then
         module load "$i"
     done
 fi
+function cleanAddPath
+{
+    #variable ex: PATH
+    variable="$1"
+    #toAdd ex: $install_prefix/bin
+    toAdd="$2"
+
+    #take out any extra $install_prefix/bin then add $install_prefix/bin to PATH
+    #how to do that:
+    #first take out any entries with doubled/tripled/etc forward slashes
+    #next take out any trailing forward slashes
+    #next take out $install_prefix/bin followed by an optional ':'
+    #then take out an ending ':' if there is one
+    #then take out an ending forward slash if there is one and a beginning ':' if there is one
+    tmp=`echo ${!variable} | sed -E 's@[/]{2,}@/@g' | sed -E 's@[/]:@:@g' | sed -E "s@$toAdd[:]*@@g" | sed -E 's@:$@@g' | sed -E 's@[/]$@@g' | sed -E 's@^:@@g'`
+    tmp="${tmp}:$toAdd"
+    tmp=`echo ${tmp} | sed -E 's@^:@@g'`
+    execute="export ${variable}=${tmp}"
+    eval $execute
+}
+
+cleanAddPath "PATH" "$install_prefix/bin"
+cleanAddPath "PKG_CONFIG_PATH" "$install_prefix/lib/pkgconfig"
+cleanAddPath "PKG_CONFIG_PATH" "$install_prefix/lib/x86_64-linux-gnu/pkgconfig"
+cleanAddPath "PKG_CONFIG_PATH" "$install_prefix/lib64/pkgconfig"
+cleanAddPath "LD_LIBRARY_PATH" "$install_prefix/lib"
+cleanAddPath "LD_LIBRARY_PATH" "$install_prefix/lib/x86_64-linux-gnu"
+cleanAddPath "LD_LIBRARY_PATH" "$install_prefix/lib64"
+export BOOST_ROOT="$install_prefix"
+export GOROOT=$downloads_prefix/go
+export GO111MODULE=on
+export GOBIN=$install_prefix/bin
+
 function install_pkgConfig
 {
     which pkg-config > /dev/null 2>&1
@@ -303,12 +336,28 @@ function install_pkgConfig
         ./configure --prefix=$install_prefix
         make
         make install
-        export PATH=$PATH:$install_prefix/bin
     fi
+    ac_path=`which pkg-config`
+    ac_path=${ac_path%/bin/pkg-config}/share/aclocal
+    mkdir $downloads_prefix/aclocal
+    cp $ac_path/* $downloads_prefix/aclocal/
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install
+
 }
 
 function install_libtool
 {
+    which makeinfo > /dev/null 2>&1
+    hasMakeinfo=$?
+    if [[ $hasMakeinfo == 1 ]];then
+        cd $downloads_prefix
+        wget https://ftp.gnu.org/gnu/texinfo/texinfo-7.0.tar.gz
+        tar -xzf ./texinfo-7.0.tar.gz
+        cd $downloads_prefix/texinfo-7.0
+        ./configure --prefix=$install_prefix
+        make
+        make install
+    fi
     which libtool > /dev/null 2>&1
     hasLibtool=$?
     if [[ $hasLibtool == 1 ]];then
@@ -319,7 +368,6 @@ function install_libtool
             echo "you may have forgotten to load a module"
             echo "you don't have libtool or libtoolize installed.  Possibly check if you have the correct modules loaded. Look at 'module avail' and 'module load'"
             echo "attempting to install libtool and its dependencies"
-            
             mkdir $install_prefix
             mkdir $downloads_prefix
             cd $downloads_prefix
@@ -330,16 +378,8 @@ function install_libtool
             make
             make install
             cd $downloads_prefix
-            wget https://ftp.gnu.org/gnu/texinfo/texinfo-7.0.tar.gz
-            tar -xzf ./texinfo-7.0.tar.gz
-            cd $downloads_prefix/texinfo-7.0
-            ./configure --prefix=$install_prefix
-            make
-            make install
-            cd $downloads_prefix
             git clone git://git.savannah.gnu.org/libtool.git
             cd $downloads_prefix/libtool
-            export PATH=$PATH:$install_prefix/bin
             ./bootstrap
             ./configure --prefix=$install_prefix
             make
@@ -350,15 +390,25 @@ function install_libtool
                 echo "ERROR - libtool still not installed"
                 echo "check if a module will allow for libtool.  Use 'module avail' and 'module load'"
                 exit
+            else
+                libtool_path=$install_prefix/bin/libtool
+                mkdir $downloads_prefix/aclocal
+                ac_path=${libtool_path%/bin/libtool}/share/aclocal
+                cp $ac_path/* $downloads_prefix/aclocal
             fi
         else
             libtoolize_path=`which libtoolize`
-            export ACLOCAL_PATH=${libtool_path%/bin/libtoolize}/share/aclocal
+            mkdir $downloads_prefix/aclocal
+            ac_path=${libtoolize_path%/bin/libtoolize}/share/aclocal
+            cp $ac_path/* $downloads_prefix/aclocal
         fi
     else
         libtool_path=`which libtool`
-        export ACLOCAL_PATH=${libtool_path%/bin/libtool}/share/aclocal
+        mkdir $downloads_prefix/aclocal
+        ac_path=${libtoolize_path%/bin/libtool}/share/aclocal
+        cp $ac_path/* $downloads_prefix/aclocal
     fi
+    export ACLOCAL_PATH=$downloads_prefix/aclocal
 }
 function install_python
 {
@@ -512,8 +562,6 @@ if [ $CONVERT != false ] && [ $OUTPUT != false ];then
     export downloads_prefix=$CONVERT/home/sim/simulator/Downloads
     export old_install_prefix=$CONVERT/home/sim/simulator/Install
     export install_prefix=$OUTPUT/Install
-    export PATH=$PATH:$install_prefix/bin
-    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
     . $python_prefix/bin/activate
     mkdir -p $install_prefix
@@ -665,8 +713,6 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ] && [ $CONT
         mv $prefix/python_tmp $prefix/python_env
     fi
     cd $prefix
-    export PATH=$PATH:$install_prefix/bin
-    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
     export BOOST_ROOT=$install_prefix
     export MY_PATH=$basefiles_prefix
     cat <<EOF
@@ -694,8 +740,7 @@ EOF
     sleep 10
 fi
 if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $UNPACK = true ];then
-    export PATH=$PATH:$install_prefix/bin
-    export PKG_CONFIG_PATH=$install_prefix/lib/pkgconfig:$install_prefix/lib64/pkgconfig
+
     export BOOST_ROOT=$install_prefix
    
     . $python_prefix/bin/activate

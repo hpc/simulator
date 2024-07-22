@@ -1,26 +1,57 @@
-def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base):
+def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base,ignoreDoesNotExist):
     import os
     import json
+    import functions
+    import sys
     experiments=[i for i in os.listdir(base) if os.path.isdir(base+"/"+i) and i!="heatmaps"]
     for exp in experiments:
+        print(f"changing input files for experiment: {exp} ...")
         jobs = [i for i in os.listdir(base+"/"+exp+"/")]
+        jobs.sort(key=functions.natural_keys)
+        total_jobs=len(jobs)
         for job in jobs:
+            print(f"\t changing input files for job: {job}/experiment_{total_jobs}  ...")
             ids = [i for i in os.listdir(base+"/"+exp+"/"+job) if os.path.isdir(base+"/"+exp+"/"+job+"/"+i)]
+            ids.sort(key=functions.natural_keys)
             for theId in ids:
                 runs = [i for i in os.listdir(base+"/"+exp+"/"+job+"/"+theId) if os.path.isdir(base+"/"+exp+"/"+job + "/" + theId +"/"+ i)]
+                runs.sort(key=functions.natural_keys)
                 for run in runs:
                     input_config = f"{base}/{exp}/{job}/{theId}/{run}/input/config.ini"
-                    if os.path.exists(input_config):
-                        with open(input_config,'r') as IOFile:
-                            config = json.load(IOFile)
-                            config["start-from-checkpoint"]=startFromCheckpoint
-                            config["start-from-checkpoint-keep"]=startFromCheckpointKeep
-                            config["start-from-frame"]=startFromFrame
-                            config["discard-last-frame"]=discardLastFrame
-                            config["skip-completed-sims"]=skipCompletedSims
-                            config["test-suite"]=testSuite
-                        with open(input_config,'w') as IOFile:
-                            json.dump(config,IOFile,indent=4)
+                    try:
+                        checkpoint_path = f"{base}/{exp}/{job}/{theId}/{run}/output"
+                        if startFromFrame == 0:
+                            checkpoint_path = f"{checkpoint_path}/expe-out/checkpoint_{startFromCheckpoint}"
+                        else:
+                            checkpoint_path = f"{checkpoint_path}/expe-out_{startFromFrame}/checkpoint_{startFromCheckpoint}"
+                        
+                        
+                        if os.path.exists(input_config):
+                            with open(input_config,'r') as IOFile:
+                                config = json.load(IOFile)
+                                config["start-from-checkpoint"]=startFromCheckpoint
+                                config["start-from-checkpoint-keep"]=startFromCheckpointKeep
+                                config["start-from-frame"]=startFromFrame
+                                config["discard-last-frame"]=discardLastFrame
+                                config["skip-completed-sims"]=skipCompletedSims
+                                config["test-suite"]=testSuite
+                            with open(input_config,'w') as IOFile:
+                                json.dump(config,IOFile,indent=4)
+                        
+                        else:
+                            print(f"ERROR: In start_from_checkpoint.py in changeInputFiles():  '{base}/{exp}/{job}/{theId}/{run}/input/config.ini' does not exist")
+                            with open (f"{base}/config_state.log","w") as OutFile:
+                                json.dump(json.loads("{ \"generate_config\":false }"),OutFile)
+                            sys.exit(1)
+                        if not os.path.exists(checkpoint_path) and ignoreDoesNotExist == False:
+                            print(f"ERROR: In start_from_checkpoint.py in changeInputFiles():  '{checkpoint_path}' does not exist")
+                            print(f"If this does not matter to you provide --ignore-does-not-exist to myBatchTasks.py")
+                            with open (f"{base}/config_state.log","w") as OutFile:
+                                json.dump(json.loads("{ \"generate_config\":false }"),OutFile)
+                            sys.exit(1)
+                    except:
+                        print(f"ERROR:there was an exception in start_from_checkpoint.py in changeInputFiles() for {base}/{exp}/{job}/{theId}/{run}/input/config.ini")
+                        sys.exit(1)
 
 def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,path,wrapper):
     import os

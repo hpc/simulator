@@ -24,7 +24,7 @@ print_mem()
     format="${format}${space}|${space}\\033[${color}m${name}\\033[0m"
     if [[ $divideBy == -1 ]];then
             myOutput="$myOutput|\\033[${color}m`echo "$entry" \
-            | awk -F, -v field=$field '{num=$field;if (num>2**30){div=2**30;u="TiB"}else if (num>2**20){div=2**20;u="GiB"}else if (num>2**10){div=2**10;u="MiB"}else{div=1;u="KiB"};num=int(num/div) ;printf("%'"'"'d %s",num,u)}'`\\033[0m"
+            | awk -F, -v field=$field '{num=$field;if (num>2^30){div=2^30;u="TiB"}else if (num>2^20){div=2^20;u="GiB"}else if (num>2^10){div=2^10;u="MiB"}else{div=1;u="KiB"};num=int(num/div) ;printf("%'"'"'d %s",num,u)}'`\\033[0m"
     else
             myOutput="$myOutput|\\033[${color}m`echo "$entry" |awk -F, -v field=$field -v div=$divideBy -v u=$memSize '{num=($field/div);num=int(num);printf("%'"'"'d %s",num,u)}'`\\033[0m"
     fi
@@ -238,7 +238,7 @@ before=1
 all=false
 head=false
 memSize="KiB"
-divideBy=1
+divideBy=-1
 print=false
 options=""
 prompt="None"
@@ -489,7 +489,7 @@ What-Info Options:
     -M, --memory-size <string>     When displaying memory, what size to display: KB | MB | GB | TB | H.  Single letter is fine too:  K | M | G | T | H
                                    This will actually be in KiB, MiB, GiB, or TiB
                                    H signifies you want human-readable units.  This is the largest unit that makes sense for the data.
-                                   [default: KB]
+                                   [default: H]
 
     -h, --help                     Display this usage page
 

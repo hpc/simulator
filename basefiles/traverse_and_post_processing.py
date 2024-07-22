@@ -122,7 +122,7 @@ for exp in experiments:
                                 total_count+=1
                             os.system(cmd)
                     if parallel == "tasks":
-                        cmd = "sbatch -p IvyBridge --export=basePath={},runPath={} --output={}/output/slurm-pp%j.out --comment='pp{}_{}' post_processing_batch.sh".format(basePath,f"{path}/{exp}/{job}/{theId}/{run}",exp,job)
+                        cmd = "sbatch --export=basePath={},runPath={} --output={}/output/slurm-pp%j.out --comment='pp{}_{}' post_processing_batch.sh".format(basePath,f"{path}/{exp}/{job}/{theId}/{run}",exp,job)
                         os.system(cmd)
                 elif fileExists:
                     if bins:

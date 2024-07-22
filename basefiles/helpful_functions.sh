@@ -14,7 +14,7 @@ function batExit
     BATSIM_ENV_ACTIVATED=""
     deactivate
     export PS1=$(echo "$PS1" | sed 's@(batsim_env)@@g' )
-    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
+    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$basefiles_prefix/tests:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
     export PATH="$tmp"
     tmp=`echo "$LD_LIBRARY_PATH" | sed "s@:$install_prefix/lib:$install_prefix/lib64@@g"`
     export LD_LIBRARY_PATH="$tmp"
@@ -32,17 +32,62 @@ function batVersion
 #just run "bind_all"
 function bind_all
 {
-bind '"\eu":previous-history'
-bind '"\em":next-history'
-bind '"\ey":history-search-backward'
-bind '"\en":history-search-forward'
-bind '"\ej":backward-char'
-bind '"\ek":forward-char'
-bind '"\eh":unix-line-discard'
-bind '"\el":beginning-of-line'
-bind '"\e;":end-of-line'
-bind '"\ep":yank'
-bind '"\eg":kill-line'
+    if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
+        cat <<"EOF"
+        binds the following:
+            alt+u:  previous-history
+            alt+m:  next-history'
+            alt+y:  history-search-backward
+            alt+n:  history-search-forward
+            alt+j:  backward-char
+            alt+k:  forward-char
+            alt+h:  unix-line-discard
+            alt+l:  beginning-of-line
+            alt+;:  end-of-line
+            alt+p:  yank
+            alt+g:  kill-line
+
+        **Note: Will only last while the shell is open for your user
+                If you like these binds you can make them permanent for your shell by editing ~/$USER/.bashrc
+                and adding the following to that file:
+                
+                
+                function bind_keys
+                {
+                    bind '"\eu":previous-history'
+                    bind '"\em":next-history'
+                    bind '"\ey":history-search-backward'
+                    bind '"\en":history-search-forward'
+                    bind '"\ej":backward-char'
+                    bind '"\ek":forward-char'
+                    bind '"\eh":unix-line-discard'
+                    bind '"\el":beginning-of-line'
+                    bind '"\e;":end-of-line'
+                    bind '"\ep":yank'
+                    bind '"\eg":kill-line'
+                }
+                #this determines whether we are in an interactive shell, the only time the commands are usable.  It will bind if it is.
+                #if unusable the bind command will print out error messages and gets in the way.  So it is best to check.
+                STR="$-";SUB="i";INTERACTIVE=0
+                if [[ "$STR" == *"$SUB"* ]]; then
+                    INTERACTIVE=1
+                    bind_keys
+                fi
+
+EOF
+    else
+        bind '"\eu":previous-history'
+        bind '"\em":next-history'
+        bind '"\ey":history-search-backward'
+        bind '"\en":history-search-forward'
+        bind '"\ej":backward-char'
+        bind '"\ek":forward-char'
+        bind '"\eh":unix-line-discard'
+        bind '"\el":beginning-of-line'
+        bind '"\e;":end-of-line'
+        bind '"\ep":yank'
+        bind '"\eg":kill-line'
+    fi
 }
 # batFile can be invoked after sourcing this file
 # it will help you choose a config file in your $prefix/configs and set it to file1
@@ -133,7 +178,7 @@ function batFolder
 {
     if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
         cat <<"EOF"
-        batFile                     batFolder can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
+        batFolder                   batFolder can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
                                     It will help you choose a folder in your $prefix/experiments and set it to folder1
         Usage:
             batFolder [-#] [-i <path | -d <bookmark>] [ls options]

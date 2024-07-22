@@ -65,17 +65,16 @@ def SMTBFSweep(SMTBFSweepInput,ourInput,origInput):
             ourInput[i] = data
             count+=1
         if not sticky:
-            for i in SMTBFRange:
-                if not i == SMTBFRange[0]:  #skip the first, we already did it
-                    for j in tmpInput.keys():
-                        data = tmpInput[j].copy()
-                        if fixedToNode == True:
-                            nodes = data["nodes"] if dictHasKey(data,"nodes") else False
-                            if type(nodes) == bool:
-                                print("compute-SMTBF-from-NMTBF set but no nodes set")
-                                sys.exit(1)
-                            data["SMTBF"] = i/nodes
-                        else:
-                            data["SMTBF"] = i
-                        ourInput["experiment_{count}".format(count=count)] = data
-                        count+=1
+            for i in SMTBFRange[1:]:  #skip the first, we already did it
+                for j in tmpInput.keys():
+                    data = tmpInput[j].copy()
+                    if fixedToNode == True:
+                        nodes = data["nodes"] if dictHasKey(data,"nodes") else False
+                        if type(nodes) == bool:
+                            print("compute-SMTBF-from-NMTBF set but no nodes set")
+                            sys.exit(1)
+                        data["SMTBF"] = i/nodes
+                    else:
+                        data["SMTBF"] = i
+                    ourInput["experiment_{count}".format(count=count)] = data
+                    count+=1

@@ -159,6 +159,7 @@ df_save = df.copy()
 restarts = df.loc[df.job_id.str.contains("$", regex = False)]
 df["restarts"]=[0] * len(df)
 restarts_ext = restarts.job_id.str.extract(r'\d+[#]?\d*[$](?P<restarts>\d+)')
+restarts_ext["restarts"]=restarts_ext["restarts"].astype(np.int64)
 df.update(restarts_ext.restarts)
 df["submission_time"]=df["original_submit"]
 df["turnaround_time"]=df["finish_time"]-df["submission_time"]
@@ -223,6 +224,7 @@ resubmits=df[df.job_id.str.contains("#", regex=False)]
 #is used in grizzly workload creator to signify the index in the workload so as to
 #form a unique jobid when randomly choosing the same job.
 resubmits_ext=resubmits.job_id.str.extract(r'(?P<parent>\d+[_]?\d*)#(?P<resubmit>\d+)')
+resubmits_ext["resubmit"]=resubmits_ext["resubmit"].astype(np.int64)
 
 #now we can just update the 'parent' column.  If it
 #wasn't a resubmit it is just left as its job_id from above

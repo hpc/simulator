@@ -27,7 +27,7 @@ export install_prefix=$prefix/Install
 export downloads_prefix=$prefix/Downloads
 export python_prefix=$prefix/python_env
 
-export PATH=$PATH:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin
+export PATH=$PATH:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$basefiles_prefix/tests:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install_prefix/lib:$install_prefix/lib64
 export LMOD_SH_DBG_ON=1
 source $python_prefix/bin/activate

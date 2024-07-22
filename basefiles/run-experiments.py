@@ -3,7 +3,7 @@
                                     prepared with the generate_config.py script.  This can be run in parallel and single mode.
 
 Usage:
-    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR]
+    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR] 
     run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--tasks-per-node INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR]
 
 Required Options:
@@ -68,6 +68,7 @@ Not So Important Options:
                                     anyway.  Like '--start-run' except this is the number to
                                     end at.  Can use in conjunction with '--start-run'
                                     or not.
+   
 
 
 """
@@ -78,6 +79,8 @@ import numpy as np
 import os
 import sys
 import json
+import subprocess
+import time
 
 import re
 
@@ -111,7 +114,12 @@ elif args["--sim-time-seconds"]:
 priority = 1 if args["--highest-priority"] else 0
 startRun=int(args["--start-run"]) if args["--start-run"] else False
 endRun=int(args["--end-run"]) if args["--end-run"] else False
-
+#do not continue if config state is false
+with open(f"{path}/config_state.log",'r') as InFile:
+    configState = json.load(InFile)
+if configState["generate_config"] == False:
+    print("ERROR: run-experiments.py : configState is False")
+    sys.exit(1)
 
 socketCount = socketStart
 if partition != "False":
@@ -143,7 +151,8 @@ if parallelMode == "sbatch":
                     
                     if not(start == 1):
                         cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
-                        os.system(cmd)
+                        myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
+                        myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
                     command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
@@ -153,7 +162,8 @@ if parallelMode == "sbatch":
                     socketCount=socketCount,myTime=myTime,mySimTime=mySimTime, \
                     parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
                     print(command,flush=True)
-                    os.system(command)
+                    myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+                    myProcess.wait()
                     socketCount+=1
 elif parallelMode == "tasks":
     #ok we are going to sbatch enough jobs that will each execute --tasks-per-node srun commands
@@ -202,7 +212,8 @@ elif parallelMode == "tasks":
                 for ourId in ids:
                     if not(start == 1):
                         cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
-                        os.system(cmd)
+                        myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
+                        myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
 
                     baseFilesPath = basefiles
@@ -236,12 +247,14 @@ elif parallelMode == "tasks":
                         socketCountString=""
 
                         print(command,flush=True)
-                        os.system(command)
+                        myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+                        myProcess.wait()
                     socketCount+=1
 elif parallelMode == "background":
     count = 1
     total_sims=0
     total_count=0
+    processes = []
     experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i)]
     for exp in experiments:
         jobs = [i for i in os.listdir(path+"/"+exp+"/")]
@@ -255,8 +268,8 @@ elif parallelMode == "background":
     for exp in experiments:
         jobs = [i for i in os.listdir(path+"/"+exp+"/") if os.path.isdir(path+"/"+exp+"/"+i)]
         jobs.sort(key=natural_keys)
-        #ids = [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+i)]
-        runs =[i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/id_1/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/id_1/"+ i)]
+        ids = [i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+i)]
+        runs =[i for i in os.listdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/") if os.path.isdir(path+"/"+exp+"/"+jobs[0]+"/"+ids[0]+"/"+ i)]
         runs.sort(key=natural_keys)
         if startRun:
             start=f"Run_{startRun}"
@@ -274,20 +287,29 @@ elif parallelMode == "background":
                 for ourId in ids:
                     if not(start == 1):
                         cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
-                        os.system(cmd)
+                        myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
+                        myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
                     out=jobPath.replace(":PATH:","") +"/output/slurm.out"
-                    if (count < tasksPerNode) and (total_count<total_sims):
-                        command = f"{baseFilesPath}/experiment.sh {str(parallelMode)} {str(method)} {str(jobPath)} {str(socketCount)} {str(mySimTime)} 2>&1 > {out}  &"
-                        count+=1
-                        total_count+=1
-                    else:
-                        command = f"{baseFilesPath}/experiment.sh {str(parallelMode)} {str(method)} {str(jobPath)} {str(socketCount)} {str(mySimTime)} 2>&1 > {out}"
-                        count = 1
-                        total_count+=1
-                    print(command,flush=True)
-                    os.system(command) 
+                    
+
+                    
+                    command = f"{baseFilesPath}/experiment.sh {str(parallelMode)} {str(method)} {str(jobPath)} {str(socketCount)} {str(mySimTime)} 2>&1 > {out}"
+                    count+=1
+                    total_count+=1
+                    print(f"Spawning simulation '{total_count}'/{total_sims}")
+                    myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+                    processes.append(myProcess)
+                    # while we are at the limit of running processes
+                    # loop all running processes to see if one has finished, if not sleep for 5 seconds and check again
+                    # if one has, remove it from running processes and start running processes again until we are at the limit again
+                    while (len(processes) >= tasksPerNode) or ((total_count==total_sims) and (len(processes) > 0)):
+                        for process in processes:
+                            poll = process.poll()
+                            if poll != None:
+                                processes.remove(process)
+                        time.sleep(5)
                     socketCount+=1 
                               
                     

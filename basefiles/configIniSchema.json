@@ -370,7 +370,7 @@
     "resv-sweep-number": {
         "type": "ignore"
     },
-    "reservations-resv1": {
+    "reservations-": {
         "type": "ignore"
     },
     "seed-failures": {
@@ -540,6 +540,22 @@
             }
         ]
     },
+    "svg-time-start": {
+        "type": "float",
+        "batsim": [
+            {
+                "--svg-time-start": "{}"
+            }
+        ]
+    },
+    "svg-time-end": {
+        "type": "float",
+        "batsim": [
+            {
+                "--svg-time-end": "{}"
+            }
+        ]
+    },
     "synthetic-workload": {
         "type": "object",
         "required": false,
@@ -571,5 +587,15 @@
             "type": "none",
             "real_start": [{"testSuite":false}]
         }
-    ]
+    ],
+    "turn-off-extra-info":
+    {
+        "type":"bool",
+        "true_batsim":[
+            {
+                "--turn-off-extra-info":""
+            }
+        ]
+
+    }
 }

@@ -1,0 +1,36 @@
+#!/bin/bash
+MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
+MY_PREFIX="$(cd -- "$MY_PATH"/../ && pwd)"
+if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]
+then
+    cat <<EOF
+    This script will populate your .../simulator/basefiles/batsim_environment.sh
+
+    Usage:
+        batPrefix (-s | -p PATH)
+        Required options:
+            -s, --script           Sets 'prefix' in batsim_environment.sh to the parent of the path to this script
+                                   This is the 'default', however this prefix is important enough to mandate the -s option
+                or
+
+            -p, --path PATH        Sets 'prefix' in batsim_environment.sh to the path: PATH
+
+    examples:
+        .../simulator/basefiles/batPrefix -s      <-- will set prefix to .../simulator
+                                                      path to this script: .../simulator/basefiles
+                                                      parent to this: .../simulator   
+        cd .../simulator
+        ./basefiles/batPrefix -p $(pwd)           <-- will set prefix to the current directory
+EOF
+exit
+fi
+if [[ $1 == "-p" ]] || [[ $1 == "--prefix" ]]
+then
+    MY_PREFIX="$2"
+fi
+if [[ $1 == "-s" ]] || [[ $1 == "--script" ]] || [[ $1 == "-p" ]] || [[ $1 == "--prefix" ]]
+then
+    sed -i "s@^#export prefix@export prefix@g" $MY_PATH/batsim_environment.sh
+    sed -i "s@export prefix=.*@export prefix=$MY_PREFIX@g" $MY_PATH/batsim_environment.sh
+    echo "successfully changed prefix to $MY_PREFIX"
+fi

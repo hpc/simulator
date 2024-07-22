@@ -73,7 +73,7 @@ if not args["--only-output"]:
     path = path.replace(":PATH:","")
     progress_path=f"{dirname}/{basename}"
 chPath=f"/mnt/FOLDER1/{basename}{rest_of_path}"
-locked_file=f"{dirname}/progress.lock"
+locked_file=f"{dirname}/{basename}/progress.lock"
 
 print("after locked_file")
 method = args["--method"]
@@ -104,6 +104,7 @@ signal.signal(checkpointBatsimSignal,signal_handler)
 #testSuite gets defined in configIniSchema.json
 if testSuite:
     progress_path = dirname
+    locked_file = f"{dirname}/progress.lock"
 
 if not os.path.exists(f"{path}/output/progress.log"):
     myJson="""
@@ -194,8 +195,18 @@ print(myGenCmd,flush=True)
 if not args["--only-output"]:
     #startFromXXX and discardLastFrame variables are made available from functions.applyJsonSchema
     if startFromCheckpoint:
+        checkpoint_path = f"{path}/output"
+        if startFromFrame == 0:
+            checkpoint_path = f"{checkpoint_path}/expe-out/checkpoint_{startFromCheckpoint}"
+        else:
+            checkpoint_path = f"{checkpoint_path}/expe-out_{startFromFrame}/checkpoint_{startFromCheckpoint}"
+       
+        if not os.path.exists(checkpoint_path):
+            print(f"ERROR: real_start.py:  '{checkpoint_path}' does not exist")
+            sys.exit(1)
         start_from_checkpoint.move_output_folder(startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,mvFolderPath,wrapper)
-    os.system(myGenCmd)
+    myProcess = subprocess.Popen(["/usr/bin/bash","-c",myGenCmd])
+    myProcess.wait()
     myProcess = subprocess.Popen(["/usr/bin/bash","-c",mySimCmd],preexec_fn=os.setsid)
     myProcess.wait()
     if myProcess.returncode >1:
@@ -243,9 +254,12 @@ else:
 
 print("real_start.py, call to post-processing.py",flush=True)
 print(postCmd,flush=True)
-myReturn = os.system(postCmd)
+myProcess = subprocess.Popen(["/usr/bin/bash","-c",myGenCmd])
+myProcess.wait()
+myProcess = subprocess.Popen(["/usr/bin/bash","-c",postCmd])
+myReturn = myProcess.wait()
 if not args["--only-output"]:
-    if myReturn>1:
+    if myReturn>0:
         locked_fd = acquireLock(locked_file)
             #we have the lock
         with open(f"{progress_path}/current_progress.log","r") as InOutFile:

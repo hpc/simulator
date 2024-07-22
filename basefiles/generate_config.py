@@ -14,7 +14,7 @@ Required Options 1:
 Required Options 2:
     -i <FILE> --input <FILE>                Where our config lives
     -o <PATH> --output <PATH>               Where to start outputting stuff
-                                        
+
 Options:
     --basefiles <PATH>                      Where base files go.  Make sure you have a 'workloads' and 'platforms' folder
                                             in this path.
@@ -33,7 +33,7 @@ Checkpoint Batsim Options:
                                             Typically '1', the latest. -1 means to not to start from a checkpoint...the default.
                                             [default: -1]
     --skip-completed-sims                   Set this if you want to skip starting from a checkpoint if the sim is included in progress.log with success
-                                            
+
     --discard-last-frame                    Used in conjunction with --start-from-checkpoint and can be used with --start-from-frame
                                             Does not make sense to use with --start-from-checkpoint-keep
                                             Will not change any of the kept expe-out_#'s and will not keep the current expe-out
@@ -57,7 +57,11 @@ Checkpoint Batsim Options:
                                             Here, '0' is the original expe-out folder that becomes expe-out_1
                                             If --discard-last-frame is used, then default here is 1. 0 is not allowed and will become 1 if used.
                                             [default: 0]
-    
+
+    --ignore-does-not-exist                 Normally if the path to one of the checkpoints does not exist it will ERROR out and stop.
+                                            This option tells it that some paths may not exist, but run the others that do,
+                                            and not to alter anything in the paths that do not exist.    
+
 
 """
 
@@ -88,8 +92,8 @@ def dictHasKey(myDict,key):
         return True
     else:
         return False
-       
-        
+
+
 #workload names include all the options in its name to distinguish it.  Some options
 #have a colon or slash in it.  This replaces those with _CLN_ or _SL_
 def nocolon(myString):
@@ -100,14 +104,14 @@ def nocolon(myString):
             myString = myString.split("/")[slashes-1]
     myString=myString.replace("/","_SL_")
     return myString.replace(":","_CLN_")
-    
+
 
 def parseIds(idString):
     import re
     import sys
     if isinstance(idString,list):
         return idString
-    regEx=re.compile(".*(\[[0-9,]+\]).*")
+    regEx=re.compile(r".*(\[[0-9,]+\]).*")
     match=regEx.match(idString)
     #does the idString match a range type of String   ie  [1,3,4]
     if match:
@@ -143,11 +147,11 @@ def equaldf(df1,idf2,cols):
 
 
 
-###########################################################################################################    
+###########################################################################################################
 ####                                                                                                  #####
 ####                                 Create a synthetic workload                                      #####
 ####                                                                                                  #####
-###########################################################################################################		
+###########################################################################################################
 
 def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,experiment,basefiles,exp,base):
     import uuid
@@ -155,7 +159,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     import os
     df = pd.DataFrame()
     homePath = os.environ['HOME']
-    
+
     if basefiles:
         path= basefiles+"/workloads"
         scriptPath=basefiles
@@ -167,7 +171,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     database=pd.DataFrame()
     command="touch {db_path}".format(db_path=db_path)
     os.system(command)
-    
+
     if os.path.isfile(db_path) and os.path.getsize(db_path) > 0:
         database=pd.read_csv(db_path,sep="|",header=0,dtype=str)
     else:
@@ -207,7 +211,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     df["type"]=[str(profile_type)]
     df["machine-speed"]=[str(machine_speed)]
     df["number-of-resources"]=[str(numberOfResources)]
-    df["duration-time"]=[str(durationTime)] 
+    df["duration-time"]=[str(durationTime)]
     df["submission-time"]=[str(submission)]
     df["submission-compression"]=[str(submission_compression)]
     df["wallclock-limit"]=[str(wallclockLimit)]
@@ -218,21 +222,21 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     df["scale-time-width-based-on"]=[str(scaleTimeWidth)]
     df["reservation-json"]=[str(resv)]
     df["seed"]=[str(seed)]
-    
-      
+
+
     filename = "%d_nodes_%d_jobs_%s.json"%(nodes,numberOfJobs,str(uuid.uuid4()))
     # if we are scaling widths we need a workload to be based on the original "scale-widths-based-on", notice location2 is the same as location
     # except location2 has scaleWidths for nodes
     if not type(scaleWidths) == bool:
         equal = pd.Series()
         if not database.empty:
-            df["nodes"]=[str(scaleWidths)]    
+            df["nodes"]=[str(scaleWidths)]
             df2 = pd.merge(database,df,how="left",on=cols_without_scale, indicator='Exist')
             df2['Exist'] = np.where(df2.Exist == 'both', True, False)
             equal = df2.loc[df2["Exist"]==True].head(n=1)
-            
-        
-     
+
+
+
         if (len(equal) == 0) or database.empty :
             #ok we need to make a workload to scale
             filename2 = "%d_nodes_%d_jobs_%s.json"%(nodes,numberOfJobs,str(uuid.uuid4()))
@@ -243,21 +247,21 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
                 database=df
             database=database[cols]
             database.to_csv(db_path,sep="|",header=True,index=False)
-            
+
             # we must make a workload
             command = """python3 {scriptPath}/generate_synthetic_workload.py
                         --db {db_path} --file-name {filename}""".format(scriptPath=scriptPath,db_path=db_path,filename=filename2).replace("\n","")
-            
+
             os.system(command)
     df["nodes"]=[str(nodes)]
 
-    
+
     equal=pd.Series()
     if not database.empty:
        df2 = pd.merge(database,df,how="left",on=cols_without_filename,indicator='Exist')
        df2['Exist'] = np.where(df2.Exist == 'both', True, False)
        equal = df2.loc[df2["Exist"]==True].head(n=1)
-    
+
 
     location=""
     folderDF_filename = filename
@@ -287,7 +291,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     folderDatabase = pd.concat([folderDatabase,folderDF])
     folderDatabase.to_csv(folderDBPath,header=True,sep="|",index=False)
     if (len(equal) == 0) or database.empty or filegood == False or noCheck == True:
-       
+
         #ok we need to make a workload
         print(f"making synthetic workload: {filename}")
         df["filename"] =[filename]
@@ -308,7 +312,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
         # else: # ok location without the nodes WAS already made, we simply have to modify it for the amount of nodes
         #     for orig,mod in modWorkloads.items():
         #         if modLocation == mod:
-                    
+
         #             if not type(scaleWidths)==bool:
         #                 command = "python3 {scriptPath}/change_workload.py -i {location2} -o {location} --nodes {nodes} --scale-widths-based-on {scaleWidths}".format(
         #                     scriptPath=scriptPath,location2=location2,location=location,nodes=nodes,scaleWidths=scaleWidths)
@@ -318,9 +322,9 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
         #             break
         #     print(command)
         #     os.system(command)
-    return location,profile_type,machine_speed,submission,command
+    return location,profile_type,machine_speed,submissionTime,submissionCompression,command
 
-###########################################################################################################    
+###########################################################################################################
 ####                                                                                                  #####
 ####                    Create a workload based on workload data we already had                       #####
 ####                                                                                                  #####
@@ -335,7 +339,7 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     df = pd.DataFrame()
     homePath = os.environ['HOME']
     command=""
-    
+
     if basefiles:
         path= basefiles+"/workloads"
         scriptPath=basefiles
@@ -347,26 +351,27 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     database=pd.DataFrame()
     command="touch {db_path}".format(db_path=db_path)
     os.system(command)
-  
+
     if os.path.isfile(db_path) and os.path.getsize(db_path) > 0:
-      
+
         database=pd.read_csv(db_path,sep="|",header=0,dtype=str)
     else:
         database=pd.DataFrame()
     index=ourId
     #TODO profile_type
     profile_type=config["type"]
-    
-    
+
+
     time = config['time']
     inputPath=config['input']
     index = config["index"] if dictHasKey(config,"index") else index
     noCheck=config["force-creation"] if dictHasKey(config,"force-creation") else False
     numberOfJobs=int(config['number-of-jobs']) if dictHasKey(config,'number-of-jobs') else False
+    if (numberOfJobs == False) and (not (type(jobs) == bool)):
+        numberOfJobs = int(jobs)
     randomSelection = config['random-selection'] if dictHasKey(config,'random-selection') else False
     submissionTime = config["submission-time"] if dictHasKey(config,"submission-time") else False
     wallclockLimit = config['wallclock-limit'] if dictHasKey(config,'wallclock-limit') else False
-    submission=config['submission-time'] if dictHasKey(config,'submission-time') else False
     readtime = config['read-time'] if dictHasKey(config,'read-time') else False
     dumptime = config['dump-time'] if dictHasKey(config,'dump-time') else False
     checkpoint = config['checkpoint-interval'] if dictHasKey(config,'checkpoint-interval') else False
@@ -383,7 +388,7 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     df["input-path"]=[str(inputPath)]
     df["number-of-jobs"]=[str(numberOfJobs)]
     df["random-selection"]=[str(randomSelection)]
-    
+
     df["index"]=[str(index)]
     df["type"]=[str(profile_type)]
     df["submission-time"]=[str(submissionTime)]
@@ -395,9 +400,9 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     df["checkpoint-interval"]=[str(checkpoint)]
     df["copy"]=[str(copies)]
     df["reservation-json"]=[str(resv)]
-        
+
     filename = "%d_nodes_%s__%s_time_%s.json"%(nodes,time.split(":")[0],time.split(":")[1],str(uuid.uuid4()))
-   
+
     # if we are scaling widths we need a workload to be based on the original "scale-widths-based-on", notice location2 is the same as location
     # except location2 has scaleWidths for nodes
     equal = pd.Series()
@@ -432,7 +437,7 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
     else:
         folderDatabase = folderDF
     folderDatabase.to_csv(folderDBPath,header=True,sep="|",index=False)
-    
+
 
     if (len(equal) == 0 or filegood == False or noCheck == True):
         #ok we need to make a workload
@@ -451,16 +456,16 @@ def createGrizzlyWorkload(ourId,submission_compression,config,resv,nodes,jobs,ex
 
         os.system(command)
 
-    return location,profile_type,machine_speed,submission,command
+    return location,profile_type,machine_speed,submissionTime,submission_compression,command
 
-###########################################################################################################    
+###########################################################################################################
 ####                                                                                                  #####
 ####                  Create a platform file ( just changing # nodes,cores,speeds )                   #####
 ####                                                                                                  #####
 ###########################################################################################################
 
 def createPlatform(nodes,cores,speeds,basefiles):
-    
+
     homePath = os.environ['HOME']
     if basefiles:
         path= basefiles+"/platforms"
@@ -476,7 +481,50 @@ def createPlatform(nodes,cores,speeds,basefiles):
         os.system(command)
     return outputPath
 
-
+def checkpointBatsimTest(value,ourInput):
+    import re
+    import numpy as np
+    from inspect import currentframe
+    SECONDS = 1
+    MINUTES = 60 * SECONDS
+    HOURS = 60 * MINUTES
+    DAYS = 24 * HOURS
+    def g(value):
+        match = currentframe().f_back.f_locals["match"]
+        return match.groups()[value]
+    regEx=re.compile("^(real|simulated)[|]([0-9]+)[-]([0-9]+):([0-9]+):([0-9]+)[|]([0-9]+)[-]([0-9]+):([0-9]+):([0-9]+)[|]([0-9]+)")
+    match=regEx.match(value)
+    #match.groups() [0]=str [1]=day1 [2]=hr1 [3]=min1 [4]=sec1 [5]=day2 [6]hr2 [7]min2 [8]sec2 [9]amount
+    if match != None:
+        type = match.groups()[0]
+        minSeconds = int(g(1))*DAYS + int(g(2))*HOURS + int(g(3))*MINUTES + int(g(4))
+        maxSeconds = int(g(5))*DAYS + int(g(6))*HOURS + int(g(7))*MINUTES + int(g(8))
+        amount = int(g(9))
+    myRange = list(np.random.randint(minSeconds,maxSeconds,amount))
+    currentExperiments = len(ourInput.keys())
+    #if there were no sweeps before
+    if currentExperiments == 0:
+        count = 1
+        for i in myRange:
+            ourInput["experiment_{count}".format(count=count)]={"checkpoint-batsim-interval":f"{type}:once:0-00:00:{i}"}
+            count+=1
+    #there were sweeps before
+    else:
+        tmpInput = ourInput.copy()
+        count = 1
+        # update the current experiments first
+        for i in ourInput.keys():
+            data = ourInput[i].copy()
+            data["checkpoint-batsim-interval"] = f"{type}:once:0-00:00:{myRange[0]}"
+            ourInput[i] = data
+            count+=1
+        myRange = myRange[1:] #we already did the first, remove it
+        for i in myRange:
+            for j in tmpInput.keys():
+                data = tmpInput[j].copy()
+                data["checkpoint-batsim-interval"] = f"{type}:once:0-00:00:{i}"
+                ourInput["experiment_{count}".format(count=count)] = data
+                count+=1
 
 
 
@@ -494,7 +542,7 @@ try:
 except DocoptExit:
     print(__doc__)
     sys.exit(1)
-###########################################################################################################    
+###########################################################################################################
 ####                                                                                                  #####
 ####        This whole section is to output information on how to construct a config file             #####
 ####                                                                                                  #####
@@ -507,8 +555,8 @@ if args["--config-info"]:
     else:
         print(__doc__)
         sys.exit(1)
-        
-###########################################################################################################    
+
+###########################################################################################################
 ####                                                                                                  #####
 ####                      This is the start of the main code                                          #####
 ####                                                                                                  #####
@@ -521,10 +569,11 @@ startFromCheckpoint = int(args["--start-from-checkpoint"])
 startFromCheckpointKeep = int(args["--start-from-checkpoint-keep"])
 startFromFrame = int(args["--start-from-frame"])
 discardLastFrame = bool(args["--discard-last-frame"])
+ignoreDoesNotExist = True if args["--ignore-does-not-exist"] else False
 if startFromCheckpoint != -1:
-    start_from_checkpoint.changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base)
+    start_from_checkpoint.changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base,ignoreDoesNotExist)
     sys.exit()
-    
+
 os.makedirs(base,exist_ok=True)
 basefiles= os.path.expanduser(str(os.path.dirname(os.path.abspath(__file__)))).rstrip("/") if args["--basefiles"] == "False" else os.path.expanduser(str(args["--basefiles"]).rstrip("/"))
 
@@ -535,15 +584,15 @@ config = json.loads(myString)
 experiments = config.keys()
 # this "experiment" is referring to experiments in the experiment.config file,
 # each one having an "input" and "output".
-for experiment in experiments:  
+for experiment in experiments:
     ourInput = dict()
     ourOutput = dict()
     configInputKeys = config[experiment]["input"].keys()
     configOutputKeys = config[experiment]["output"].keys()
-    
+
     #this is for the # of runs if we are using an average makespan or pass-fail
     numberOfEach=1
-    
+
     #are we outputting avg-makespan or pass-fail?
     if dictHasKey(config[experiment]["output"],"avg-makespan"):
         #we are outputting avg-makespan, get the # of runs
@@ -630,7 +679,7 @@ for experiment in experiments:
     # could be a sweep or workload or just some property
     for i in configInputKeys:
         if not i.find("-sweep") == -1: # ok we have a sweep
-            #what kind of sweep?  The naming convention is NAME-sweep, so get NAME  
+            #what kind of sweep?  The naming convention is NAME-sweep, so get NAME
             kindOfSweep = i.split("-sweep")[0]
             #make sure it isn't a multiple sweep
             match = re.search(r'[ ]*{[ ]*[0-9]+[ ]*}',str(kindOfSweep))
@@ -643,36 +692,40 @@ for experiment in experiments:
             handleSweep = sweeps.sweepSwitch(kindOfSweep)
             #execute that sweep's function
             handleSweep(config[experiment]["input"][i],ourInput,config[experiment]["input"])
+        elif i == "checkpoint-batsim-test": #ok we have a checkpoint test
+            checkpointBatsimTest(config[experiment]["input"]["checkpoint-batsim-test"],ourInput)
         elif not i.find("-workload") == -1:  # ok we have a workload, this should be the last option in input, so we can create all workloads below
             #what kind of workload: synthetic or grizzly?
             #The naming convention is NAME-workload, so get the NAME and check its type
             if i.split("-workload",1)[0] == "synthetic":
                 #we may have to create the workload, this function deals with all of that
+                workloadType = "synthetic-workload"
                 createWorkload = createSyntheticWorkload
             elif i.split("-workload")[0] == "grizzly":
                 #we may have to create a grizzly workload, this function deals with all of that
+                workloadType = "grizzly-workload"
                 createWorkload = createGrizzlyWorkload
-            
+            index = config[experiment]["input"][workloadType]["index"] if dictHasKey(config[experiment]["input"][workloadType],"index") else False
+
             #in python we need to be careful what data we are talking about:views/slices, etc..
             # we create a copy here so we don't worry about it pointing back to some original.
             # this data represents all the options in our input->workload section of this config "experiment"
             data = deepcopy(config[experiment]["input"][i])
-            
+
             #get the name of the reservation it uses
             resvName = data["reservations"] if dictHasKey(data, "reservations") else False
-            print(f"resvName: {resvName}")
             resv=False
             if resvName:
                 resv=deepcopy(config[experiment]["input"]["reservations-%s"%resvName])
                 resv=json.dumps(resv)
-                
-        
+
+
             #here we create our platform and workload and get back the location
             #of both of the files and put them into ourInput config
             #here exp is iterating through the experiments of one input in our config, whereas the outer loop - experiments - is iterating over "input"s in our config
-            print("creating workloads ...")
+            print(f"creating workloads for experiment: {experiment} ...")
             for exp in ourInput.keys():
-                print(f"job: experiment_{exp}")
+                
                 nodes = ourInput[exp]["nodes"]
                 resv = ourInput[exp]["resv"] if dictHasKey(ourInput[exp],"resv") else resv
                 heldback = ourInput[exp]["share-packing-holdback"] if dictHasKey(ourInput[exp],"share-packing-holdback") else -1
@@ -682,6 +735,8 @@ for experiment in experiments:
                 rangeOfIds = [1]
                 if not ids == -1:
                     rangeOfIds = parseIds(ids)
+                if index != False:
+                    rangeOfIds = [index]
                 cores = ourInput[exp]["core-count"] if dictHasKey(ourInput[exp],"core-count") else -1
                 speeds = ourInput[exp]["speeds"] if dictHasKey(ourInput[exp],"speeds") else -1
                 jobs = ourInput[exp]["number-of-jobs"] if dictHasKey(ourInput[exp],"number-of-jobs") else False
@@ -691,10 +746,11 @@ for experiment in experiments:
                 all_data = deepcopy(ourInput[exp])
                 ourInput[exp]={}
                 for ourId in rangeOfIds:
-                    location,profile_type,machine_speed,submission,command = createWorkload(ourId,submission_compression,data,resv,nodes,jobs,experiment,basefiles,exp,base)
+                    print(f"\t index: {ourId}")
+                    location,profile_type,machine_speed,submissionTime,submissionCompression,command = createWorkload(ourId,submission_compression,data,resv,nodes,jobs,experiment,basefiles,exp,base)
                     ourInput[exp][ourId]=deepcopy(all_data)
-                    ourInput[exp][ourId][i]={"workloadFile":location,"profileType":profile_type,"speed":machine_speed,"submissionTime":submission,"command":command}
-                
+                    ourInput[exp][ourId][i]={"workloadFile":location,"profileType":profile_type,"speed":machine_speed,"submissionTime":submissionTime,"submissionCompression":submissionCompression,"command":command}
+
 
 
         else:
@@ -706,7 +762,7 @@ for experiment in experiments:
                 data["test-suite"]=testSuite
                 data["skip-completed-sims"]=skipCompletedSims
                 ourInput[exp] = data
-                
+
     #our config is ready, now make the correct directory structure and output the tailored config files
     #for each simulation
     print(f"creating folder structure for experiment: {experiment} ...")
@@ -733,8 +789,8 @@ for experiment in experiments:
                         ourInput[i][j]["reservations-start"]=resv_start_strings[number-2]
                     elif((numberOfEach - length_strings) == 0):
                         ourInput[i][j]["reservations-start"]=resv_start_strings[number-1]
-                    
-                        
+
+
 
 
                 #batch-job-memory wasn't being observed on our cluster
