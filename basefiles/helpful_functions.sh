@@ -1,4 +1,4 @@
-BATVERSION="1.0.6"
+BATVERSION="1.0.7"
 #when sourced you will see a '(batsim_env)' in your command prompt
 #you will still have your python_env but it won't show '(python_env)'
 if [[ $BATSIM_ENV_ACTIVATED == "" ]];then
@@ -191,9 +191,9 @@ function batFolder
 
             -[ls options]           Normally 'ls' is invoked to read your $prefix/experiments folder without any options.
                                     You may find it helpful to use options to 'ls' such as: sort by time, reverse etc...
-                                    Just pass the ls options you would normally want to use to batFile and you should be fine.
-                                    I suggest using batFile like so:
-                                    batFile -ltr
+                                    Just pass the ls options you would normally want to use to batFolder and you should be fine.
+                                    I suggest using batFolder like so:
+                                    batFolder -ltr
 
 EOF
 

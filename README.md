@@ -643,7 +643,7 @@ As long as the file the workload comes from conforms to the same requirements th
         - If you want different options you make multiple jobs in the form of experiment_# folders.  
         - If those options make batsim use randomness and you want to do some statistics by running batsim multiple times you use 'runs' by setting ***avg-makespan*** in the 'output' section of your config.
       - Ids
-        - In contrast, if you want to make multiple random **workloads** for statistics, then you use 'ids' which can also be used in tandem with 'runs', though this gets complicated and may not aggregate properly at the time of this writing.TODO.tandem with 'runs', though this gets complicated and may not aggregate properly at the time of this writing.TODO.
+        - In contrast, if you want to make multiple random **workloads** for statistics, then you use 'ids' which can also be used in tandem with 'runs', though this gets complicated and may not aggregate properly at the time of this writing.TODO.
     - syntax: '[\<comma seperated range of ids\>]', example: '[1,5,8,20]'  , yes this is a string
     - syntax: 'min;max;step', example: '5;20;1' 
   - ***number-of-jobs***

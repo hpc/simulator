@@ -36,8 +36,12 @@ def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
         
 
+try:
+    args=docopt(__doc__,help=True,options_first=False)
+except DocoptExit:
+    print(__doc__)
+    sys.exit(1)
 
-args=docopt(__doc__,help=True,options_first=False)
 
 
 path = args["--input"].rstrip("/")
