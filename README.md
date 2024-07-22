@@ -522,7 +522,7 @@ Sweeps can parameterize in multiple ways.  Here are the methods used:
     "formula":"i*3600"  // will make 2 hours, 3 hours, 4 hours. easier than 7200 sec,10800 sec,14400 sec
     ```
     Example:
-    ```json
+    ```java
     "min":1,
     "max":5,
     "step":1,
