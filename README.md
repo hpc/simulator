@@ -699,7 +699,7 @@ Whether you use these files or not is completely up to you.  We give you the too
         - jobs will have from \<float1\> to \<float2\> normally random number of time between submissions
 - ### **Additional Options**
   - ***wallclock-limit***
-    - the amount of time that a job is able to use. If omitted, will use the actual wallclock-limit from the ***input*** file. 
+    - the amount of time that a job is able to use. If omitted, will use -1, where the value will not be used in Batsim. 
       - syntax: \<float\>|'\<int\>%' a percent will be based off of the runtime of the job.
       - syntax: \<string\> either 'min:max[:seed]' or 'min%:max%[:seed]'  where min:max are floats and min% and max% are '\<int\>%'.  These are random numbers from min to max and an optional seed
       - example: '98%:102%:10'  from 98% of runtime to 102% of runtime with a seed of 10

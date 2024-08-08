@@ -508,15 +508,18 @@ def populateCMDs():
 def applyJsonSchema(InConfig,InSchema):
     import sys
     import re
-    resv_regEx=re.compile("^reservations[-](?!start)")
+    resv_regEx=re.compile("^reservations[-](?!start)(.*)")
     #first go through all the keys of what we have
     for key in InConfig.keys():
-        if resv_regEx.match(key) != None:
+        keyName=key
+        matchKey = resv_regEx.match(key)
+        if matchKey != None:
             key = "reservations-"
+            keyName = f"{key}{matchKey[1]}"
         if not dictHasKey(InSchema,key):
             print(f"Error, applyJsonSchema: no key in schema. Key:{key}")
             sys.exit(1)
-        applyKeyJsonSchema(InConfig[key],InSchema[key],[key])
+        applyKeyJsonSchema(InConfig[keyName],InSchema[key],[key])
     for key in InSchema.keys():
         applyNone(InSchema[key],InConfig,[key])
     #We've taken care of objects that have required keys, lists that have type none but required

@@ -239,7 +239,7 @@ def reservationSweep(SweepInput,ourInput,origInput):
                             reservation["machines"]=functions.orderDict(machines,MACHINE_KEYS)
                             reservation = functions.orderDict(reservation,RESERVATION_ORDER)
                         key_reservations.append(deepcopy(reservation))
-                    #keep putting the reservations at the beginning (-1 will have a lower number experiment # than -5 as -5 will be processed first)
+                    #keep putting the reservations at the beginning (-1 will have a higher number experiment # than -5 as -5 will be processed first)
                     neg_reservations=deepcopy(key_reservations) + neg_reservations
                 elif multiplierKey.find("+") != -1:
                     #populate the myChanges dict with what is already in the original reservation if not specified in this multiplier key

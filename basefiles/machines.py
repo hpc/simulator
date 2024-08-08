@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import re
 import numpy as np
+import functions
 
 
 def dictHasKey(myDict,key):
@@ -120,16 +121,12 @@ def parse_machines_json(machinesJson,nb_reservations):
                     resNumberChoices=list(np.random.choice(resource_info[2],size=diffR,replace=False))
             
                 resNumbers=[]
-                reservations_left=nb_reservations
-                nb_each=int(nb_reservations/len(resNumberChoices))
+                
                 # ok for each resNumberChoice we want to know how many reservations of each choice we want
                 # we divide the reservations up (mostly) evenly among the resource number choices
-                for i in range(1,len(resNumberChoices)+1):
-                    if not i==len(resNumberChoices):
-                        resNumbers.append(nb_each)                   
-                        reservations_left-=nb_each
-                    else:
-                        resNumbers.append(reservations_left)
+                for i in range(0,len(resNumberChoices)):
+                    resNumbers.append(functions.blockSize(i,len(resNumberChoices),nb_reservations))
+                    
 
                 # ok now we know what amount of resources we want
                 # we now need to choose WHICH resources we want
@@ -138,9 +135,7 @@ def parse_machines_json(machinesJson,nb_reservations):
                 diffI=1
                 if not match==None:
                     diffI = compute_random(match)[1]
-                if diffI == -1:
-                    diffI = int(nb_reservations/len(resNumberChoices))
-                 
+                                 
                 
                 #ok now we construct intervals
                 intervals=[]
@@ -150,17 +145,15 @@ def parse_machines_json(machinesJson,nb_reservations):
                     #so we have a specific resNumberChoice
                     #get diffI choices of that specific resNumberChoice
                     choices=[]
-                    for j in range(0,diffI):
+                    diffINow = diffI
+                    if diffI == -1:
+                        diffINow = resNumbers[count]
+                    for j in range(0,diffINow):
                         choices.append(list(np.random.choice(range(0,len(ourMachines)),size=i,replace=False)))
                     choiceNumbers=[]
-                    intervals_left=resNumbers[count]
-                    nb_each=int(resNumbers[count]/len(choices))
-                    for number in range(1,len(choices)+1):
-                        if not number==len(choices):
-                            choiceNumbers.append(nb_each)                   
-                            intervals_left-=nb_each
-                        else:
-                            choiceNumbers.append(intervals_left) 
+                    for number in range(0,len(choices)):
+                        choiceNumbers.append(functions.blockSize(number,len(choices),resNumbers[count]))
+
                     #translate choices into machines then into intervalset then add to our intervals the amount needed
                     count_choice=0
                     for choice in choices:
@@ -174,6 +167,7 @@ def parse_machines_json(machinesJson,nb_reservations):
                         #now find out out of the choiceNumbers[count_choice] how much is in each choice
                         intervals+=[intervalset]*choiceNumbers[count_choice]
                         resources+=[len(choice)]*choiceNumbers[count_choice]
+                        count_choice+=1
                     count+=1
                 if not len(intervals) == nb_reservations:
                     print("Error with machine intervals %s . length = %d but nb_reservations = %d" % (machineInterval,len(intervals),nb_reservations))
@@ -223,17 +217,12 @@ def parse_machines_json(machinesJson,nb_reservations):
                             "but you can only choose %d. interval: %s"%(resNumberLength,machineInterval))
                     resNumberChoices=list(np.random.choice(resource_info[2],size=diffR,replace=False))
                 resNumbers=[]
-                reservations_left=nb_reservations
-                nb_each=int(nb_reservations/len(resNumberChoices))
                 # ok for each resNumberChoice we want to know how many reservations of each choice we want
                 # we divide the reservations up (mostly) evenly among the resource number choices
                 resources=[]
                 for i in range(0,len(resNumberChoices)):
-                    if not i==(len(resNumberChoices)-1):
-                        resources+=[resNumberChoices[i]]*nb_each                  
-                        reservations_left-=nb_each
-                    else:
-                        resources+=[resNumberChoices[i]]*reservations_left
+                    nb_each = functions.blockSize(i,len(resNumberChoices),nb_reservations)
+                    resources+=[resNumberChoices[i]]*nb_each                  
                 if not len(resources) == nb_reservations:
                     print("Error with machine resources %s . length = %d but nb_reservations = %d" % (machineResources,len(resources),nb_reservations))
                     exit(1)
