@@ -404,9 +404,9 @@ function install_libtool
         fi
     else
         libtool_path=`which libtool`
-        mkdir $downloads_prefix/aclocal
+        mkdir -p $downloads_prefix/aclocal
         ac_path=${libtoolize_path%/bin/libtool}/share/aclocal
-        cp $ac_path/* $downloads_prefix/aclocal
+        cp $ac_path/* $downloads_prefix/aclocal/
     fi
     export ACLOCAL_PATH=$downloads_prefix/aclocal
 }
