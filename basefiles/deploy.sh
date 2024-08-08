@@ -339,7 +339,7 @@ function install_pkgConfig
     fi
     ac_path=`which pkg-config`
     ac_path=${ac_path%/bin/pkg-config}/share/aclocal
-    mkdir $downloads_prefix/aclocal
+    mkdir -p $downloads_prefix/aclocal
     cp $ac_path/* $downloads_prefix/aclocal/
     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$install
 
@@ -816,7 +816,7 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = false ];then
     install_python
     install_pkgConfig
     install_libtool
-    myDir=$MY_PATH
+    export myDir=$MY_PATH
     echo "myDir=$myDir"
     touch $myDir/deploy.config
     line_number=`sed -n 1p $myDir/deploy.config`
