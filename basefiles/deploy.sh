@@ -646,10 +646,10 @@ if [ $FORMAT = 'bare-metal' ] && [ $NO = true ] && [ $PACK = true ];then
     wget --no-check-certificate https://sourceforge.net/projects/boost/files/boost/1.75.0/boost_1_75_0.tar.gz/download
     tar -xf ./download
     cd $downloads_prefix
-    git clone https://deploy-1:x8BEfHUytzmT78ftoTnY@gitlab.newmexicoconsortium.org/lanl-ccu/batsim4.git
-    git clone https://deploy-1:_CmeAypLDgszp8SANVsm@gitlab.newmexicoconsortium.org/lanl-ccu/batsched4.git
+    git clone https://github.com/hpc/batsim4.git
+    git clone https://github.com/hpc/batsched4.git
     cd $basefiles_prefix
-    git clone https://cswalke1:ekhr1Q_mL356zvCt_p2B@gitlab.newmexicoconsortium.org/lanl-ccu/simulator.git
+    git clone https://github.com/hpc/simulator.git
     cd $downloads_prefix
     git clone https://framagit.org/simgrid/simgrid.git
     git clone https://github.com/zeromq/libzmq.git
