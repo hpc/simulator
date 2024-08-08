@@ -6,6 +6,11 @@
 <!-- ----------------------------------------------------------------  Intro --------------------------------------------- -->
 $\textbf{\Huge simulator}$ <br />
 
+Copyright Notice
+----------------
+Copyright © 2024 Triad National Security, LLC.
+Release Approved Under O#4697 - LANL-contributed enhancements to BatSim toolstack.
+
 'simulator' is a job scheduling simulator.
 Our work makes use of Inria's Batsim (https://batsim.readthedocs.io/) simulator.
 
