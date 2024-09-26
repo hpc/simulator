@@ -11,10 +11,11 @@ Copyright Notice
 Copyright © 2024 Triad National Security, LLC.
 Release Approved Under O#4697 - LANL-contributed enhancements to BatSim toolstack.
 
-'simulator' is a job scheduling simulator.  It is all you need to deploy our edited Batsim simulator.
+'simulator' is a job scheduling simulator.  It is all you need to clone to deploy our edited Batsim simulator.
+
 Our edited Batsim and Batsched repos are located here:
-(https://github.com/hpc/batsim4)
-(https://github.com/hpc/batsched4)
+- (https://github.com/hpc/batsim4)
+- (https://github.com/hpc/batsched4)
 
 Our work makes use of Inria's Batsim (https://batsim.readthedocs.io/) simulator.
 
