@@ -6,7 +6,7 @@ export prefix="$(cd -- "$MY_PATH"/../ && pwd)"
 export basefiles=$prefix/basefiles
 . $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DCI --long test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,ignore-does-not-exist,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DCId: --long discard-old-logs:,test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,ignore-does-not-exist,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -25,8 +25,9 @@ TEST_SUITE=""
 START_FROM_CHECKPOINT=false
 SKIP_COMPLETED=""
 FRAME=0
-KEEP=1
+KEEP=-1
 DISCARD=""
+DISCARD_LOGS=""
 IGNORE_DOES_NOT_EXIST=""
 
 eval set -- "$VALID_ARGS"
@@ -119,6 +120,10 @@ while true; do
     -D | --discard-last-frame)
         DISCARD=" --discard-last-frame "
         shift 1
+        ;;
+    -d | --discard-old-logs)
+        DISCARD_LOGS=" --discard-old-logs $2 "
+        shift 2
         ;;
     -F | --start-from-frame)
         FRAME=$2
@@ -229,6 +234,10 @@ Checkpoint Batsim Options:
                                             Flag to give the following behavior:
                                                 Will not change any of the kept expe-out_#'s and will not keep the current expe-out
 
+    -d, --discard-old-logs <INT>            discards all logs except the INT last ones
+                                            default is -1, will not discard any
+                                            [default: -1]
+
     -K, --start-from-checkpoint-keep <INT>  Used in conjunction with --start-from-checkpoint
                                             Will keep expe-out_1 through exp-out_<INT>.  Only use with --start-from-checkpoint
                                             When starting from checkpoint, the current expe-out folder becomes expe-out_1.
@@ -237,7 +246,8 @@ Checkpoint Batsim Options:
                                                 will move expe-out_1 to expe-out_2
                                                 will move expe-out_2 to expe-out_3
                                                 will delete old expe-out_3
-                                            [default: 1]
+                                            default is -1 which is 1 except the config file trumps it
+                                            [default: -1]
 
     -F, --start-from-frame <INT>            Only used with --start-from-checkpoint and in conjunction with --start-from-checkpoint-keep
                                             Will use the expe-out_<INT> folder to look for the checkpoint data
@@ -279,16 +289,16 @@ if [ $P_METHOD = 'tasks' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED" 
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED" 
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS
             fi
             ;;
         'docker')
@@ -321,16 +331,16 @@ elif [ $P_METHOD = 'sbatch' ];then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED"
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED
             else    
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS
             fi
             ;;
         'docker')
@@ -362,24 +372,24 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
         'charliecloud')
             $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --write -- /bin/bash -c "mkdir -p /mnt/prefix;mkdir -p /mnt/FOLDER1;mkdir -p /mnt/FILE1"
             if [ $START_FROM_CHECKPOINT != false ];then
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED"
             else
-                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED"
+                $prefix/charliecloud/charliecloud/bin/ch-run $prefix/batsim_ch --bind ${prefix}:/mnt/prefix --bind ${FOLDER1_DIR}:/mnt/FOLDER1 --bind ${FILE1_DIR}:/mnt/FILE1 --write --set-env=HOME=/home/sim -- /bin/bash -c "source /home/sim/.bashrc; cd /mnt/prefix/basefiles;source /home/sim/simulator/python_env/bin/activate; python3 generate_config.py -i /mnt/FILE1/$FILE1_BASE -o /mnt/FOLDER1/$FOLDER1_BASE --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS"
             fi
             ;;
         'bare-metal')
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS
             fi
             ;;
         'docker')
             prefix=/home/sim/simulator
             if [ $START_FROM_CHECKPOINT != false ];then
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config --start-from-checkpoint $START_FROM_CHECKPOINT --start-from-frame $FRAME $IGNORE_DOES_NOT_EXIST --start-from-checkpoint-keep $KEEP $DISCARD $DISCARD_LOGS $TEST_SUITE $SKIP_COMPLETED
             else
-                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED
+                python3 $basefiles/generate_config.py -i $FILE1 -o $FOLDER1 --basefiles ${basefiles}  --output-config $TEST_SUITE $SKIP_COMPLETED $DISCARD_LOGS
             fi
             ;;
     esac

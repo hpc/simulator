@@ -85,12 +85,8 @@ output = args["--output"] if args["--output"] != "<input>_agg.csv" else f"{basen
 columns_to_compare = ["nodes","SMTBF","NMTBF","MTTR","fixed-failures","submission_compression","repair-time","exp"]
 if skipColumns != False:
     for column in skipColumns:
-        try:
-            columns_to_compare.remove(column)
-        except ValueError:
-            print(f"column: {column} not part of columns to compare, skipping...")
+        columns_to_compare.remove(column)
 non_concat_columns = columns_to_compare + ["id","job","number_of_makespans"]
-non_concat_columns.extend(skipColumns)
 
 if not batches:
     #ok we need to get a list of all files that have the basename
@@ -115,10 +111,7 @@ for file in files:
         df_fin = pd.concat([df_fin,df],axis=0)
         concat_columns = list(df_fin.columns)
         for column in non_concat_columns:
-            try:
-                concat_columns.remove(column)
-            except ValueError:
-                print(f"removing column: {column} from concat_columns failed, skipping...")
+            concat_columns.remove(column)
     else:
         #ok df_fin is not empty, lets concatenate df with df_fin, row by row (slow)
         for index, row in df_fin.iterrows():

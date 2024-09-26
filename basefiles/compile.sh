@@ -18,6 +18,7 @@ CLEAN=false
 BUILDTYPE="release"
 ONLY="both"
 modules=false
+SRC_PATH=false
 eval set -- "$VALID_ARGS"
 while true; do
   case "$1" in

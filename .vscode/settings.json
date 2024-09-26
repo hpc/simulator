@@ -1,0 +1,11 @@
+{
+    "python.analysis.autoImportCompletions": true,
+   "python.terminal.activateEnvironment": true,
+  "python.venvPath": "/home/craig/LANL/Post_July_2021/Sim/deploy_bare_metal_2/simulator/python_env_3.7",
+  "python.defaultInterpreterPath":"/usr/bin/python3.11",
+  "python.autoComplete.extraPaths": ["/home/craig/LANL/Post_July_2021/Sim/deploy_bare_metal_2/simulator/python_env_3.7/"],
+  "python.analysis.typeCheckingMode": "basic", // Options: off, basic, strict
+"python.analysis.autoSearchPaths": true,
+"python.analysis.useLibraryCodeForTypes": true,
+
+}

@@ -38,6 +38,9 @@ Checkpoint Batsim Options:
                                             Does not make sense to use with --start-from-checkpoint-keep
                                             Will not change any of the kept expe-out_#'s and will not keep the current expe-out
 
+    --discard-old-logs <INT>                Keep <INT> Frame's logs
+                                            [default: -1]
+
     --start-from-checkpoint-keep <INT>      Used in conjunction with --start-from-checkpoint
                                             Will keep expe-out_1 through exp-out_<INT>.  Only use with --start-from-checkpoint
                                             When starting from checkpoint, the current expe-out folder becomes expe-out_1.
@@ -46,7 +49,8 @@ Checkpoint Batsim Options:
                                                 will move expe-out_1 to expe-out_2
                                                 will move expe-out_2 to expe-out_3
                                                 will delete old expe-out_3
-                                            [default: 1]
+                                            default is -1 but that is really 1 except config file will trump it.
+                                            [default: -1]
 
     --start-from-frame <INT>                Only used with --start-from-checkpoint and in conjunction with --start-from-checkpoint-keep
                                             Will use the expe-out_<INT> folder to look for the checkpoint data
@@ -190,7 +194,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     noCheck=config["force-creation"] if dictHasKey(config,"force-creation") else False
     numberOfResources=config['number-of-resources'] if dictHasKey(config,'number-of-resources') else False
     durationTime = config['duration-time'] if dictHasKey(config,'duration-time') else False
-    submission=config['submission-time'] if dictHasKey(config,'submission-time') else False
+    submissionTime=config['submission-time'] if dictHasKey(config,'submission-time') else False
     wallclockLimit = config['wallclock-limit'] if dictHasKey(config,'wallclock-limit') else False
     readtime = config['read-time'] if dictHasKey(config,'read-time') else False
     dumptime = config['dump-time'] if dictHasKey(config,'dump-time') else False
@@ -212,7 +216,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
     df["machine-speed"]=[str(machine_speed)]
     df["number-of-resources"]=[str(numberOfResources)]
     df["duration-time"]=[str(durationTime)]
-    df["submission-time"]=[str(submission)]
+    df["submission-time"]=[str(submissionTime)]
     df["submission-compression"]=[str(submission_compression)]
     df["wallclock-limit"]=[str(wallclockLimit)]
     df["read-time"]=[str(readtime)]
@@ -322,7 +326,7 @@ def createSyntheticWorkload(ourId,submission_compression,config,resv,nodes,jobs,
         #             break
         #     print(command)
         #     os.system(command)
-    return location,profile_type,machine_speed,submissionTime,submissionCompression,command
+    return location,profile_type,machine_speed,submissionTime,submission_compression,command
 
 ###########################################################################################################
 ####                                                                                                  #####
@@ -569,9 +573,15 @@ startFromCheckpoint = int(args["--start-from-checkpoint"])
 startFromCheckpointKeep = int(args["--start-from-checkpoint-keep"])
 startFromFrame = int(args["--start-from-frame"])
 discardLastFrame = bool(args["--discard-last-frame"])
+discardLogs = int(args["--discard-old-logs"])
 ignoreDoesNotExist = True if args["--ignore-does-not-exist"] else False
+#if we are starting from a checkpoint we need to update the .../input/config.ini files
 if startFromCheckpoint != -1:
-    start_from_checkpoint.changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base,ignoreDoesNotExist)
+    myString = stripJsonComments.loadFile(args["--input"])
+    myString = stripJsonComments.stripComments(myString,kind="all")
+    configFile = json.loads(myString)
+    stripJsonComments.saveFile(base+"/strippedComments.config",myString)
+    start_from_checkpoint.changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,discardLogs,base,configFile,ignoreDoesNotExist)
     sys.exit()
 
 os.makedirs(base,exist_ok=True)
@@ -789,6 +799,8 @@ for experiment in experiments:
                         ourInput[i][j]["reservations-start"]=resv_start_strings[number-2]
                     elif((numberOfEach - length_strings) == 0):
                         ourInput[i][j]["reservations-start"]=resv_start_strings[number-1]
+                if discardLogs != -1:
+                    ourInput[i][j]["discard-old-logs"]=discardLogs
 
 
 

@@ -268,7 +268,7 @@ def generate_reservations(reservations_json):
             allocs=intervals[0]
             resources=intervals[1]
             cols=[ids,submits,resources,ids,allocs,starts,walltimes,purposes,orders]
-            column_names=["id","subtime","res","profile","alloc","start","walltime","purpose","order"]
+            column_names=["id","subtime","res","profile","future_allocation","start","walltime","purpose","order"]
         else:
             resources=resources[0]
             cols=[ids,submits,resources,ids,starts,walltimes,purposes,orders]

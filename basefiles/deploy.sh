@@ -428,6 +428,7 @@ function install_python
     python3 -m pip install seaborn
     python3 -m pip install shapely
     python3 -m pip install requests
+    python3 -m pip install psutil
     python3 -m pip install venv-pack
     export python3_ver=`python3 --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
     export file="$python_prefix/lib/python${python3_ver}/site-packages/mesonbuild/backend/backends.py"

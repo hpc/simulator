@@ -61,7 +61,7 @@ def parse_machines_json(machinesJson,nb_reservations):
     #       "prefix":"a",                  <---required though at the moment does nothing.  This is the prefix of the machine (host)
     #       "machine-speed":1,             <---required if reservation type is parallel_homogeneous
     #       "total-resources":"0-1489",    <---required, the available resources.  used with random
-    #       "interval":"2-5"               <---optional, either 'interval' | 'resources'.  Interval translates to "alloc" in job item in workload
+    #       "interval":"2-5"               <---optional, either 'interval' | 'resources'.  Interval translates to "future_allocation" in job item in workload
     #       "resources":5                  <---optional, either 'interval' | 'resources'.  Resources translates to "res" in job item in workload
     #       "interval":"random:unif [options]" <---optional, using random on interval, below for options
     #           "random:unif res-number="  <--- 5 would be 5 machines in an interval    5,8 would be randomly 5-8 machines in an interval

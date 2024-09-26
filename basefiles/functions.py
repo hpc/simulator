@@ -1,10 +1,12 @@
-__all__=["dictHasKey","blockSize"]
+__all__=["dictHasKey","blockSize","getJsonProperty"]
 
 MONTH_DAYS=[31,28,31,30,31,30,31,31,30,31,30,31]
 SECS_PER_MINUTE=60
 MINUTES_PER_HOUR=60
 HOURS_PER_DAY=24
 DAYS_PER_MONTH=30
+CHECKPOINT_DUMP_TIME=60
+KILL_TIME=10
 def atoi(text):
     return int(text) if text.isdigit() else text
 
@@ -283,6 +285,11 @@ def sortJson(ourJson,levelInterval="all",keyOrder=[],levelKeyOrders={},default="
         sys.exit(1)
     return sortJsonLevel(ourJson,levels,1,keyOrder,levelKeyOrders,default)
 
+def getJsonProperty():
+    import json
+    import sys
+    print(sys.argv)
+
 batsimOptions={}
 batschedOptions={}
 realStartOptions={}
@@ -541,6 +548,272 @@ def applyJsonSchema(InConfig,InSchema):
     #ok lets populate our commands
     populateCMDs()
     return
+def requeue(*args):
+    import json
+    import sys
+    import subprocess
+    import time
+    import re
+    import signal
+    def signal_handler(signum,frame):
+        print("requeue signaled",flush=True)
+    
+    argsDict={}
+    if __name__ == '__main__':
+        #strip off functions.py and requeue
+        args=sys.argv[2:]
+    argsDict["SLURM_JOB_PARTITION"]=args[0].lstrip(" ")
+    argsDict["srunCount"]=args[1]
+    argsDict["SLURM_EXPORT_ENV"]=args[2].lstrip(" ")
+    argsDict["myTime"]=args[3]
+    argsDict["output"]=args[4].lstrip(" ")
+    argsDict["comment"]=args[5].lstrip(" ")
+    argsDict["addToSbatch"]=args[6].lstrip(" ")
+    argsDict["basefiles"]=args[7].lstrip(" ")
+    argsDict["parallelMode"]=args[8].lstrip(" ")
+    argsDict["method"]=args[9].lstrip(" ")
+    argsDict["signal_num"]=args[10]
+    argsDict["SLURM_JOB_ID"]=args[11]
+    argsDict["projectFolder"]=args[12].lstrip(" ")
+    argsDict["jobPathString"]=args[13].lstrip(" ")
+    argsDict["socketCountString"]=args[14].lstrip(" ")
+    argsDict["experimentString"] = args[15].lstrip(" ")
+    argsDict["jobString"]=args[16].lstrip(" ")
+    argsDict["idString"]=args[17].lstrip(" ")
+    argsDict["runString"]=args[18].lstrip(" ")
+    argsDict["ourPIDs"]=args[19]
+    argsDict["number"]=args[20]
+    signal.signal(int(argsDict['signal_num']),signal_handler)
+    #folder should be the project folder
+    #experimentString will have all the experiments in this sbatch
+    #in the format "exp1 exp2 exp3"
+    #lets check if we requeue
+    experiments=set(argsDict["experimentString"].split(" "))
+    with open(f"{argsDict['projectFolder']}/strippedComments.config","r") as InFile:
+        configFile=json.load(InFile)
+    requeue = False
+    requeueS=[]
+    keepS={}
+    for exp in experiments:
+        if dictHasKey(configFile[exp]["input"],"checkpoint-batsim-requeue"):
+            requeue = True
+            requeueS.append(exp)
+            if dictHasKey(configFile[exp]["input"],"start-from-checkpoint-keep"):
+                keepS[exp]=configFile[exp]["input"]["start-from-checkpoint-keep"]
+            else:
+                keepS[exp]=1
+        
+    if requeue:
+        #first send the tasks the signal
+        command = f"scancel --signal {argsDict['signal_num']} {argsDict['SLURM_JOB_ID']}"
+        myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+        myProcess.wait()
+        #sleep for a bit so the tasks have time to checkpoint
+        time.sleep(CHECKPOINT_DUMP_TIME)
+        #now it should be safe to end the simulations
+        command = f"kill {argsDict['ourPIDs']}"
+        print("kill command",flush=True)
+        print(command,flush=True)
+        myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+        myProcess.wait()
+        #now lets change their config.ini files
+        for jobPath,experiment in zip(argsDict['jobPathString'].split(" "),argsDict["experimentString"].split(" ")):
+            if experiment in requeueS:
+                keep=1
+                if dictHasKey(keepS,experiment):
+                    keep=keepS[experiment]
+                configPath = f"{jobPath.replace(':PATH:','')}/input/config.ini"
+                with open(configPath,"r") as InFile:
+                    configJson=json.load(InFile)
+                configJson["checkpoint-batsim-requeue"]=True
+                configJson["start-from-checkpoint"] = 1
+                configJson["start-from-checkpoint-keep"]=keep
+                configJson["start-from-frame"]=0
+                with open(configPath,"w") as OutFile:
+                    json.dump(configJson,OutFile,indent=4)
+        #lets give it time to kill
+        time.sleep(KILL_TIME)
+        #now it should be safe to queue them back up
+        #number=re.match(".*number=([0-9]+).*",argsDict['SLURM_EXPORT_ENV']).groups()[0]
+        #print("number")
+        #print(number)
+        sbatch_count=int(argsDict['number'])
+        strings=re.split(",",argsDict['SLURM_EXPORT_ENV'])
+        strings.append(f'number={argsDict["number"]}')
+        strings=[i.replace("=","=\"",1)+"\"" for i in strings]
+        mySLURMexport=",".join(strings)
+        #mySLURMexport=re.sub(",number=\"[0-9]+\"","",mySLURMexport)
+
+        command = f"source {argsDict['basefiles']}/batsim_environment.sh;sbatch -p {argsDict['SLURM_JOB_PARTITION']} -N1 --exclusive --ntasks={argsDict['srunCount']}"
+        command +=f" --export={mySLURMexport} {argsDict['myTime']} --output={argsDict['output']}_{sbatch_count}.out"
+        command +=f" --comment={argsDict['comment']} {argsDict['myTime']} {argsDict['addToSbatch']} {argsDict['basefiles']}/experiment.sh"
+        command +=f" {argsDict['parallelMode']} {argsDict['method']}"
+        print("command",flush=True)
+        print(command,flush=True)
+        myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
+        myProcess.wait()
+
+def get_key(data, key, path=''):
+    if isinstance(data, list):
+        for number, item in enumerate(data):
+            yield from get_key(item, key, f'{path}[{number}]')
+    elif isinstance(data, dict):
+        if key in data.keys():
+            #print(data[key])
+            yield (data[key], f'{path}["{key}"]')
+        for name, item in data.items():
+            yield from get_key(item, key, f'{path}["{name}"]')
+def getJsonProperty(*,jsonObj=None,file=None,key=None):
+    import json
+    import sys
+    if (sys.argv[2] == "-h") or (sys.argv[2] == "--help"):
+        usage = \
+        """
+        Description:  Gets the value of the specified key and its location
+                   
+        Usage:  python3 functions.py getJsonProperty <file> <key>
+                python3 functions.py getJsonProperty -h
+
+            <file>          the json file to open
+            <key>           the key or key path
+                            if only key is supplied (and not a path) will return all items matching the key
+            -h, --help      print this usage
+        
+        Examples:
+            #will return a list of tuples (value,path) of all matches to key
+                python3 functions.py getJsonProperty './json.config' 'key'
+            #will only return the item
+                python3 functions.py getJsonProperty './json.config' '["ParentKey"]["ChildKey"]'
+            #can use a dot notation as well
+                python3 functions.py getJsonProperty './json.config' 'ParentKey.ChildKey'
+            #will only return the item
+                python3 functions.py getJsonProperty './json.config' '["Key"]'
+            #can use a dot notation as well
+                python3 functions.py getJsonProperty './json.config' 'Key.'
+        """
+        print(usage)
+        sys.exit()
+    if __name__ == '__main__':
+        file = sys.argv[2]
+        key = sys.argv[3]
+        write = True
+    elif ((file == None) and (jsonObj == None)) or (key == None):
+        print(f"file: {file}, jsonObj: {jsonObj}, key: {key}")
+        print("ERROR: must provide 'file' or 'jsonObj' and a 'key'")
+    if jsonObj == None:
+        with open(file,"r") as InFile:
+            jsonObj=json.load(InFile)
+    if key.find("[") == -1 and key.find(".") == -1:
+        mylist=list(get_key(jsonObj,key))
+    else:
+        if key.find(".") != -1:
+            keys=key.rstrip(".").split('.')
+            key = "".join([f"[\"{i}\"]" for i in keys])
+        mylist = eval(f"jsonObj{key}")
+    if write:
+        print(mylist)
+    return mylist
+
+def setJson(*,jsonObj,key,value):
+    #key is either a single value 'key' or '["key"]'
+    #or key is a path '["keyParent"]["keyChild"]["keySubChild"]'
+    if key.find('[') == -1:
+        #ok key is just the key not a path
+        jsonObj[key]=value
+        return jsonObj
+    else:
+        #ok key is a path
+        keys = key.replace("[","").replace("\"","").split(']')[:-1]
+        element = jsonObj
+        for key in keys[:-1]:
+            element=element[key]
+        element[keys[-1]]=value
+    return jsonObj
+        
+def setJsonProperty(*,jsonObj=None,file=None,key=None,value=None,write=True):
+    import json
+    import sys
+    if (sys.argv[2] == "-h") or (sys.argv[2] == "--help"):
+        usage = \
+        """
+        Description:  Sets the value of the specified key
+                   
+        Usage:  python3 functions.py setJsonProperty <file> <key> <value> [-w]
+                python3 functions.py setJsonProperty -h
+
+            <file>          The path to json file
+            <key>           The key or key path to set
+            <value>         The value to set the key to
+            -w, --write     if not used, will just print the json out.
+                            if used, will write to the file 
+            -h, --help      print this usage
+
+        Note, you must supply double quotes for strings
+        
+        
+        Examples:
+            #will only print out the json with ["ParentKey"]["ChildKey"] = [1,2,3]
+                python3 functions.py setJsonProperty './json.config' '["ParentKey"]["ChildKey"]' '[1,2,3]'
+            #can use a dot notation as well
+                python3 functions.py setJsonProperty './json.config' 'ParentKey.ChildKey' '[1,2,3]'
+            #will write the change to the file './json.config'
+                python3 functions.py setJsonProperty './json.config' '["ParentKey"]["ChildKey"]' '"astring"' --write
+            #will also write the change to the file './json.config'
+                python3 functions.py setJsonProperty './json.config' '["Key"]' '[1,2,3]' -w
+            #can ommit the path syntax if key is a level 1 key
+                python3 functions.py setJsonProperty './json.config' 'key' '[1,2,3]'
+        """
+        print(usage)
+        sys.exit()
+    if __name__ == '__main__':
+        file = sys.argv[2]
+        key = sys.argv[3]
+        value = sys.argv[4]
+        write=False
+        if len(sys.argv) == 6 and ((sys.argv[5] == "-w") or (sys.argv[5] == "--write")):
+            write=True
+    elif ((file == None) and (jsonObj == None)) or (key == None) or (value==None):
+        print(f"file: {file}, jsonObj: {jsonObj}, key: {key}")
+        print("ERROR: must provide 'file' or 'jsonObj' and a 'key'")
+    if jsonObj == None:
+        with open(file,"r") as InFile:
+            jsonObj=json.load(InFile)
+    value = json.loads(value)
+    if key.find("[") == -1 and key.find(".") == -1:
+        exec(f"jsonObj[\"{key}\"]=value")
+    else:
+        if key.find(".") != -1:    
+            keys=key.rstrip(".").split('.')
+            key = "".join([f"[\"{i}\"]" for i in keys])
+        exec(f"jsonObj{key}=value")
+    if write:
+        if file:
+            with open(file,"w") as OutFile:
+                json.dump(jsonObj,OutFile,indent=4)
+        else:
+            print(json.dumps(jsonObj,indent=4))
+    elif __name__ == '__main__':
+        print(json.dumps(jsonObj,indent=4))
+    return jsonObj
+    
+    
+
+
+import sys
+if __name__ == '__main__':
+    import sys
+    if sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        usage="""
+        commands:
+            getJsonProperty
+            setJsonProperty
+        """
+        print(usage)
+        sys.exit()
+
+    globals()[sys.argv[1]]()
+
+
         
 
 

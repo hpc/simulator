@@ -135,6 +135,12 @@
             }
         ]
     },
+    "checkpoint-batsim-requeue":{
+        "type": "bool",
+        "real_start":[
+            { "requeue":"{}"}
+        ]
+    },
     "checkpoint-batsim-signal": {
         "type": "int",
         "real_start":[{"checkpointBatsimSignal":"{}"}],
@@ -238,6 +244,24 @@
             "real_start": [
                 {
                     "discardLastFrame": false
+                }
+            ]
+        }
+    ],
+    "discard-old-logs":[
+        {
+            "type": "int",
+            "real_start":[
+                {
+                    "discardLogs": "{}"
+                }
+            ]
+        },
+        {
+            "type":"none",
+            "real_start": [
+                {
+                    "discardLogs": -1
                 }
             ]
         }

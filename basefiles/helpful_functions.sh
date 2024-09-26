@@ -1,4 +1,4 @@
-BATVERSION="1.0.7"
+BATVERSION="1.1.0"
 #when sourced you will see a '(batsim_env)' in your command prompt
 #you will still have your python_env but it won't show '(python_env)'
 if [[ $BATSIM_ENV_ACTIVATED == "" ]];then
@@ -14,7 +14,7 @@ function batExit
     BATSIM_ENV_ACTIVATED=""
     deactivate
     export PS1=$(echo "$PS1" | sed 's@(batsim_env)@@g' )
-    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$basefiles_prefix/tests:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
+    tmp=`echo "$PATH" | sed "s@:$prefix/charliecloud/charliecloud/bin:$basefiles_prefix:$basefiles_prefix/tests:$basefiles_prefix/debug_files:$prefix:$install_prefix/bin:/usr/bin:/usr/sbin@@g"`
     export PATH="$tmp"
     tmp=`echo "$LD_LIBRARY_PATH" | sed "s@:$install_prefix/lib:$install_prefix/lib64@@g"`
     export LD_LIBRARY_PATH="$tmp"
@@ -92,6 +92,90 @@ EOF
 # batFile can be invoked after sourcing this file
 # it will help you choose a config file in your $prefix/configs and set it to file1
 # as well as help with setting folder1
+function batEdit
+{   
+    VALID_ARGS=$(getopt -o i:eo:h --long input:,ls-options:,edit,help -- "$@")
+    eval set -- "$VALID_ARGS"
+    if [[ $? -ne 0 ]]; then
+        return
+    fi
+    input=false
+    edit=false
+    help=false
+    options=""
+
+    while true; do
+        case "$1" in
+            -i | --input)
+                input=$2
+                shift 2
+                ;;
+            -o | --ls-options)
+                options=$2
+                shift 2
+                ;;
+            -e | --edit)
+                edit=true
+                shift 1
+                ;;
+            -h | --help)
+                help=true
+                break
+                ;;
+            --) shift;
+                break
+                ;;
+        esac
+    done
+
+    if [ $help = true ];then
+        cat <<"EOF"
+        editFile                    editFile can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
+                                    It will help you choose a config file in your $prefix/configs and set it to file1
+                                    as an absolute path
+        Usage:
+            editFile [-i] [-e] [-o "<ls options>"]
+
+            -i,--input <path>       Will use path as folder to choose file in, otherwise $prefix/configs
+
+            -o,--ls-options <str>   Will use these options to pass to ls
+
+            -e,--edit               Will run nano on the file chosen
+
+            -[ls options]           Normally 'ls' is invoked to read your $prefix/configs folder without any options.
+                                    You may find it helpful to use options to 'ls' such as: sort by time, reverse etc...
+                                    Just pass the ls options you would normally want to use to editFile and you should be fine.
+                                    I suggest using editFile like so:
+                                    editFile -ltr
+
+EOF
+    return
+    fi
+    if [ $input = false ];then
+        input="$prefix/configs"
+    fi
+
+        /usr/bin/ls $options "$input" | nl
+        files="`/usr/bin/ls $options "$input" | nl`"
+        IFS=$'\n' read -d '' -ra filesArray <<< "$files"
+        printf "\\033[48;5;23;38;5;16;1mEnter a choice (0 to exit):\\033[0m "
+        read choice
+        choice=`echo $choice | awk '{num=$1-1;print num}'`
+        if [[ $choice != -1 ]];then
+            file1="${filesArray[$choice]}"
+            file1="`echo "$file1" | awk '{print $NF}'`"
+            expandedInput=$(cd $input;pwd)
+            export file1=$expandedInput/$file1
+            if [ $edit = true ];then
+                nano $file1
+            fi
+        fi
+    
+
+}
+# batFile can be invoked after sourcing this file
+# it will help you choose a config file in your $prefix/configs and set it to file1
+# as well as help with setting folder1
 function batFile
 {   
     if [[ $1 == "-h" ]] || [[ $1 == "--help" ]];then
@@ -133,6 +217,8 @@ EOF
             return
         fi
         file1="${filesArray[$choice]}"
+        file1=$prefix/configs/$file1
+        echo "$file1"
         export file1="`echo "$file1" | awk '{print $NF}'`"
         if [[ $1 == "-NF" ]];then
             echo "file1   = $file1"

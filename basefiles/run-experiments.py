@@ -98,7 +98,7 @@ except DocoptExit:
     sys.exit(1)
 path = args["--input"].rstrip("/")
 basefiles=str(os.path.dirname(os.path.abspath(__file__)))
-partition = args["--partition"]
+partition = args["--partition"] # will be legit or "False"
 parallelMode = args["--parallel-mode"]
 method = args["--method"]
 coresPerJob = int(args["--cores-per-job"]) if args["--parallel-mode"] == "sbatch" else False
@@ -114,6 +114,15 @@ elif args["--sim-time-seconds"]:
 priority = 1 if args["--highest-priority"] else 0
 startRun=int(args["--start-run"]) if args["--start-run"] else False
 endRun=int(args["--end-run"]) if args["--end-run"] else False
+partition_env=os.getenv('SBATCH_PARTITION')
+signal_env=os.getenv('SBATCH_SIGNAL')
+signal_regex = re.compile("B:([0-9]+)@([0-9]+)")
+match= signal_regex.match(signal_env)
+if match == None:
+    print("signal not set")
+else:
+    signal_num=match[1]
+    signal_time=match[2]
 #do not continue if config state is false
 with open(f"{path}/config_state.log",'r') as InFile:
     configState = json.load(InFile)
@@ -122,10 +131,13 @@ if configState["generate_config"] == False:
     sys.exit(1)
 
 socketCount = socketStart
-if partition != "False":
+if (partition != "False") and (partition != None):
+    partition_env = partition
     partition = "-p {partition}".format(partition=partition)
 else:
     partition = ""
+if partition_env != "":
+    partition_env = f"-p {partition_env}"
 if parallelMode == "sbatch":
     experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i)]
     for exp in experiments:
@@ -155,12 +167,12 @@ if parallelMode == "sbatch":
                         myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
                     baseFilesPath = basefiles
-                    command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime}
+                    command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 -n1 -c{coresPerJob} --export=myTime='{myTime}',projectFolder='{path}',jobPath='{jobPath}',experiment='{exp}',job='{job}',id='{ourId}',run='{run}',basefiles='{basefiles}',folder='{folder}',priority='{priority}',socketCount={socketCount},myTime={myTime},mySimTime={mySimTime},signal_num={signal_num},partition_env={partition_env},addToSbatch={addToSbatch},comment='{folder}_{exp}_{job}j_{ourId}i_{run}r',output='{jobPath}/output/slurm-%j',number=0
                     --output={jobPath}/output/slurm-%j.out --comment='{folder}_{exp}_{job}j_{ourId}i_{run}r' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
-                    """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=os.path.basename(path),priority=priority,\
+                    """.format(partition=partition,coresPerJob=coresPerJob,jobPath=jobPath,exp=exp,job=job.rsplit("_",1)[1],ourId=ourId,run=run,basefiles=baseFilesPath,folder=os.path.basename(path),path=path,priority=priority,\
                     socketCount=socketCount,myTime=myTime,mySimTime=mySimTime, \
-                    parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
+                    parallelMode=parallelMode,method=method,addToSbatch=addToSbatch,signal_num=signal_num,partition_env=partition_env).replace("\n","")
                     print(command,flush=True)
                     myProcess = subprocess.Popen(["/usr/bin/bash","-c",command])
                     myProcess.wait()
@@ -228,14 +240,14 @@ elif parallelMode == "tasks":
                     if (srunCount == tasksPerNode) or (total_sims==0):
                         #ok we have reached our limit for a single sbatch, time to sbatch and start another
 
-                        command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 --exclusive --ntasks={tasksPerNode} --export=mySimTime='{mySimTime}',jobPathString='{jobPathString}',experimentString='{experimentString}',jobString='{jobString}',idString='{ourIdString}',runString='{runString}',basefiles='{basefiles}',priority='{priority}',socketCountString='{socketCountString}'
+                        command = """. {basefiles}/batsim_environment.sh;sbatch {partition} -N1 --exclusive --ntasks={tasksPerNode} --export=myTime='{myTime}',projectFolder='{expPath}',folder='{folder}',mySimTime='{mySimTime}',jobPathString='{jobPathString}',experimentString='{experimentString}',jobString='{jobString}',idString='{ourIdString}',runString='{runString}',basefiles='{basefiles}',priority='{priority}',socketCountString='{socketCountString}',signal_num={signal_num},partition_env='{partition_env}',addToSbatch='{addToSbatch}',comment='{folder}_{batch_num}',output='{expPath}/sbatch-{batch_num}'
                     {myTime}
                     --output={expPath}/sbatch-{batch_num}.out --comment='{folder}_{batch_num}' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
-                    """.format(partition=partition,tasksPerNode=tasksPerNode,mySimTime=mySimTime,\
+                    """.format(partition=partition,tasksPerNode=tasksPerNode+1,mySimTime=mySimTime,\
                                 jobPathString=jobPathString,experimentString=experimentString,runString=runString,jobString=jobString,ourIdString=ourIdString,\
                                 basefiles=basefiles,priority=priority,folder=os.path.basename(path),socketCountString=socketCountString,myTime=myTime,expPath=path,batch_num=batch_num,\
-                                parallelMode=parallelMode,method=method,addToSbatch=addToSbatch).replace("\n","")
+                                parallelMode=parallelMode,method=method,addToSbatch=addToSbatch,signal_num=signal_num,partition_env=partition_env).replace("\n","")
                         batch_num+=1
                         srunCount=0
                         mySimTimeString=""
