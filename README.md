@@ -4,8 +4,7 @@
 
 
 <!-- ----------------------------------------------------------------  Intro --------------------------------------------- -->
-<h1>Simulator</h1><br />
-
+<h1>Simulator</h1>
 Copyright Notice
 ----------------
 Copyright © 2024 Triad National Security, LLC.
