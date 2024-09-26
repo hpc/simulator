@@ -1145,14 +1145,18 @@ If you would like to run other experiments, feel free to learn about our simulat
 While we hope that this simulator suits your needs, it is inevitable that some may have uses that are not included.  We feel that our work can be expanded on somewhat quickly so we include Development docs as well.
 - User Docs 
   - Walkthrough
-    - .../simulator/basefiles/docs/User/User_Doc_Walkthrough.pdf      TODO
+    - .../simulator/basefiles/docs/User/User_Doc_Walkthrough.pdf
+      - TODO
   - Manual
-    - .../simulator/basefiles/docs/User/User_Doc_Manual.pdf      First Draft COMPLETED
+    - .../simulator/basefiles/docs/User/User_Doc_Manual.pdf      
+      - First Draft COMPLETED
 - Development Docs
   - Walkthrough
-    - .../simulator/basefiles/docs/Developer/Developer_Doc_Walkthrough.pdf     TODO
+    - .../simulator/basefiles/docs/Developer/Developer_Doc_Walkthrough.pdf     
+      - TODO
   - Manual
-    - .../simulator/basefiles/docs/Developer/Developer_Doc_Manual.pdf     TODO
+    - .../simulator/basefiles/docs/Developer/Developer_Doc_Manual.pdf     
+      - TODO
 
 
 
