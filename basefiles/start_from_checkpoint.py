@@ -66,7 +66,8 @@ def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCh
                             with open (f"{base}/config_state.log","w") as OutFile:
                                 json.dump(json.loads("{ \"generate_config\":false }"),OutFile)
                             sys.exit(1)
-                        if not os.path.exists(checkpoint_path) and ignoreDoesNotExist == False:
+                        
+                        if startFromFrame != -5 and (not os.path.exists(checkpoint_path)) and ignoreDoesNotExist == False:
                             print(f"ERROR: In start_from_checkpoint.py in changeInputFiles():  '{checkpoint_path}' does not exist")
                             print(f"If this does not matter to you provide --ignore-does-not-exist to myBatchTasks.py")
                             with open (f"{base}/config_state.log","w") as OutFile:
@@ -74,7 +75,8 @@ def changeInputFiles(testSuite,skipCompletedSims,startFromCheckpoint,startFromCh
                             sys.exit(1)
                     except:
                         print(f"ERROR:there was an exception in start_from_checkpoint.py in changeInputFiles() for {base}/{exp}/{job}/{theId}/{run}/input/config.ini")
-                        sys.exit(1)
+                        print(f"continuing...")
+                        #sys.exit(1)
 def changeInputFile(run,testSuite,skipCompletedSims,startFromCheckpoint,startFromCheckpointKeep,startFromFrame,discardLastFrame,base,ignoreDoesNotExist):
     import os
     import json
@@ -122,6 +124,9 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
     import json
     import sys
     import functions
+    START_FROM_FIRST_CHECKPOINTED_FRAME_NB=-5
+    if startFromFrame == START_FROM_FIRST_CHECKPOINTED_FRAME_NB:
+        startFromFirstCheckpointedFrame = True
     
     input_config = f"{os.path.dirname(path)}/input/config.ini" #.../Run_#/input/config.ini
     old_folder = f"{path}/expe-out"  #.../Run_#/output/expe-out
@@ -178,6 +183,14 @@ def move_output_folder(nb_startFromCheckpoint,startFromCheckpointKeep,startFromF
         if os.path.isdir(path+"/"+i) and (filename.find("expe-out_")!=-1):
             #ok we have a directory in path that is a frame, add it to our frames
             frames.append(int(filename[9:]))
+    if startFromFirstCheckpointedFrame:
+        if os.path.exists(f"{path}/expe-out/checkpoint_1"):
+            startFromFrame=0
+        for i in frames:
+            if os.path.exists(f"{path}/expe-out_{i}/checkpoint_1"):
+                startFromFrame=i
+        nb_startFromCheckpoint=1
+
     frames.sort(reverse=True)
     for i in frames:
         if i>=startFromCheckpointKeep:

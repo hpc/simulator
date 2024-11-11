@@ -813,6 +813,25 @@ if __name__ == '__main__':
 
     globals()[sys.argv[1]]()
 
+# This function traverses a project folder, passed in as 'path', and applies a function to each simulation.
+# The function passed, 'myFunc' should accept a pathArgs and a changing inputArgs.
+# It should also return the inputArgs dictionary.  This traverse_project_folder
+# function will return the inputArgs dictionary.
+def traverse_project_folder(path,myFunc,inputArgs):
+    experiments=[i for i in os.listdir(path) if os.path.isdir(path+"/"+i)]
+    for exp in experiments:
+        jobs=[i for i in os.listdir(f"{path}/{exp}") if os.path.isdir(f"{path}/{exp}/{i}")]
+        for job in jobs:
+            ids=[i for i in os.listdir(f"{path}/{exp}/{job}") if os.path.isdir(f"{path}/{exp}/{job}/{i}")]
+            for ourId in ids:
+                runs=[i for i in os.listdir(f"{path}/{exp}/{job}/{ourId}") if os.path.isdir(f"{path}/{exp}/{job}/{ourId}/{i}")]
+                for run in runs:
+                    current_run=f"{path}/{exp}/{job}/{ourId}/{run}"
+                    pathArgs={"experiments":experiments,"jobs":jobs,"ids":ids,"runs":runs,"path":path,"exp":exp,"job":job,"ourId":ourId,"run":run,"current_run":current_run}
+                    inputArgs=myFunc(pathArgs,inputArgs)
+
+    return inputArgs
+
 
         
 

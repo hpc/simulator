@@ -1,4 +1,4 @@
-BATVERSION="1.1.0"
+BATVERSION="1.1.1"
 #when sourced you will see a '(batsim_env)' in your command prompt
 #you will still have your python_env but it won't show '(python_env)'
 if [[ $BATSIM_ENV_ACTIVATED == "" ]];then
@@ -94,7 +94,7 @@ EOF
 # as well as help with setting folder1
 function batEdit
 {   
-    VALID_ARGS=$(getopt -o i:eo:h --long input:,ls-options:,edit,help -- "$@")
+    VALID_ARGS=$(getopt -o i:l:f:eo:h --long linenumber:,filename:,input:,ls-options:,edit,help -- "$@")
     eval set -- "$VALID_ARGS"
     if [[ $? -ne 0 ]]; then
         return
@@ -102,12 +102,22 @@ function batEdit
     input=false
     edit=false
     help=false
+    filename=false
     options=""
+    linenumber=""
 
     while true; do
         case "$1" in
             -i | --input)
                 input=$2
+                shift 2
+                ;;
+            -f | --filename)
+                filename=$2
+                shift 2
+                ;;
+            -l | --linenumber)
+                linenumber="+$2"
                 shift 2
                 ;;
             -o | --ls-options)
@@ -130,13 +140,17 @@ function batEdit
 
     if [ $help = true ];then
         cat <<"EOF"
-        editFile                    editFile can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
+        batEdit                     batEdit can be invoked after sourcing $prefix/basefiles/batsim_environment.sh
                                     It will help you choose a config file in your $prefix/configs and set it to file1
                                     as an absolute path
         Usage:
-            editFile [-i] [-e] [-o "<ls options>"]
+            batEdit [-i] [-f] [-l] [-e] [-o "<ls options>"]
 
             -i,--input <path>       Will use path as folder to choose file in, otherwise $prefix/configs
+            
+            -f, --filename <path>   Will use this filename and skip the selection of a file.
+
+            -l, --linenumber <int>  Will open file in nano at the specified line number.
 
             -o,--ls-options <str>   Will use these options to pass to ls
 
@@ -154,7 +168,7 @@ EOF
     if [ $input = false ];then
         input="$prefix/configs"
     fi
-
+    if [ $filename = false ];then
         /usr/bin/ls $options "$input" | nl
         files="`/usr/bin/ls $options "$input" | nl`"
         IFS=$'\n' read -d '' -ra filesArray <<< "$files"
@@ -167,9 +181,17 @@ EOF
             expandedInput=$(cd $input;pwd)
             export file1=$expandedInput/$file1
             if [ $edit = true ];then
-                nano $file1
+                nano ${linenumber} $file1
             fi
         fi
+    else
+        expandedInput=$(cd ${input};pwd)
+        export file1=${expandedInput}/${filename}
+        if [ $edit = true ];then
+            nano ${linenumber} $file1
+        fi
+    fi
+
     
 
 }

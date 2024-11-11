@@ -1,29 +1,70 @@
 #!/usr/bin/bash
-if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]
+
+VALID_ARGS=$(getopt -o c:f:do:h --long config:,folder:,download,only:,help -- "$@")
+if [[ $? -ne 0 ]]; then
+    exit 1;
+fi
+config="false"
+folderloc="false"
+download="false"
+only="all"
+help="false"
+
+eval set -- "$VALID_ARGS"
+while true; do
+  case "$1" in
+    -c | --config)
+        config="$2"
+        shift 2
+        ;;
+    -f | --folder)
+        folderloc="$2"
+        shift 2
+        ;;
+    -d | --download)
+        download="true"
+        shift 1
+        ;;
+    -o | --only)
+        only=$2
+        shift 2
+        ;;
+    -h | --help)
+        help="true"
+        break
+        ;;
+    --) shift;
+        break
+        ;;
+    esac
+done
+if [[ $help == "true" ]]
     then
     cat <<EOF
     This script expects you to make a config file that will be used everytime you update.
     Details on its format are at the bottom. It also expects that you are in your batsim_environment
-    
-    Usage:
-        update_simulator.sh -i <path_to_config> [-o (code|simulator)]
 
-        -i                      path to config
-        -o (code|simulator)     only update 'code' or 'simulator', otherwise update all
-        
+    Usage:
+        update_simulator.sh -i <path_to_config> [-f <path_to_folders>|-d] [-o (code|simulator)]
+
+        -c <path>, --config <path>      path to config
+        -f <path>, --folder <path>      path to simulator,batsim4,batsched4
+        -d, --download                  download latest
+        -o ,--only (code|simulator)     only update 'code' or 'simulator', otherwise update all
+
     config file:
-        paths should be absolute expanded paths
+        paths should be absolute expanded paths. input field will not be used with -f or -d options
 
         input=/path/to/tarfile.tar.gz    include the filename in path
                 This tarball should include batsim4, batsched4, and simulator folders
         output=/path/to/simulator         include the simulator folder in path but not a trailing slash '/'
         compileCommand="compile.sh -f <format> -p <path> -m <modules>"
 
-    example:    update_simulator.sh -i /users/<name>/update.config [-o (simulator|code)] 
+    example:    update_simulator.sh -i /users/<name>/update.config [-o (simulator|code)]
 
 
     Script will:
-        untar your tarball
+        untar your tarball into temp folder || copy to temp folder || download latest into temp folder
         remove .../simulator/Downloads/[batsim4 and batsched4]
         move the new batsim4 and batsched4 to .../simulator/Downloads/
         move .../simulator/basefiles/batsim_environment.sh  to .../simulator/batsim_environment.sh
@@ -37,22 +78,19 @@ if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]
 
 EOF
 fi
-only="all"
 batsim4compile=false
 batsched4compile=false
 
-if [[ $# -gt 3 ]] && [[ $3 == "-o" ]];then
-    if [[ $4 == "simulator" ]] || [[ $4 == "code" ]];then
-        only="$4"
-    else
-        echo "Error, -o option only takes 'simulator' or 'code'"
-        exit
-    fi
+
+if [[ $only != "simulator" ]] && [[ $only != "code" ]];then
+    echo "Error, -o option only takes 'simulator' or 'code'"
+    exit
 fi
-if [[ $# -gt 1 ]] && [[ $1 == "-i" ]]
+
+if [[ $config != "false" ]]
     then
     #source config file
-    . "$2"
+    . $config
     #source batsim_environment
     . "${output}/basefiles/batsim_environment.sh"
     #get the name of the tarball
@@ -62,11 +100,31 @@ if [[ $# -gt 1 ]] && [[ $1 == "-i" ]]
     #go to this folder
     cd "$folder"
     mkdir -p tmp_update
-    mv $file ./tmp_update
-    cd ./tmp_update
-    #untar the tarball
-    echo "untaring ..."
-    tar -xzf $file
+    if [[ $folderloc != "false" ]]; then
+        if [[ $only == "simulator" ]] || [[ $only == "all" ]];then
+            cp -R ${folderloc}/simulator ./tmp_update/
+        fi
+        if [[ $only == "code" ]] || [[ $only == "all" ]];then
+            cp -R ${folderloc}/batsim4 ./tmp_update/
+            cp -R ${folderloc}/batsched4 ./tmp_update/
+        fi
+        cd ./tmp_update
+    elif [[ $download != "false" ]]; then
+        cd ./tmp_update
+        if [[ $only == "simulator" ]] || [[ $only == "all" ]];then
+            git clone https://github.com/hpc/simulator.git
+        fi
+        if [[ $only == "code" ]] || [[ $only == "all" ]];then
+            git clone https://github.com/hpc/batsim4.git
+            git clone https://github.com/hpc/batsched4.git
+        fi
+    else
+        mv $file ./tmp_update
+        cd ./tmp_update
+        #untar the tarball
+        echo "untaring ..."
+        tar -xzf $file
+    fi
     batsim4compile=false;batsched4compile=false;
     if [[ $only == "code" ]] || [[ $only == "all" ]];then
         #remove the batsim4 and batsched4 folders
@@ -106,7 +164,7 @@ if [[ $# -gt 1 ]] && [[ $1 == "-i" ]]
     rm $file
     if [[ $only == "code" ]] || [[ $only == "all" ]];then
         #compile both batsim4 and batsched4
-        
+
         sleep 5
         if [ $batsim4compile = true ];then
             echo "compiling new batsim code ..."

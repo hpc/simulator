@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+START_FROM_FIRST_CHECKPOINTED_FRAME_NB=-5
 MY_PATH="$(dirname -- "${BASH_SOURCE[0]}")"
 export prefix="$(cd -- "$MY_PATH"/../ && pwd)"
 
@@ -6,7 +7,7 @@ export prefix="$(cd -- "$MY_PATH"/../ && pwd)"
 export basefiles=$prefix/basefiles
 . $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DCId: --long discard-old-logs:,test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,ignore-does-not-exist,help -- "$@")
+VALID_ARGS=$(getopt -o f:o:s:t:c:m:p:w:ha:S:P:F:K:DCId:L --long start-from-first-checkpointed-frame,discard-old-logs:,test-suite,skip-completed-sims,file:,folder:,socket-start:,tasks-per-node:,cores-per-node:,method:,parallel-method:,wallclock-limit:,add-to-sbatch:,permissions:,start-from-checkpoint:,start-from-checkpoint-keep:,start-from-frame:,discard-last-frame,ignore-does-not-exist,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -40,8 +41,15 @@ while true; do
         if [ $? -eq 0 ];then
             FILE1_ABS=true
             FILE1="$2"
-            FILE1_DIR=$(dirname "$2")
-            FILE1_BASE=$(basename "$2")
+            #is ./ being entered?
+            if [[ $myString == "./" ]];then
+                tmp="$(cd -- "./" && pwd)"
+                GLOBIGNORE="strippedComments.config"
+                FILE1="$tmp/$(ls *.config)"
+                unset GLOBIGNORE
+            fi
+            FILE1_DIR=$(dirname "$FILE1")
+            FILE1_BASE=$(basename "$FILE1")
         else
             FILE1_DIR="$prefix/configs"
             FILE1_BASE="$2"
@@ -55,7 +63,7 @@ while true; do
         grep "/" <<<"$myString" > /dev/null
         if [ $? -eq 0 ];then
             FOLDER1_ABS=true
-            FOLDER1="$2"
+            FOLDER1="$(cd -- "$2" && pwd)"
             FOLDER1_DIR=$(dirname "$2")
             FOLDER1_BASE=$(basename "$2")
         else
@@ -114,7 +122,7 @@ while true; do
         shift 2
         ;;
     -C | --skip-completed-sims)
-        SKIP_COMPLETED=" --skip-completed-sims"
+        SKIP_COMPLETED=" --skip-completed-sims "
         shift 1
         ;;
     -D | --discard-last-frame)
@@ -128,6 +136,11 @@ while true; do
     -F | --start-from-frame)
         FRAME=$2
         shift 2
+        ;;
+    -L | --start-from-first-checkpointed-frame)
+        FRAME=$START_FROM_FIRST_CHECKPOINTED_FRAME_NB
+        START_FROM_CHECKPOINT=1
+        shift 1
         ;;
     -K | --start-from-checkpoint-keep)
         KEEP=$2
@@ -162,7 +175,9 @@ if [ $FILE1 = false ] || [ $FOLDER1 = false ] ||  \
                             NOTE: make sure $prefix is set to the folder that houses basefiles, charliecloud, batsim_ch, python_env, experiments, and configs
 
 Usage:
-    myBatchTasks.sh -f <STR> -o <STR> (-p sbatch [-c <INT>] | -p tasks -t <INT> )[-m <STR>] [-s <INT>] [-w <STR>][--permissions <STR>][--start-from-checkpoint <INT>]
+    myBatchTasks.sh -f <STR> -o <STR> [-m <STR>]
+                        (-p sbatch [-c <INT>] | -p tasks -t <INT> | -p background [-t <INT>] | -p none)
+                        [-s <INT>] [-w <STR>][--permissions <STR>][--start-from-checkpoint <INT>] []
 
 Required Options:
 
@@ -258,6 +273,9 @@ Checkpoint Batsim Options:
                                             Here, '0' is the original expe-out folder that becomes expe-out_1
                                             If --discard-last-frame is used, then default here is 1. 0 is not allowed and will become 1 if used.
                                             [default: 0]
+    -L, 
+     --start-from-first-checkpointed-frame  Start from the latest checkpoint available.  Will go through all frames and choose the most recent 
+                                            one that has a checkpoint_1 folder
 
     -I, --ignore-does-not-exist             Normally if the path to one of the checkpoints does not exist it will ERROR out and stop.
                                             This option tells it that some paths may not exist, but run the others that do,
@@ -320,7 +338,7 @@ if [ $P_METHOD = 'tasks' ];then
 EOF
     fi
 
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node $TASKS_PER_NODE $WALLCLOCK $SKIP_COMPLETED --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'sbatch' ];then
     if [ $CORES_PER_NODE ];then
         CORES_PER_NODE="--cores-per-node $CORES_PER_NODE"
@@ -361,7 +379,7 @@ elif [ $P_METHOD = 'sbatch' ];then
 }
 EOF
     fi
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK --add-to-sbatch "$ADDED"
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --cores-per-node $CORES_PER_NODE $WALLCLOCK $SKIP_COMPLETED --add-to-sbatch "$ADDED"
 elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
     if [ $P_METHOD = 'none' ];then
         TASKS_PER_NODE=1
@@ -408,5 +426,5 @@ elif [ $P_METHOD = 'none' ] || [ $P_METHOD = 'background' ]; then
 }
 EOF
     fi
-    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node ${TASKS_PER_NODE}
+    python3 $basefiles/run-experiments.py -i $FOLDER1  --method $METHOD --parallel-mode $P_METHOD --socket-start ${SOCKET_START} --tasks-per-node ${TASKS_PER_NODE} $SKIP_COMPLETED
 fi

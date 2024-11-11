@@ -4,7 +4,7 @@ function requeue_this
     #run python script that handles everything
     echo "$SLURM_EXPORT_ENV"
     SLURM_EXPORT_ENV=`echo "$SLURM_EXPORT_ENV" | sed 's@'\''@\\'\''@g'`
-    srun --ntasks=1 -c 1 ${python_prefix}/bin/python3 ${basefiles}/functions.py requeue "$SLURM_JOB_PARTITION" "$srunCount" "$SLURM_EXPORT_ENV" "$myTime" "$output" "$comment" "$addToSbatch" "$basefiles" "$parallelMode" "$method" "$signal_num" "$SLURM_JOB_ID" "$projectFolder" "$jobPathString" "$socketCountString" "$experimentString" "$jobString" "$idString" "$runString" "${ourPIDs[*]}" "$(( number + 1 ))" &
+    ${python_prefix}/bin/python3 ${basefiles}/functions.py requeue "$SLURM_JOB_PARTITION" "$srunCount" "$SLURM_EXPORT_ENV" "$myTime" "$output" "$comment" "$addToSbatch" "$basefiles" "$parallelMode" "$method" "$signal_num" "$SLURM_JOB_ID" "$projectFolder" "$jobPathString" "$socketCountString" "$experimentString" "$jobString" "$idString" "$runString" "${ourPIDs[*]}" "$(( number + 1 ))" &
     wait
 }
 

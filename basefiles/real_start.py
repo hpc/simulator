@@ -42,6 +42,7 @@ import psutil
 import time
 import re
 from contextlib import contextmanager
+SKIP_GLOBAL_PROGRESS=True
 print(" ".join(sys.argv),flush=True)
 
 def acquireLock(locked_file):
@@ -263,18 +264,19 @@ if skipCompletedSims or requeue:
         progressJson=json.load(InFile)
         if progressJson["completed"]:
             print("ATTN: completed already, no work to do")
-            try:
-                locked_fd = acquireLock(locked_file)
-                #we have the lock
-                with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-                    getProgress(InOutFile)
-                    if not skipCurrentProgress:
-                        progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
-                        with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-                            json.dump(progress,InOutFile,indent=4)
-                releaseLock(locked_fd)
-            except InterruptedError:
-                pass
+            if not SKIP_GLOBAL_PROGRESS:
+                try:
+                    locked_fd = acquireLock(locked_file)
+                    #we have the lock
+                    with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                        getProgress(InOutFile)
+                        if not skipCurrentProgress:
+                            progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
+                            with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+                                json.dump(progress,InOutFile,indent=4)
+                    releaseLock(locked_fd)
+                except InterruptedError:
+                    pass
             if dictHasKey(progressJson,"post-processing"):
                 sys.exit(0)
             else:
@@ -331,32 +333,34 @@ if not onlyOutput:
 #-------------------------------------     Update Current Progress   -------------------------------------------------
     skipCurrentProgress = False
     if myProcess.returncode >1:
-        try:
-            locked_fd = acquireLock(locked_file)
-            with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-                getProgress(InOutFile)
-                if not skipCurrentProgress:
-                    progress[f"{dirname}/{basename}{rest_of_path}_sim"]=0
-                    progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
-                with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-                    json.dump(progress,InOutFile,indent=4)
-            releaseLock(locked_fd)
-        except InterruptedError:
-            pass
-        sys.exit(myProcess.returncode)
-    else:
-        try:
-            locked_fd = acquireLock(locked_file)
-            #we have the lock
-            with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-                getProgress(InOutFile)
-                if not skipCurrentProgress:
-                    progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
+        if not SKIP_GLOBAL_PROGRESS:
+            try:
+                locked_fd = acquireLock(locked_file)
+                with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                    getProgress(InOutFile)
+                    if not skipCurrentProgress:
+                        progress[f"{dirname}/{basename}{rest_of_path}_sim"]=0
+                        progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
                     with open(f"{progress_path}/current_progress.log","w") as InOutFile:
                         json.dump(progress,InOutFile,indent=4)
-            releaseLock(locked_fd)
-        except InterruptedError:
-            pass
+                releaseLock(locked_fd)
+            except InterruptedError:
+                pass
+        sys.exit(myProcess.returncode)
+    else:
+        if not SKIP_GLOBAL_PROGRESS:
+            try:
+                locked_fd = acquireLock(locked_file)
+                #we have the lock
+                with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                    getProgress(InOutFile)
+                    if not skipCurrentProgress:
+                        progress[f"{dirname}/{basename}{rest_of_path}_sim"]=1
+                        with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+                            json.dump(progress,InOutFile,indent=4)
+                releaseLock(locked_fd)
+            except InterruptedError:
+                pass
         with open(f"{path}/output/progress.log","r") as InFile:
             try:
                 progressJson=json.load(InFile)
@@ -406,31 +410,33 @@ if myReturn == 0:
 
 #-------------------------------     Set Current Progress  -------------------------------------
 if myReturn>0:
-    try:
-        locked_fd = acquireLock(locked_file)
-            #we have the lock
-        with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-            getProgress(InOutFile)
-            if not skipCurrentProgress:
-                progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
-                with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-                    json.dump(progress,InOutFile,indent=4)
-        releaseLock(locked_fd)
-    except InterruptedError:
-        pass
+    if not SKIP_GLOBAL_PROGRESS:
+        try:
+            locked_fd = acquireLock(locked_file)
+                #we have the lock
+            with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                getProgress(InOutFile)
+                if not skipCurrentProgress:
+                    progress[f"{dirname}/{basename}{rest_of_path}_post"]=0
+                    with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+                        json.dump(progress,InOutFile,indent=4)
+            releaseLock(locked_fd)
+        except InterruptedError:
+            pass
     sys.exit(myReturn)
 else:
     with open(f"{path}/output/progress.log","w") as OutFile:
         json.dump(progressJson,OutFile)
-    try:
-        locked_fd = acquireLock(locked_file)
-            #we have the lock
-        with open(f"{progress_path}/current_progress.log","r") as InOutFile:
-            getProgress(InOutFile)
-            if not skipCurrentProgress:
-                progress[f"{dirname}/{basename}{rest_of_path}_post"]=1
-                with open(f"{progress_path}/current_progress.log","w") as InOutFile:
-                    json.dump(progress,InOutFile,indent=4)
-        releaseLock(locked_fd)
-    except InterruptedError:
-        pass
+    if not SKIP_GLOBAL_PROGRESS:
+        try:
+            locked_fd = acquireLock(locked_file)
+                #we have the lock
+            with open(f"{progress_path}/current_progress.log","r") as InOutFile:
+                getProgress(InOutFile)
+                if not skipCurrentProgress:
+                    progress[f"{dirname}/{basename}{rest_of_path}_post"]=1
+                    with open(f"{progress_path}/current_progress.log","w") as InOutFile:
+                        json.dump(progress,InOutFile,indent=4)
+            releaseLock(locked_fd)
+        except InterruptedError:
+            pass

@@ -23,6 +23,8 @@
 #export SBATCH_NO_REQUEUE="yes"
 
 export basefiles_prefix=$prefix/basefiles
+export configs_folder=$prefix/configs
+export experiments_folder=$prefix/experiments
 export install_prefix=$prefix/Install
 export downloads_prefix=$prefix/Downloads
 export python_prefix=$prefix/python_env

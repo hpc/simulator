@@ -244,7 +244,7 @@ elif parallelMode == "tasks":
                     {myTime}
                     --output={expPath}/sbatch-{batch_num}.out --comment='{folder}_{batch_num}' {myTime} {addToSbatch}
                     {basefiles}/experiment.sh {parallelMode} {method}
-                    """.format(partition=partition,tasksPerNode=tasksPerNode+1,mySimTime=mySimTime,\
+                    """.format(partition=partition,tasksPerNode=tasksPerNode,mySimTime=mySimTime,\
                                 jobPathString=jobPathString,experimentString=experimentString,runString=runString,jobString=jobString,ourIdString=ourIdString,\
                                 basefiles=basefiles,priority=priority,folder=os.path.basename(path),socketCountString=socketCountString,myTime=myTime,expPath=path,batch_num=batch_num,\
                                 parallelMode=parallelMode,method=method,addToSbatch=addToSbatch,signal_num=signal_num,partition_env=partition_env).replace("\n","")

@@ -780,7 +780,7 @@ for experiment in experiments:
     for i in ourInput.keys():
         #where are all these folders going?  --output + experiment + job(i) + id_(j) + Run_(number)
         new_base_orig = base +"/" + experiment + "/" + i
-        print(f"\t creating folder structure for: {i}/experiment_{totalJobs} ...")
+        print(f"\t creating folder structure for: {i} / experiment_{totalJobs} ...")
         # j is our workload ids
         for j in ourInput[i].keys():
             new_base = new_base_orig + "/" + "id_"+str(j)

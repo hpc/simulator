@@ -274,14 +274,25 @@
             }
         ]
     },
-    "forward-profiles-on-submission": {
-        "type": "bool",
-        "true_batsim": [
-            {
-                "--forward-profiles-on-submission": ""
-            }
-        ]
-    },
+    "forward-profiles-on-submission": [
+        {
+            "type": "bool",
+            "true_batsim": [
+                {
+                    "--forward-profiles-on-submission": ""
+                }
+            ]
+        },
+        {
+            "type": "none",
+            "batsim":[
+                {
+                    "--forward-profiles-on-submission": ""
+                }
+            ]
+        }
+        
+    ],
     "grizzly-workload": {
         "type": "object",
         "required": false,
@@ -511,7 +522,7 @@
                 }
             ]
         }
-    ],
+    ],    
     "submission-compression":{
         "type": "string",
         "regex": "^[0-9]+[%]$"   
