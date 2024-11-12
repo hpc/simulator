@@ -1,0 +1,596 @@
+\documentclass[titlepage]{article}
+\author{Craig Walker}
+\title{CCU-LANL Batsim Developer Doc Manual}
+%stix did not work, we use ifsym instead
+\usepackage{savesym}
+\usepackage{amsmath,amssymb,amsfonts}
+\savesymbol{Cross} % Cross is already defined somewhere, probably amsmath,amssymb,amsfonts,
+                   % so what we do is save the symbol and restore it as CCUCross
+\usepackage[geometry]{ifsym} %\FilledCircle \FilledSmallSquare \SmallCircle
+\restoresymbol{CCU}{Cross}
+\usepackage{oplotsymbl} %\triangleprfillhl \rhombusfill
+\usepackage{helvet}
+\usepackage{fontspec}
+\usepackage{fontawesome} %\faCircle %\faSquare
+\usepackage{listings}
+\usepackage{soul}
+\usepackage{xparse}
+\usepackage{fvextra}
+\usepackage{sourcesanspro}
+\usepackage{enumitem}
+
+
+
+
+%\usepackage{xunicode}
+\usepackage{xltxtra}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{hhline}
+\usepackage[bookmarks,bookmarksopen,bookmarksdepth=5,colorlinks=true]{hyperref}
+\usepackage{bookmark}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, filecolor=blue, urlcolor=blue}
+\usepackage{polyglossia}
+\usepackage[most]{tcolorbox}
+\usepackage[margin=0.5in]{geometry}
+%\usepackage{lstlinebgrd}   <--  Adding this makes latex flavors not able to find the next package 'sectsty' ??
+\usepackage{sectsty}
+\usepackage{titlesec}
+\usepackage{fancyvrb,newverbs,xcolor}
+\usepackage{csvsimple}
+% This tex file uses the following commands:
+% Environments:
+% termESC - bash highlighted listing(verbatim) looking like a terminal, gray bg
+%         - to escape, use the following:             '+escaped stuff+'.  
+%         - To use a command use '?', not '\' :       '+?{command} and ?{other_command}+'
+%         - if you need to use a question mark use :  '+?{questionmark}+'
+%         - if you need to use a plus sign use:       '+?{plussign}+'
+%         - environment uses NewTCBListing{hiterminal}
+%termPESC - regular highlighted listing(verbatim) looking like a terminal, gray bg
+%         - to escape, use the following:             '!escaped stuff!'.
+%         - use '?' and not '\' to use commands, like termESC
+%         - if you need to use a '!' use :            '!?{notsign}!'
+%hicode{language}    - NewTCBListing(verbatim) highlighted language with light yellow bg
+%                    - escape using '~'                '~\command something else~'
+%                    - to use '~', use:                '~\tildesign~'       
+%code                - Just code, not highlighted colors, light yellow bg
+%                    - no escape
+%explanation{title}  - below v
+%important{title}    - below v
+%warning{title}      - all 3 of these environments have a title to them in a box with different
+%                    - alert icons.  The box is light blue.  It is a verbatim environment
+%                    - to escape use : '@|stuff@|'  ,  to use '@|'   do '@|\atpipesign@|'
+% Inline Environments:
+%  lstTerm           - terminal(verbatim), light gray bg, dark red fg
+%  lstArg            - terminal option(verbatim), light gray bg, red fg
+%  lstProperty       - Json Property(verbatim), light gray bg, teal fg
+%  lstFolder         - Folder/File(verbatim),light gray bg, blue fg
+%  lstCode           - Code(verbatim), light yellow bg, muted blue fg
+% Commands:
+%   prompt           - terminal prompt: 'user >' purple/blue fg
+%   rprompt          - terminal root prompt: 'root >' red fg
+%   batprompt        - terminal batsim prompt: '(batsim_env) user >' black and purple/blue fg
+%   questionmark
+%   plussign
+%   tildesign
+%   notsign
+%   atpipesign
+
+
+
+
+\setdefaultlanguage[variant=american]{english}
+% Text styles
+\definecolor{hi-light-yellow}{HTML}{FFFF6D}
+\definecolor{hi-light-orange}{HTML}{FFE994}
+\definecolor{hi-light-pink}{HTML}{FFD8CE}
+\definecolor{hi-light-purple}{HTML}{E0C2CD}
+\definecolor{hi-light-green}{HTML}{E8F2A1}
+\definecolor{hi-yellow}{HTML}{FFFF00}
+\definecolor{lightest-gray}{gray}{.97}
+\definecolor{codelist}{RGB}{250, 238, 197}
+\colorlet{codelist-light}{codelist!50}
+\colorlet{terminal-light}{black!15}
+\definecolor{code-blue}{RGB}{4, 86, 194}%{89,131,176}
+\definecolor{easter-blue}{RGB}{0,200,255}
+\definecolor{myLightBlue}{RGB}{0,100,255}
+\colorlet{lightest-blue}{easter-blue!10}
+\colorlet{explanation-code}{myLightBlue!23}
+\definecolor{comment-greenish}{RGB}{99, 138, 133}
+\definecolor{rprompt-color}{RGB}{230,80,120}
+\definecolor{prompt-color}{RGB}{160,90,250}
+\definecolor{code-keyword}{HTML}{B21354}
+\definecolor{code-string}{HTML}{AF770A}
+\definecolor{warning-color}{RGB}{255,100,100}
+\definecolor{info-color}{RGB}{255,255,255}
+\definecolor{important-color}{RGB}{250, 218, 102}
+\definecolor{property-teal}{RGB}{22,130,103}
+\definecolor{myTerminalRed}{RGB}{160, 60, 73}
+\definecolor{myExplanationRed}{RGB}{160,40,100}
+\definecolor{argument-color}{RGB}{230,60,73}
+
+% New Commands
+\let\oldsection\section
+\newcommand\spsection{\oldsection} % same page section
+\renewcommand\section{\clearpage\oldsection}
+\makeatletter
+\titleformat*{\section}{\LARGE\bfseries}
+\titleformat*{\subsection}{\Large\bfseries}
+\titleformat*{\subsubsection}{\large\bfseries}
+\titleformat*{\paragraph}{\normalsize\bfseries}
+\titleformat*{\subparagraph}{\small\bfseries}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}{-3.25ex \@plus1ex \@minus.2ex}{10pt}{\sffamily\normalsize\bfseries}}
+\renewcommand\subparagraph{\@startsection{subparagraph}{4}{\z@}{-3.25ex \@plus1ex \@minus.2ex}{10pt}{\sffamily\small\bfseries}}
+%\definecolor{explanation-code}{RGB}{50,150,255}
+
+\newenvironment{expverbatim}
+ {\SaveVerbatim{cverb}}
+ {\endSaveVerbatim
+  \flushleft\fboxrule=0pt\fboxsep=.5em
+  \colorbox{explanation-code}{%
+    \makebox[\dimexpr\linewidth-2\fboxsep][l]{\BUseVerbatim{cverb}}%
+  }
+  \endflushleft
+}
+% types of explanation boxes
+\newcommand\infoC{\faInfoCircle}
+\newcommand\alertC{\faExclamationCircle}
+\newcommand\alertT{\faExclamationTriangle}
+%
+\AfterEndEnvironment{explanation}{\color{black}}
+\AfterEndEnvironment{itemize}{\color{black}}
+\AfterEndEnvironment{enumerate}{\color{black}}
+\AfterEndEnvironment{description}{\color{black}}
+
+%\renewcommand{\familydefault}{\sfdefault}
+\newenvironment{regular}{\color{black}\linespread{1.2}\selectfont}{}
+\usepackage{marvosym}
+
+
+%-------------------------------------------------------------------
+%                            Background Color Ranges
+%-------------------------------------------------------------------
+\usepackage{pgf}
+\usepackage{pgffor}
+
+\makeatother
+\newcommand\myIfRange[3]{%
+\ifnum\value{lstnumber}>\numexpr#1-1\relax
+	\ifnum\value{lstnumber}<\numexpr#2+1\relax
+		\color{#3}
+	\fi
+\fi}
+\newcommand\myIf[2]{%
+\ifnum\value{lstnumber}=#1
+	\color{#2}
+\fi}
+\newcommand\myStart{\color{lightest-gray}}
+\newcommand\myTitle{What This Code Does}
+					
+					
+%--------------------------------------------------------------------
+
+%--------------------------------------------------------------------
+% these tcblistings use xparse for the arguments.  read the documentation for that if unsure of syntax.  O is optional m=mandatory
+\tcbuselibrary{xparse,minted}   %minted is for highlighting code.  styles didn't work for me, but languages do.
+% all styles
+% manni rrt perldoc borland colorful murphy vs trac tango fruity autumn 
+% bw emacs vim pastie friendly native monokai
+\usemintedstyle[Bash]{tango}
+\usemintedstyle[C++]{trac}
+\usemintedstyle[python]{manni}
+%Acceptable styles
+%Bash
+%murphy%tango%autumn%emacs%pastie
+%C++
+%colorful%trac%autumn%pastie
+%python
+%manni%murphy%autumn%pastie
+
+%this is for writing bash code and escaping commands.  bash language in pygmentize (which minted uses) does not like backslashes, thinks of them as strings
+%so we escape (unfortunately minted only uses 1 char for setting escapeinside in tcb environment)
+%and then we do {?{color}{red}hello}.  So if ++ is escapeinside then + ?{color}{red}?{small}hello + 
+\catcode`\?=\active
+\gdef?#1{\csname #1\endcsname}
+\catcode`\?=12
+
+% a prompt for the terminal
+\def\rprompt{\color{rprompt-color}\textbf{root >}\hspace{3mm}} %root prompt
+\def\prompt{\color{prompt-color}\textbf{user >}\hspace{3mm}}   %user prompt
+\def\batprompt{(batsim\_env) \color{prompt-color}\textbf{user >}\hspace{3mm}}
+% \begin{termESC}   terminal block that allows ++ escaping.  Use +?{command}+
+% \begin{hicode}[language] Use for highlighted code in the language it is.
+% \begin{explanation}
+% \begin{important}
+% \begin{warning}
+% \lstTerm{terminal command}
+% \lstFolder{folder/path}
+% \lstCode{Code statement}
+
+\renewcommand{\theFancyVerbLine}{\sffamily
+\textcolor[rgb]{0.5,0.5,1.0}{\small
+\oldstylenums{\arabic{FancyVerbLine}}\hspace{2mm}}}
+\newcommand\tildesign{~}
+\NewTCBListing{hicode}{ !O{python} !O{ } }{%
+  breakable,
+  left=15mm,
+  before skip=5mm,
+  after skip=10mm,
+  colback=codelist!50,
+  colframe=codelist!50,
+  arc=3pt,
+  boxrule=0pt,  
+  listing only,
+  listing engine=minted,
+  minted language=#1,
+  minted options={numbers=left,tabsize=1,fontsize=\small,escapeinside=~~,#2}
+}
+\NewTCBListing{code}{ !O{python} !O{ } }{%
+  breakable,
+  left=10mm,
+  colback=codelist!50,
+  colframe=codelist!50,
+  arc=3pt,
+  boxrule=0pt,  
+  listing only,
+  listing engine=listings,
+  listing options={language=#1,stringstyle=\ttfamily,commentstyle=\itshape\bfseries\color{comment-greenish},keywordstyle=\color{code-keyword}\bfseries,showstringspaces=false,numbers=left,style=CODE-STYLE,tabsize=1,#2}
+}
+\newcommand\plussign{+}
+\NewTCBListing{hiterminal}{ !O{} }{%
+  breakable,
+  top=2mm,
+  bottom=2mm,
+  left=15mm,
+  before skip=5mm,
+  after skip=10mm,
+  colback=black!15,
+  colframe=black!15,
+  arc=5pt,
+  listing engine=minted,
+  minted language=Bash,
+  boxrule=0pt,
+  listing only,
+  minted options={breaklines=true,numbers=left,tabsize=1,fontsize=\small,escapeinside=++,baselinestretch=1.3,#1}
+}
+\newcommand\notsign{!}
+\NewTCBListing{Phiterminal}{ !O{} }{%
+  breakable,
+  top=2mm,
+  bottom=2mm,
+  left=15mm,
+  before skip=5mm,
+  after skip=10mm,
+  colback=black!15,
+  colframe=black!15,
+  arc=5pt,
+  minted language=text,
+  listing engine=minted,
+  boxrule=0pt,
+  listing only,
+  minted options={breaklines=true,numbers=left,tabsize=1,fontsize=\small,escapeinside=!!,baselinestretch=1.3,#1}
+}
+\newcommand\atpipesign{@|}
+\NewTCBListing{terminal}{ !O{style=TERMINAL} }{%
+  top=-1mm,
+  bottom=-1mm,
+  before skip=10pt,
+  after skip=10pt,
+  colback=black!15,
+  colframe=black!15,
+  arc=5pt,
+  listing engine=listings,
+  boxrule=0pt,
+  listing only,
+  listing options={tabsize=1,language=Bash,escapechar=@|,commentstyle=\itshape\bfseries\color{comment-greenish},#1}
+}
+\NewTCBListing{explanation}{ O{style=EXPLANATION-STYLE} m}{%
+	enhanced,
+  before skip=5mm,
+  after skip=10mm,
+	colback=myLightBlue!30,
+	colframe=myLightBlue!30!black!90,
+	coltitle=lightest-blue!50,
+	fonttitle={\fontsize{15}{25}\bfseries},
+	listing only,
+	breakable,
+	arc=5pt,
+  listing engine=listings,
+	title={\Large{\textcolor{info-color}{\infoC}} \quad #2},
+	listing options={showstringspaces=false,showtabs=false,escapechar=@|,#1}
+}
+\NewTCBListing{important}{ O{style=EXPLANATION-STYLE} m}{%
+	enhanced,
+  before skip=5mm,
+  after skip=10mm,
+	colback=myLightBlue!30,
+	colframe=myLightBlue!30!black!90,
+	coltitle=lightest-blue!50,
+	fonttitle={\fontsize{15}{25}\bfseries},
+	listing only,
+	breakable,
+	arc=5pt,
+  listing engine=listings,
+	title={\Large{\textcolor{important-color}{\alertC}} \quad #2},
+	listing options={showstringspaces=false,showtabs=false,escapechar=@|,#1}
+}
+\NewTCBListing{warning}{ O{style=EXPLANATION-STYLE} m}{%
+	enhanced,
+  before skip=5mm,
+  after skip=10mm,
+	colback=myLightBlue!30,
+	colframe=myLightBlue!30!black!90,
+	coltitle=lightest-blue!50,
+	fonttitle={\fontsize{15}{25}\bfseries},
+	listing only,
+	breakable,
+	arc=5pt,
+  listing engine=listings,
+	title={\Large{\textcolor{warning-color}{\alertT}} \quad #2},
+	listing options={showstringspaces=false,showtabs=false,escapechar=@|,#1}
+}
+\setlength\parindent{0pt}
+\setlength\parskip{10pt}
+\setcounter{tocdepth}{5} 
+\setcounter{secnumdepth}{5}
+
+\setmonofont{DejaVu Sans Mono}
+
+% so detokenize is nice for a listing, it takes any special meaning off of things like #,$,\
+% the problem is that it has problems with # as this is what is used for an argument
+% it ends up doubling it.  Some commands will double the # and some half them.  But we want a 
+%single # in our document so this will use Latex3 to take all control sequences with parameter code (#) and replace with the string version of #
+%N=command, p=parameter list, n=token list, x=expanded token list
+\ExplSyntaxOn
+
+\def\mystrut{\rule[\dimexpr-1.2\dp\strutbox+\fboxsep]{0pt}{%
+ \dimexpr\normalbaselineskip-1\fboxsep}}
+\def\grayspace{\hspace{0pt minus \fboxsep}}
+\NewDocumentCommand{\lstTerm}{ v }{
+  \ \allowbreak\sloppy\grayspace\tcbox[breakable,on~line,boxsep=3pt, left=0pt,right=0pt,top=0pt,bottom=0pt,colframe=white,colback=black!15]{\textcolor{myTerminalRed}{\small\ttfamily\mystrut\smash{#1}}\ 
+}}
+\NewDocumentCommand{\lstFolder}{ v }{
+  \ \allowbreak\sloppy\grayspace\tcbox[breakable,on~line,boxsep=3pt, left=0pt,right=0pt,top=0pt,bottom=0pt,colframe=white,colback=black!15]{\textcolor{blue!70}{\small\ttfamily\mystrut\smash{#1}}\ 
+}}
+%\NewDocumentCommand{\lstCode}{ v }{
+%  \ \allowbreak\sloppy\grayspace\colorbox{codelist!90}{\textcolor{code-blue}{\small\ttfamily\mystrut\smash~{#1}}\ 
+%}}
+\NewDocumentCommand{\lstCode}{ v }{
+  \ \allowbreak\sloppy\grayspace\tcbox[tcbox~width=auto~limited,breakable,on~line,boxsep=3pt, left=0pt,right=0pt,top=0pt,bottom=0pt,colframe=white,colback=codelist!90]{\textcolor{code-blue}{\small\ttfamily\mystrut\smash~{#1}}\ 
+}}
+\NewDocumentCommand{\lstProperty}{ v }{
+  \ \allowbreak\sloppy\grayspace\tcbox[tcbox~width=auto~limited,breakable,on~line,boxsep=3pt, left=0pt,right=0pt,top=0pt,bottom=0pt,colframe=white,colback=black!15]{\textcolor{property-teal}{\small\ttfamily{#1}}\ 
+}}
+\NewDocumentCommand{\lstArg}{ v }{
+  \ \allowbreak\sloppy\grayspace\tcbox[tcbox~width=auto~limited,breakable,on~line,boxsep=3pt, left=0pt,right=0pt,top=0pt,bottom=0pt,colframe=white,colback=black!15]{\textcolor{argument-color}{\small\ttfamily\mystrut\smash{#1}}\ 
+}}
+\NewDocumentCommand{\Opt}{ m }{\textbf{\textit{#1}}}
+%this \Detokenize function is just to play with.  It answers some questions I had
+%about latex3,regex, catcodes, etc..
+%it can go around #1 in \lstCode
+%Note that this stuff didn't work too well before I set the variable to verbatim
+%  you can see how I was calling it before in \mytokens below
+% right now it replaces all (P)arameter catcoded(6)of any character with a #(11)
+% it then replaces a {(11) with {(1) and }(11) with }(2)
+% I believe that you must switch both the { and the } to (1/2)(B/E) at the same time or else
+% you will have an unbalanced expression
+% all code 11's above may be code 12.  Not sure right now.
+%
+\cs_new:Npn \Detokenize #1 {
+  %\cs_set_eq:NN \myDetokenize:n \detokenize
+
+  \tl_clear_new:N \l_ccu_ourInput
+  \tl_set:Nn \l_ccu_ourInput {#1}
+  \regex_replace_all:nnN { \cP. }{ \# } \l_ccu_ourInput
+  \regex_replace_all:nnN { \{ (.*) \} }{ \cB\{ \1 \cE\} } \l_ccu_ourInput
+  \regex_replace_all:nnN { \cE. }{ m \cE\} } \l_ccu_ourInput
+  \tl_to_str:V {\l_ccu_ourInput}
+  %\tl_to_str:o {\ourInput}
+}
+\ExplSyntaxOff
+
+\makeatletter
+
+\newcommand\mytokens[3]{\mytokenshelp{#1}{#2}#3 \relax\relax}
+\def\mytokenshelp#1#2#3 #4\relax{\allowbreak\sloppy\grayspace\tokenscolor{#1}{#2}{#3}\ifx\relax#4\else
+ \mytokenshelp{#1}{#2}#4\relax\fi}
+\newcommand\tokenscolor[3]{\colorbox{#1}{\textcolor{#2}{%
+  \small\ttfamily\mystrut\smash{\Detokenize{#3}}}}}
+%\newcommand{\lstTerm}[1]{a}
+
+%\newcommand{\lstTerm}[1]{~~\mytokens{black!15}{myTerminalRed}{#1}~}
+%\newcommand{\lstFolder}[1]{~~\lstfolder{black!15}{blue!70}{#1}~}
+%\newcommand{\lstFolder}[1]{a}
+%\newcommand{\lstCode}[1]{a}
+%\newcommand{\lstfolder}[1]{~~\mytokens{black!15}{blue!70}{#1}~}
+%\newcommand{\lstCode}[1]{~~\mytokens{codelist!90}{code-blue}{#1}~}
+
+%\NewDocumentCommand{\lstCode}{v}{\sethlcolor{codelist-light}\texthl{\Verb{#1}}}
+%\newcommand{\lstCode}[1]{\hl{\Verb#1}}
+%\soulregister\lstCode1
+%\newcommand{\lstCode}[1]{%
+%  \edef\hverb@tmp{#1}%
+%  \expandafter\hl\expandafter{\hverb@tmp}}
+\newcommand\questionmark{?}
+\def\underscore{\_}
+\def\atsign{\@}
+\def\quotes{"}
+\makeatother
+\newenvironment{termESC}{\catcode`\?=\active \hiterminal}{\endhiterminal}
+%termP{lain}ESC
+\newenvironment{termPESC}{\catcode`\?=\active \Phiterminal}{\endPhiterminal}
+%\setcounter{section}{-1}
+
+\newcommand\subsubsubsection\paragraph
+\newcommand\subsubsubsubsection\subparagraph
+
+
+
+
+\begin{document}
+\setlistdepth{9}
+\setlist[itemize,1]{label=\FilledCircle}
+\setlist[itemize,2]{label=\FilledSmallSquare}
+\setlist[itemize,3]{label=\SmallCircle}
+\setlist[itemize,4]{label=$\rhombusfill$}
+\setlist[itemize,5]{label=$\diamond$}
+\setlist[itemize,6]{label=$\star$}
+\setlist[itemize,7]{label=$\bullet$}
+\setlist[itemize,8]{label=$\square$}
+\setlist[itemize,9]{label=$-$}
+
+\renewlist{itemize}{itemize}{9}
+\sffamily
+\allsectionsfont{}
+
+
+\lstdefinestyle{EXPLANATION-STYLE}
+{
+ 	columns=flexible,
+ 	breaklines=true,
+    basicstyle={\normalsize\color{black}\sffamily},
+  escapechar=@|
+}
+\lstdefinestyle{TERMINAL}
+{
+ 	columns=fullflexible,
+ 	breaklines=true,
+  escapechar=@|,
+	backgroundcolor=\color{black!15},
+    basicstyle=\small\ttfamily
+}
+\lstdefinestyle{TERMINAL-FLEX}
+{
+ 	columns=flexible,
+ 	breaklines=true,
+	backgroundcolor=\color{black!15},
+    basicstyle=\small\color{myTerminalRed}\ttfamily
+}
+\lstdefinestyle{CODE-STYLE}
+{
+	columns=flexible,
+	breaklines=true,
+	escapechar=@|,
+	backgroundcolor=\color{codelist!50},
+    basicstyle=\small\ttfamily
+}
+
+
+\maketitle
+\hypersetup{linkcolor=blue,urlcolor=blue,anchorcolor=blue}
+
+\pdfbookmark[section]{Table Of Contents}{1}
+\tableofcontents
+\pagebreak
+\phantomsection \addcontentsline{toc}{section}{i. Preface}
+\section*{i. Preface} 
+\phantomsection \addcontentsline{toc}{section}{ii. Style Of Document}
+\subsection*{\LARGE ii. Style Of Document} 
+\begin{regular}
+There is a certain style to this guide that should be made apparent.
+\end{regular}
+\begin{itemize}
+  \vspace{3mm}
+  \item \textbf{Inline style:}
+  \vspace{3mm}
+        \begin{enumerate}
+          \item \lstTerm{Commands you would run ./from --the --terminal --look --like --this.}
+          \item \lstArg{Just an --argument to a command will look like this.}
+          \item \lstProperty{A config 'property': will look like this}
+          \item \lstFolder{A/folder/or/file/path/would/look/like/this.}
+          \item \lstCode{Code::would #look like() this.}
+         \end{enumerate}
+  \vspace{7mm}
+  \item \textbf{Block style:}
+  \vspace{3mm}
+        \begin{enumerate}
+          \item \textbf{Terminal}
+\begin{termESC}
++?{prompt}+#this is a terminal block, and this is a comment in it.
++?{prompt}+./and_this_would_be_a_command & | if [[ ]] ; for ;do echo 
++?{prompt}+cd ~/our/path # and this is a known command
++?{prompt}+su -
+Password:
++?{rprompt}+./this_would_run_as_root
+\end{termESC}
+          \item \textbf{Code}
+\begin{hicode}[C++]
+//A c++ code block looks like this, and this is a c/c++ comment in it
+and this::is::a::function()
+{
+  with an int definition;
+  int a=10;
+  string name="CCU-LANL";
+  return 10;
+}
+\end{hicode}
+\begin{hicode}[python]
+# and this is python code
+import pandas as pd
+with open("file.csv","r") as InFile:
+  df = pd.read_csv(InFile,sep=",")
+def hello:
+  print("world")
+  q = [ 5,10 ]
+\end{hicode}
+          \item \textbf{Explanations}
+          
+          \begin{enumerate}
+            
+            \item \textbf{Additional Info}
+            \begin{explanation}{Explains Some Additional Info}
+            Additional info here
+            \end{explanation}
+            
+            \item \textbf{Important Info}
+            \begin{important}{Explains Important Info}
+            This is very important
+            \end{important}
+            
+            \item \textbf{Warning Info}
+            \begin{warning}{Info That Warns You}
+            This will certainly break the internet
+            \end{warning}
+          
+          \end{enumerate}
+        
+        \end{enumerate}
+
+\end{itemize}
+\section{intro}
+Batsim uses a library called Simgrid under the hood.  Simgrid is responsible for making simulated nodes and connections and for all the simulated calculations on them and between them.
+Batsim is able to sit on top of it using an api called s4u that Simgrid provides.  Batsim doesn't use all of Simgrid's functionality,
+but it adds quite a bit of its own functionality to the cluster/scheduler paradigm.\\
+
+So, Batsim is responsible for taking a workload file and following each job's progress through the simulation.  It sends messages over a socket
+to a scheduler.  Batsim doesn't care if this scheduler is written in C, python, shell, java, etc\ldots  as long as it is able to follow the protocols of sending messages over the socket.
+The scheduler makes scheduling decisions.  So to make this simpler, here is an example:
+
+Workload file 'w0' 
+\section{simulator}
+\subsection{overview}
+  \includegraphics[scale=.40]{images/overview.png}
+
+  \subsubsection{myBatchTasks.sh}
+  \subsubsection{generate\_config.py}
+  \subsubsection{run-experiments.py}
+  \subsubsection{experiment.sh}
+  \subsubsection{real\_start.py}
+  \subsubsection{post-processing.py}
+  
+\subsection{config.ini Schema}
+\subsection{progress.sh}
+\subsection{analysis}
+\subsubsection{aggregate\_makespan.py}
+\section{batsim4}
+\subsection{batsim options}
+\subsection{workload}
+\subsection{passing messages}
+\subsubsection{protocol reader}
+\subsubsection{protocol writer}
+\subsection{batsim\_tools}
+\section{batsched4}
+\subsection{batsched options}
+\subsection{isalgorithm}
+\subsection{batsched\_tools}
+\end{document}

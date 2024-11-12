@@ -3,8 +3,8 @@
                                     prepared with the generate_config.py script.  This can be run in parallel and single mode.
 
 Usage:
-    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR] 
-    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--tasks-per-node INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--add-to-sbatch STR]
+    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--cores-per-job INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--skip-completed-sims] [--add-to-sbatch STR] 
+    run-experiments.py -i <FOLDER> [--parallel-mode STR][--method STR][--partition STR][--tasks-per-node INT][--socket-start INT][--time INT][--sim-time-minutes FLOAT | --sim-time-seconds INT][--start-run INT][--end-run INT] [--highest-priority] [--skip-completed-sims] [--add-to-sbatch STR]
 
 Required Options:
     -i <FOLDER> --input <FOLDER>    Where experiments live
@@ -40,6 +40,9 @@ Optional Important Options:
                                     have 100 sims going and you started at 10,000, then you will want to do your next set of sims at 10,100 for example
                                     You can use higher numbers.  I've used numbers up to 300,000
                                     [default: 10000]
+
+   --skip-completed-sims            Set this to skip sims that are in progress.log as completed
+
 Not So Important Options:
    --add-to-sbatch STR              If parallel-mode is not 'none' then one can add sbatch options.  These should
                                     overrule any environment variables set.
@@ -90,12 +93,33 @@ def atoi(text):
 def natural_keys(text):
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
+def simCompleted(runPath):
+    try:
+        with open(f"{runPath}/output/progress.log","r") as InFile:
+            progressJson=json.load(InFile)
+            if progressJson["completed"]:
+                return True
+            else:
+                return False
+    except:
+        try:
+            with open(f"{runPath}/output/progress.log","w") as OutFile:
+                progressJson="""
+                { "completed":false }
+                """
+                progressJson=json.loads(progressJson)
+                json.dump(progressJson,OutFile,indent=4)
+        except:
+            print(f"ERROR with progress.log, runPath: {runPath}")
+        return False
+    
 
 try:
     args=docopt(__doc__,help=True,options_first=False)
 except DocoptExit:
     print(__doc__)
     sys.exit(1)
+
 path = args["--input"].rstrip("/")
 basefiles=str(os.path.dirname(os.path.abspath(__file__)))
 partition = args["--partition"] # will be legit or "False"
@@ -111,6 +135,7 @@ if args["--sim-time-minutes"]:
     mySimTime=int(np.round(float(args["--sim-time-minutes"])*60))
 elif args["--sim-time-seconds"]:
     mySimTime=int(args["--sim-time-seconds"])
+skipCompleted = True if args["--skip-completed-sims"] else False
 priority = 1 if args["--highest-priority"] else 0
 startRun=int(args["--start-run"]) if args["--start-run"] else False
 endRun=int(args["--end-run"]) if args["--end-run"] else False
@@ -160,7 +185,9 @@ if parallelMode == "sbatch":
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)
                 for ourId in ids:
-                    
+                    jobPath = path+"/"+exp+"/"+job +"/"+ ourId + "/" + run
+                    if skipCompleted and simCompleted(jobPath):
+                        continue
                     if not(start == 1):
                         cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
                         myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
@@ -222,8 +249,11 @@ elif parallelMode == "tasks":
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)
                 for ourId in ids:
+                    jobPath = path+"/"+exp+"/"+job +"/"+ ourId + "/" + run
+                    if skipCompleted and simCompleted(jobPath):
+                        continue
                     if not(start == 1):
-                        cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
+                        cmd=f"rm {jobPath}/output/*.out 2> /dev/null"
                         myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
                         myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
@@ -297,8 +327,11 @@ elif parallelMode == "background":
                 ids = [i for i in os.listdir(path+"/"+exp+"/"+job+"/") if os.path.isdir(path+"/"+exp+"/"+job+"/"+i)]
                 ids.sort(key=natural_keys)
                 for ourId in ids:
+                    jobPath = path+"/"+exp+"/"+job +"/"+ ourId + "/" + run
+                    if skipCompleted and simCompleted(jobPath):
+                        continue
                     if not(start == 1):
-                        cmd="rm {jobPath}/output/*.out 2> /dev/null".format(jobPath=path+"/"+exp+"/"+job +"/"+ ourId + "/" + run)
+                        cmd=f"rm {jobPath}/output/*.out 2> /dev/null"
                         myProcess = subprocess.Popen(["/usr/bin/bash","-c",cmd])
                         myProcess.wait()
                     jobPath = path+":PATH:/"+exp+"/"+job +"/"+ ourId + "/" + run
