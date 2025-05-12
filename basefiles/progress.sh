@@ -260,6 +260,31 @@ print_entry()
     myOutput="$myOutput|\\033[${color}m$number\\033[0m"
     subtract_output_count
 }
+seconds2time()
+{
+   T=$1
+   
+   y=$(echo "$T/60/60/24/365"| bc)
+   T=$(echo "$T-($y*3600*24*365)"|bc)
+   m=$(echo "$T/60/60/24/30"| bc)
+   T=$(echo "$T-($m*3600*24*30)"| bc)
+   D=$(echo "$T/60/60/24"| bc)
+   T=$(echo "$T-($D*3600*24)"| bc)
+   H=$(echo "$T/60/60%24"| bc)
+   M=$(echo "$T/60%60"| bc)
+   S=$(echo "$T%60/1"| bc)
+   N=$(echo "$T" |sed -E 's/[0-9]+[.]//g')
+   #printf "%dy %dm %dd %02d:%02d:%02d.%d" $y $m $D $H $M $S $(date -u +"%N" -d "@${seconds}")
+   myOutput="$(printf "%s%dy%dm%dd %02d:%02d:%02d.%s%s" "$myOutput|\\033[${color}m" $y $m $D $H $M $S $N "\\033[0m")"
+   
+}
+print_entry_time()
+{
+    seconds=$(echo "$entry" |awk -F, -v field=$field '{printf("%s",$field)}')
+    seconds2time $seconds
+    subtract_output_count
+
+}
 
 
 completed_jobs_f()
@@ -326,12 +351,20 @@ times_f()
     color=$color4; field=4; name="real_time"; alt_name="rl_time";
     print_entry_f;
     color=$color5; field=5; name="sim_time"; alt_name="sm_time"
-    print_entry_f; 
+    print_entry_f;
+
+    
+
 }
 times()
 {
     color=$color4; field=4; name="real_time"; print_entry;
-    color=$color5; field=5; name="sim_time"; print_entry;
+    color=$color5; field=5; name="sim_time";
+    if [ $simTimeString = true ];then
+         print_entry_time;
+    else
+        print_entry;
+    fi
 }
 queue_size_f()
 {
@@ -670,7 +703,7 @@ source $prefix/basefiles/batsim_environment.sh
 export basefiles=$prefix/basefiles
 source $prefix/python_env/bin/activate
 
-VALID_ARGS=$(getopt -o i:aEOopcm:qsNI:r:e:j:b:HM:tSuUFT:hP:123456789d:CZz: --long up,normal-info,no-info:,original-info,condensed,super-condensed,elapsed-time,overall-percent,input:,prompt:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
+VALID_ARGS=$(getopt -o i:ab:cd:e:f:hj:m:opqr:stuz:CDEFHI:M:NOP:ST:UZ123456789 --long frame,display-sim-time,up,normal-info,no-info:,original-info,condensed,super-condensed,elapsed-time,overall-percent,input:,prompt:,all,percent,completed,time,memory:,memory-size:,schedule-info,utilization,queue-size,schedule-size,experiment:,job:,id:,run:,finished-sims,unfinished-sims,threshold:,before:,head,help -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -706,6 +739,8 @@ original_info=false
 noInfo=false
 normalInfo=false
 up=false
+simTimeString=false
+frame=""
 
 eval set -- "$VALID_ARGS"
 while true; do
@@ -733,6 +768,11 @@ while true; do
         options="$options, up"
         up=true
         shift 1
+        ;;
+    -f | --frame)
+        options="$options, f $2"
+        frame="_$2"
+        shift 2
         ;;
      -e | --experiment)
         options="$options, e $2"
@@ -903,6 +943,11 @@ while true; do
         #max_cols=$(( cols + 200 ))
         shift 1
         ;;
+    -D | --display-sim-time)
+        options="$options, D"
+        simTimeString=true
+        shift 1
+        ;;
     -h | --help)
         break
         ;;
@@ -917,7 +962,7 @@ cat <<"EOF"
 progress.sh: used to show the progress of all simulations in a folder, or just certain ones, with options for what to show.
 
 Usage:
-    progress.sh [-# | -i <folder> | -d <bookmark> ] [-P <options>] [-e <folder>] [-j <array string>] [-D <array string>] [-r <array string>] [--up]
+    progress.sh [-# | -i <folder> | -d <bookmark> ] [-P <options>] [-e <folder>] [-j <array string>] [-D <array string>] [-r <array string>] [--up] [-f INT]
                             [-b <int>] [-H] [-E] [-O] [-N] [-p] [-o] [-c] [-q] [-s] [-m <batsim|batsched|both|all|available>] [-M K|M|G|T|H] [-z "<opts>"]
                             [-C] [-Z]  
 
@@ -927,7 +972,7 @@ Mostly Required Options:
                                    NOTE: using this method requires folder# to be exported: export folder#
                                    NOTE: batFolder automatically exports the corresponding folder# variable
 
-    -d <bookmark>                  Will use the dibB.sh bookmark
+    -d <bookmark>                  Will use the .dirB.sh bookmark
 
     -i, --input <folder>           Where the experiments are.  This is supposed to be the outer folder passed to ./myBatchTasks.sh
                                    If it has a forward slash '/' in the name it will assume it is an absolute path.
@@ -971,6 +1016,11 @@ Which-Simulation Options:
     -r, --run <array string>       If you want to focus on just one run (in the sense of folders named Run_#) then use this to enter the folder number.
                                    Basically the same as --job and --id as far as how it works, except we focus on the run(s)
                                    Look at --job for string format
+
+    -f, --frame <int>              If you want to look at another frame, use this option.  The default is to look at the current frame.
+                                   Only use this option if you want to look at a different frame.  For instance, --frame 0 is not allowed.
+                                   But --frame 1, --frame 2  are allowed.  If the frame requested is not available it will have an error 
+                                   entry for that line.
 
     -F, --finished-sims            Only include sims that have overall_jobs_completed == overall_jobs
 
@@ -1031,6 +1081,9 @@ Presentation Options
     -Z, --super-condensed          When displaying format at the bottom, will use abbreviated names
                                    When displaying data, will not follow the line breaks of the "format" string
                                    TODO when displaying path, will use a condensed version of it
+
+    -D, --display-sim-time         Display the simulation time as a time broken up in years (365 days), months(30 days),days HH:MM:SS.mmm
+                                   Usually it will just show simulation time as total seconds.
 
 
     -h, --help                     Display this usage page
@@ -1214,7 +1267,8 @@ for exp in "${experiments[@]}";do
 
             fi
             for r in "${runs[@]}";do
-                lines="`tail -n $before "$r/output/expe-out/out_extra_info.csv" 2>/dev/null`"
+                lines="`tail -n $before "$r/output/expe-out${frame}/out_extra_info.csv" 2>/dev/null`"
+                
                 runOutput=`echo $r | sed "s@$input_dir/$input_base/@@g"`
                 if [ $superCondensed = true ];then
                     runOutput=`echo $runOutput | sed "s@experiment@e@g"`
@@ -1223,7 +1277,7 @@ for exp in "${experiments[@]}";do
                 fi
                 line_count=$(wc -l "$r/output/expe-out/out_extra_info.csv" 2>/dev/null | awk '{print $1}')
 
-                if ! test -f "$r/output/expe-out/out_extra_info.csv" ;then
+                if ! test -f "$r/output/expe-out${frame}/out_extra_info.csv" ;then
                     echo -e "...${runOutput}:   \\033[${grey}m************************************************* Error No File *************************************************\\033[0m"
                     continue
                 elif [[ $line_count == 1 ]];then

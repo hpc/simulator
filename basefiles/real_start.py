@@ -308,10 +308,12 @@ if not onlyOutput:
     #check that the frame exists and move the frame ahead if starting from a checkpoint
     if startFromCheckpoint:
         checkpoint_path = f"{path}/output"
-        if startFromFrame == 0:
+        if (startFromFrame == 0) and (not discardLastFrame):
             checkpoint_path = f"{checkpoint_path}/expe-out/checkpoint_{startFromCheckpoint}"
-        else:
+        elif (not discardLastFrame):
             checkpoint_path = f"{checkpoint_path}/expe-out_{startFromFrame}/checkpoint_{startFromCheckpoint}"
+        else:
+            checkpoint_path = f"{checkpoint_path}/expe-out_1/checkpoint_{startFromCheckpoint}"
        
         if not os.path.exists(checkpoint_path):
             print(f"ERROR: real_start.py:  '{checkpoint_path}' does not exist")

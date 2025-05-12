@@ -45,7 +45,7 @@ if [[ $help == "true" ]]
     Details on its format are at the bottom. It also expects that you are in your batsim_environment
 
     Usage:
-        update_simulator.sh -i <path_to_config> [-f <path_to_folders>|-d] [-o (code|simulator)]
+        update_simulator.sh -c <path_to_config> [-f <path_to_folders>|-d] [-o (code|simulator)]
 
         -c <path>, --config <path>      path to config
         -f <path>, --folder <path>      path to simulator,batsim4,batsched4
@@ -82,7 +82,7 @@ batsim4compile=false
 batsched4compile=false
 
 
-if [[ $only != "simulator" ]] && [[ $only != "code" ]];then
+if [[ $only != "all" ]] && [[ $only != "simulator" ]] && [[ $only != "code" ]];then
     echo "Error, -o option only takes 'simulator' or 'code'"
     exit
 fi

@@ -62,6 +62,7 @@ while true; do
         myString="$2"
         grep "/" <<<"$myString" > /dev/null
         if [ $? -eq 0 ];then
+            mkdir -p "$myString"
             FOLDER1_ABS=true
             FOLDER1="$(cd -- "$2" && pwd)"
             FOLDER1_DIR=$(dirname "$2")
@@ -175,9 +176,13 @@ if [ $FILE1 = false ] || [ $FOLDER1 = false ] ||  \
                             NOTE: make sure $prefix is set to the folder that houses basefiles, charliecloud, batsim_ch, python_env, experiments, and configs
 
 Usage:
-    myBatchTasks.sh -f <STR> -o <STR> [-m <STR>]
-                        (-p sbatch [-c <INT>] | -p tasks -t <INT> | -p background [-t <INT>] | -p none)
-                        [-s <INT>] [-w <STR>][--permissions <STR>][--start-from-checkpoint <INT>] []
+    myBatchTasks.sh  -f <STR> -o <STR> [options]
+      deployment opts:         [-m 'bare-metal' | -m 'docker' | -m 'charliecloud' ]
+      parallel opts:           (-p sbatch [-c <INT>] | -p tasks -t <INT> | -p background [-t <INT>] | -p none)
+      opts:                    [-s <INT>] [-w <STR>][--permissions <STR>] [--add-to-sbatch <STR>] [--skip-completed-sims]
+      checkpointing opts:      [--start-from-checkpoint <INT>] [--start-from-checkpoint-keep <INT>] [--discard-old-logs <INT>]  
+      checkpoint frame opts:   [--discard-last-frame] [--start-from-frame <INT>] [--start-from-first-checkpointed-frame] 
+      checkpointing opts:      [--ignore-does-not-exist]
 
 Required Options:
 
@@ -267,7 +272,7 @@ Checkpoint Batsim Options:
     -F, --start-from-frame <INT>            Only used with --start-from-checkpoint and in conjunction with --start-from-checkpoint-keep
                                             Will use the expe-out_<INT> folder to look for the checkpoint data
                                                 So if you were invoking --start-from-checkpoint-keep 2, you would have
-                                                expe-out_1 and expe-out_2,   once you started from a checkpoint twice
+                                                expe-out_1 and expe-out_2,   once you started from a checkpoint twice.
                                                 If you use --start-from-frame 2 you will be using the checkpoint_[--start-from-checkpoint]
                                                 folder located in the expe-out_2 folder ( the expe-out_[--start-from-frame] folder)
                                             Here, '0' is the original expe-out folder that becomes expe-out_1
